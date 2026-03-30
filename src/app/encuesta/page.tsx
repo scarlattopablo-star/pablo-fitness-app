@@ -243,54 +243,49 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 4: Results */}
+        {/* STEP 4: Ready - redirect to payment */}
         {step === 4 && macros && (
           <div className="animate-fade-in-up">
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
                 <Check className="h-8 w-8 text-black" />
               </div>
-              <h2 className="text-2xl font-black mb-2">Tu Plan Personalizado</h2>
-              <p className="text-muted">Basado en el método Harris-Benedict</p>
+              <h2 className="text-2xl font-black mb-2">¡Encuesta Completada!</h2>
+              <p className="text-muted">Ya calculamos tu plan personalizado</p>
             </div>
 
-            {/* Macro Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="glass-card rounded-xl p-5 text-center col-span-2">
-                <p className="text-sm text-muted mb-1">Calorías Diarias</p>
-                <p className="text-4xl font-black text-primary">{macros.targetCalories}</p>
-                <p className="text-xs text-muted mt-1">kcal/día</p>
+            <div className="glass-card rounded-xl p-6 mb-6 text-center">
+              <p className="text-muted mb-2">Tu plan incluye:</p>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="bg-card-bg rounded-lg p-3">
+                  <p className="text-xs text-muted">Calorías</p>
+                  <p className="text-lg font-black text-primary">Calculadas</p>
+                </div>
+                <div className="bg-card-bg rounded-lg p-3">
+                  <p className="text-xs text-muted">Macros</p>
+                  <p className="text-lg font-black text-primary">Personalizados</p>
+                </div>
+                <div className="bg-card-bg rounded-lg p-3">
+                  <p className="text-xs text-muted">Entrenamiento</p>
+                  <p className="text-lg font-black text-primary">A tu medida</p>
+                </div>
+                <div className="bg-card-bg rounded-lg p-3">
+                  <p className="text-xs text-muted">Nutrición</p>
+                  <p className="text-lg font-black text-primary">Personalizada</p>
+                </div>
               </div>
-              <div className="glass-card rounded-xl p-4 text-center">
-                <p className="text-xs text-muted mb-1">Proteínas</p>
-                <p className="text-2xl font-black text-red-400">{macros.protein}g</p>
-                <p className="text-xs text-muted">{macros.protein * 4} kcal</p>
-              </div>
-              <div className="glass-card rounded-xl p-4 text-center">
-                <p className="text-xs text-muted mb-1">Carbohidratos</p>
-                <p className="text-2xl font-black text-yellow-400">{macros.carbs}g</p>
-                <p className="text-xs text-muted">{macros.carbs * 4} kcal</p>
-              </div>
-              <div className="glass-card rounded-xl p-4 text-center">
-                <p className="text-xs text-muted mb-1">Grasas</p>
-                <p className="text-2xl font-black text-blue-400">{macros.fats}g</p>
-                <p className="text-xs text-muted">{macros.fats * 9} kcal</p>
-              </div>
-              <div className="glass-card rounded-xl p-4 text-center">
-                <p className="text-xs text-muted mb-1">TMB</p>
-                <p className="text-2xl font-black">{macros.tmb}</p>
-                <p className="text-xs text-muted">kcal base</p>
-              </div>
+              <p className="text-sm text-muted">
+                Completá el pago para desbloquear tu plan completo con calorías, macros, rutinas y comidas personalizadas.
+              </p>
             </div>
 
             <div className="glass-card rounded-xl p-4 mb-8">
-              <h3 className="font-bold mb-2">Resumen</h3>
+              <h3 className="font-bold mb-2">Tus Datos</h3>
               <div className="space-y-1 text-sm text-muted">
                 <p>Sexo: {sex === "hombre" ? "Hombre" : "Mujer"} | Edad: {age} años</p>
                 <p>Peso: {weight}kg | Altura: {height}cm</p>
                 <p>Actividad: {activityLevel && ACTIVITY_LABELS[activityLevel as ActivityLevel]?.label}</p>
                 <p>Restricciones: {restrictions.length > 0 ? restrictions.join(", ") : "Ninguna"}</p>
-                <p>TDEE: {macros.tdee} kcal | Objetivo: {macros.targetCalories} kcal</p>
               </div>
             </div>
 
