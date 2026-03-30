@@ -68,9 +68,9 @@ const t: Translations = {
   "features.title2": { es: "INCLUYE", en: "INCLUDED", pt: "INCLUI" },
   "features.macros.title": { es: "Cálculo de Macros", en: "Macro Calculation", pt: "Cálculo de Macros" },
   "features.macros.desc": {
-    es: "Método exclusivo Pablo Scarlatto para calcular tus calorías, proteínas, carbohidratos y grasas exactas.",
-    en: "Exclusive Pablo Scarlatto method to calculate your exact calories, protein, carbs and fats.",
-    pt: "Método exclusivo Pablo Scarlatto para calcular suas calorias, proteínas, carboidratos e gorduras exatas.",
+    es: "Cálculo personalizado de tus calorías, proteínas, carbohidratos y grasas exactas.",
+    en: "Personalized calculation of your exact calories, protein, carbs and fats.",
+    pt: "Cálculo personalizado das suas calorias, proteínas, carboidratos e gorduras exatas.",
   },
   "features.videos.title": { es: "Videos de Ejercicios", en: "Exercise Videos", pt: "Vídeos de Exercícios" },
   "features.videos.desc": {

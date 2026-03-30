@@ -10,7 +10,7 @@ export const PLANS: Plan[] = [
     includes: [
       'Plan de entrenamiento HIIT + pesas personalizado',
       'Plan de nutrición con déficit calórico controlado',
-      'Cálculo de macros con método Pablo Scarlatto',
+      'Cálculo de macros personalizado',
       'Seguimiento semanal de progreso',
       'Videos explicativos de cada ejercicio',
       'Ajustes mensuales según progreso',

@@ -101,7 +101,7 @@ export default function PlanDetailPage({
               {[
                 "Elegís este plan y la duración que prefieras",
                 "Completás una encuesta rápida (edad, peso, altura, objetivo, nivel de actividad)",
-                "Calculamos automáticamente tus calorías y macros con nuestro método exclusivo",
+                "Calculamos automáticamente tus calorías y macros de forma personalizada",
                 "Recibís tu plan de entrenamiento y nutrición 100% personalizado",
                 "Accedés a videos de cada ejercicio para saber cómo ejecutarlos",
                 "Subís fotos y medidas para seguir tu progreso",
