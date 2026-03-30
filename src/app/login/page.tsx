@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,16 +17,41 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // TODO: Integrate with Supabase Auth
-    // For now, simulate login
-    setTimeout(() => {
-      if (email === "admin@pabloscarlatto.com") {
-        window.location.href = "/admin";
-      } else {
-        window.location.href = "/dashboard";
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        if (authError.message.includes("Invalid login")) {
+          setError("Email o contraseña incorrectos.");
+        } else {
+          setError(authError.message);
+        }
+        setLoading(false);
+        return;
       }
+
+      if (data.user) {
+        // Check if admin
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profile?.is_admin) {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/dashboard";
+        }
+      }
+    } catch {
+      setError("Error inesperado. Intentá de nuevo.");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (

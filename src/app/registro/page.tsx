@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { getPlanBySlug, DURATION_LABELS } from "@/lib/plans-data";
 
 export default function RegistroPage() {
   const [fullName, setFullName] = useState("");
@@ -13,16 +16,85 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const searchParams = useSearchParams();
+  const planSlug = searchParams.get("plan") || "";
+  const duration = searchParams.get("duration") || "3-meses";
+  const plan = getPlanBySlug(planSlug);
+  const price = plan?.prices[duration as keyof typeof plan.prices] || 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    // TODO: Integrate with Supabase Auth + MercadoPago payment
-    setTimeout(() => {
-      window.location.href = "/dashboard";
+    try {
+      // 1. Create account in Supabase
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: phone,
+          },
+        },
+      });
+
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          setError("Este email ya está registrado. Intentá iniciar sesión.");
+        } else {
+          setError(authError.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        setError("Error al crear la cuenta. Intentá de nuevo.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Update profile with phone
+      if (phone) {
+        await supabase
+          .from("profiles")
+          .update({ phone, full_name: fullName })
+          .eq("id", authData.user.id);
+      }
+
+      // 3. Create MercadoPago preference and redirect to payment
+      if (plan && price > 0) {
+        const response = await fetch("/api/mercadopago/create-preference", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planName: plan.name,
+            planSlug: plan.slug,
+            duration,
+            price,
+            email,
+            name: fullName,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.init_point) {
+          // Redirect to MercadoPago checkout
+          window.location.href = data.init_point;
+          return;
+        }
+      }
+
+      // If no plan selected or free, go to dashboard
+      window.location.href = "/compra-exitosa";
+    } catch (err) {
+      setError("Error inesperado. Intentá de nuevo.");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -36,6 +108,16 @@ export default function RegistroPage() {
           <h1 className="text-2xl font-black">Crear Cuenta</h1>
           <p className="text-muted text-sm mt-2">Registrate para acceder a tu plan</p>
         </div>
+
+        {plan && (
+          <div className="glass-card rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted">Plan seleccionado</p>
+              <p className="font-bold">{plan.name} - {DURATION_LABELS[duration]}</p>
+            </div>
+            <span className="text-primary font-bold text-lg">${price}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-4">
           {error && (
@@ -86,9 +168,9 @@ export default function RegistroPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
+                placeholder="Mínimo 6 caracteres"
                 required
-                minLength={8}
+                minLength={6}
                 className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-primary transition-colors"
               />
               <button
@@ -106,11 +188,11 @@ export default function RegistroPage() {
             disabled={loading}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? "Creando cuenta..." : "Crear Cuenta y Pagar"}
+            {loading ? "Procesando..." : plan ? `Crear Cuenta y Pagar $${price}` : "Crear Cuenta"}
           </button>
 
           <p className="text-xs text-muted text-center">
-            Serás redirigido a MercadoPago para completar el pago
+            {plan ? "Serás redirigido a MercadoPago para completar el pago" : ""}
           </p>
         </form>
 
