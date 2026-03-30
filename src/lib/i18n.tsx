@@ -68,9 +68,9 @@ const t: Translations = {
   "features.title2": { es: "INCLUYE", en: "INCLUDED", pt: "INCLUI" },
   "features.macros.title": { es: "Cálculo de Macros", en: "Macro Calculation", pt: "Cálculo de Macros" },
   "features.macros.desc": {
-    es: "Método Harris-Benedict para calcular tus calorías, proteínas, carbohidratos y grasas exactas.",
-    en: "Harris-Benedict method to calculate your exact calories, protein, carbs and fats.",
-    pt: "Método Harris-Benedict para calcular suas calorias, proteínas, carboidratos e gorduras exatas.",
+    es: "Método exclusivo Pablo Scarlatto para calcular tus calorías, proteínas, carbohidratos y grasas exactas.",
+    en: "Exclusive Pablo Scarlatto method to calculate your exact calories, protein, carbs and fats.",
+    pt: "Método exclusivo Pablo Scarlatto para calcular suas calorias, proteínas, carboidratos e gorduras exatas.",
   },
   "features.videos.title": { es: "Videos de Ejercicios", en: "Exercise Videos", pt: "Vídeos de Exercícios" },
   "features.videos.desc": {
@@ -133,9 +133,9 @@ const t: Translations = {
   // Plans page
   "plans.choosePlan": { es: "ELEGÍ TU", en: "CHOOSE YOUR", pt: "ESCOLHA SEU" },
   "plans.allInclude": {
-    es: "Todos los planes incluyen entrenamiento + nutrición personalizada con cálculo de macros Harris-Benedict, videos de ejercicios y seguimiento de progreso.",
-    en: "All plans include training + personalized nutrition with Harris-Benedict macro calculation, exercise videos and progress tracking.",
-    pt: "Todos os planos incluem treino + nutrição personalizada com cálculo de macros Harris-Benedict, vídeos de exercícios e acompanhamento de progresso.",
+    es: "Todos los planes incluyen entrenamiento + nutrición personalizada con cálculo de macros exclusivo, videos de ejercicios y seguimiento de progreso.",
+    en: "All plans include training + personalized nutrition with exclusive macro calculation, exercise videos and progress tracking.",
+    pt: "Todos os planos incluem treino + nutrição personalizada com cálculo de macros exclusivo, vídeos de exercícios e acompanhamento de progresso.",
   },
   "plans.choosePlanBtn": { es: "Elegir Plan", en: "Choose Plan", pt: "Escolher Plano" },
   "plans.viewDetails": { es: "Ver detalles", en: "View details", pt: "Ver detalhes" },

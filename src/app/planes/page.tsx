@@ -43,7 +43,7 @@ export default function PlanesPage() {
           </h1>
           <p className="text-muted max-w-xl mx-auto">
             Todos los planes incluyen entrenamiento + nutrición personalizada con
-            cálculo de macros Harris-Benedict, videos de ejercicios y seguimiento de progreso.
+            cálculo de macros personalizado, videos de ejercicios y seguimiento de progreso.
           </p>
         </div>
 
