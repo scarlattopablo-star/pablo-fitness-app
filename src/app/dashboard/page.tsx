@@ -5,6 +5,7 @@ import {
   Flame, TrendingUp, ClipboardList, Camera,
   ArrowRight, Calendar, Target,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 // Mock data - will be replaced with Supabase
 const MOCK_USER = {
@@ -20,6 +21,8 @@ const MOCK_USER = {
 };
 
 export default function DashboardPage() {
+  const { profile, subscription } = useAuth();
+  const userName = profile?.full_name || MOCK_USER.name;
   const daysRemaining = Math.max(
     0,
     Math.ceil(
@@ -31,7 +34,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-black">Hola, {MOCK_USER.name}</h1>
+        <h1 className="text-2xl font-black">Hola, {userName}</h1>
         <p className="text-muted">Tu resumen de progreso</p>
       </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { Users, CreditCard, TrendingUp, DollarSign, UserPlus, AlertCircle } from "lucide-react";
+import { Users, CreditCard, TrendingUp, DollarSign, UserPlus, AlertCircle, Eye, Globe } from "lucide-react";
 import Link from "next/link";
+import { useState, useEffect } from "react";
 
 const MOCK_STATS = {
   totalClients: 47,
@@ -21,6 +22,15 @@ const RECENT_CLIENTS = [
 ];
 
 export default function AdminDashboard() {
+  const [visits, setVisits] = useState({ total: 0, today: 0, week: 0, month: 0 });
+
+  useEffect(() => {
+    fetch("/api/track-visit")
+      .then(r => r.json())
+      .then(data => setVisits(data))
+      .catch(() => {});
+  }, []);
+
   return (
     <div>
       <h1 className="text-2xl font-black mb-2">Panel de Administración</h1>
@@ -47,6 +57,36 @@ export default function AdminDashboard() {
           <TrendingUp className="h-5 w-5 text-primary mb-2" />
           <p className="text-2xl font-black">${MOCK_STATS.totalRevenue}</p>
           <p className="text-xs text-muted">Ingresos totales</p>
+        </div>
+      </div>
+
+      {/* Visitor Counter */}
+      <div className="glass-card rounded-2xl p-6 mb-8">
+        <h2 className="font-bold mb-4 flex items-center gap-2">
+          <Globe className="h-5 w-5 text-primary" />
+          Visitas a la App
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-card-bg rounded-xl p-4 text-center">
+            <Eye className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-black">{visits.today}</p>
+            <p className="text-xs text-muted">Hoy</p>
+          </div>
+          <div className="bg-card-bg rounded-xl p-4 text-center">
+            <Eye className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-black">{visits.week}</p>
+            <p className="text-xs text-muted">Esta semana</p>
+          </div>
+          <div className="bg-card-bg rounded-xl p-4 text-center">
+            <Eye className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-black">{visits.month}</p>
+            <p className="text-xs text-muted">Este mes</p>
+          </div>
+          <div className="bg-card-bg rounded-xl p-4 text-center">
+            <Eye className="h-5 w-5 text-primary mx-auto mb-2" />
+            <p className="text-2xl font-black">{visits.total}</p>
+            <p className="text-xs text-muted">Total</p>
+          </div>
         </div>
       </div>
 

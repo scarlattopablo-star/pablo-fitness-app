@@ -7,6 +7,8 @@ import {
   CreditCard, BookOpen, LogOut, Menu, X,
 } from "lucide-react";
 import { useState } from "react";
+import { RequireAdmin } from "@/components/require-auth";
+import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -19,8 +21,10 @@ const NAV_ITEMS = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { signOut } = useAuth();
 
   return (
+    <RequireAdmin>
     <div className="min-h-screen flex">
       {/* SIDEBAR */}
       <aside className="hidden md:flex w-64 glass-card border-r border-card-border flex-col fixed h-screen">
@@ -52,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
         </nav>
-        <div className="p-4 border-t border-card-border">
+        <div className="p-4 border-t border-card-border space-y-1">
           <Link
             href="/"
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-white hover:bg-white/5 transition-all"
@@ -60,6 +64,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <LogOut className="h-5 w-5" />
             Ir al Sitio
           </Link>
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-danger hover:bg-danger/5 w-full transition-all"
+          >
+            <LogOut className="h-5 w-5" />
+            Cerrar Sesión
+          </button>
         </div>
       </aside>
 
@@ -100,5 +111,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
+    </RequireAdmin>
   );
 }
