@@ -123,10 +123,23 @@ function AccesoGratisForm() {
             <Check className="h-8 w-8 text-black" />
           </div>
           <h1 className="text-2xl font-black mb-2">¡Acceso Activado!</h1>
-          <p className="text-muted mb-6">Tu plan {planName} está listo. Iniciá sesión para acceder.</p>
+          <p className="text-muted mb-4">Tu plan {planName} está listo.</p>
+          <p className="text-sm text-muted mb-6">Completá la encuesta para que tu entrenador pueda armar tu plan personalizado.</p>
+          <Link
+            href="/encuesta-directa"
+            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 w-full text-center mb-4"
+          >
+            Completar Encuesta
+          </Link>
+          <Link
+            href="/compra-exitosa"
+            className="inline-block border border-primary text-primary font-bold px-8 py-3 rounded-xl hover:bg-primary/5 w-full text-center mb-4"
+          >
+            Descargar App
+          </Link>
           <Link
             href="/login"
-            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90"
+            className="block text-sm text-muted hover:text-primary"
           >
             Iniciar Sesión
           </Link>

@@ -47,25 +47,32 @@ export default function ClienteDetailPage({
   }, [id]);
 
   const loadClient = async () => {
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", id)
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) { setLoading(false); return; }
 
-    if (profileData) setClient(profileData);
+      // Perfil via API con auth
+      const res = await fetch(`/api/admin/clients?limit=1&id=${id}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const apiData = await res.json();
+      if (apiData.clients?.[0]) setClient(apiData.clients[0]);
 
-    const { data: surveyData } = await supabase
-      .from("surveys")
-      .select("*")
-      .eq("user_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+      // Survey - el admin tiene permiso RLS directo con la sesion
+      const { data: surveyData } = await supabase
+        .from("surveys")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (surveyData) setSurvey(surveyData);
-
-    setLoading(false);
+      if (surveyData) setSurvey(surveyData);
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {

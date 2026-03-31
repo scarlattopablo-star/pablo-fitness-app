@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, UserPlus, Eye, Globe, Loader2 } from "lucide-react";
+import { Users, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
@@ -19,27 +19,33 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load visits
     fetch("/api/track-visit")
       .then(r => r.json())
       .then(data => setVisits(data))
       .catch(() => {});
 
-    // Load real clients from Supabase
     loadClients();
   }, []);
 
   const loadClients = async () => {
-    const { data, count } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact" })
-      .eq("is_admin", false)
-      .order("created_at", { ascending: false })
-      .limit(5);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
 
-    if (data) setClients(data);
-    if (count !== null) setTotalClients(count);
-    setLoading(false);
+      const res = await fetch("/api/admin/clients?limit=5", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.clients) setClients(data.clients);
+      if (data.total !== undefined) setTotalClients(data.total);
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

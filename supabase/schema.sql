@@ -160,59 +160,50 @@ ALTER TABLE public.nutrition_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.progress_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
+-- Helper: SECURITY DEFINER function to check admin status without triggering RLS recursion
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND is_admin = TRUE
+  );
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
 -- Profiles: users can read/update their own, admins can read all
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Admin can view all profiles" ON public.profiles FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can view all profiles" ON public.profiles FOR SELECT USING (public.is_admin());
 
 -- Plans: everyone can read
 CREATE POLICY "Anyone can view plans" ON public.plans FOR SELECT USING (true);
-CREATE POLICY "Admin can manage plans" ON public.plans FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can manage plans" ON public.plans FOR ALL USING (public.is_admin());
 
 -- Exercises: everyone can read
 CREATE POLICY "Anyone can view exercise categories" ON public.exercise_categories FOR SELECT USING (true);
 CREATE POLICY "Anyone can view exercises" ON public.exercises FOR SELECT USING (true);
-CREATE POLICY "Admin can manage exercises" ON public.exercises FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can manage exercises" ON public.exercises FOR ALL USING (public.is_admin());
 
 -- Surveys: users can manage their own
 CREATE POLICY "Users can manage own surveys" ON public.surveys FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Admin can view all surveys" ON public.surveys FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can view all surveys" ON public.surveys FOR SELECT USING (public.is_admin());
 
 -- Subscriptions: users can view own, admins can manage all
 CREATE POLICY "Users can view own subscriptions" ON public.subscriptions FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admin can manage subscriptions" ON public.subscriptions FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can manage subscriptions" ON public.subscriptions FOR ALL USING (public.is_admin());
 
 -- Training/Nutrition plans: users can view own
 CREATE POLICY "Users can view own training plans" ON public.training_plans FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admin can manage training plans" ON public.training_plans FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can manage training plans" ON public.training_plans FOR ALL USING (public.is_admin());
 CREATE POLICY "Users can view own nutrition plans" ON public.nutrition_plans FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admin can manage nutrition plans" ON public.nutrition_plans FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can manage nutrition plans" ON public.nutrition_plans FOR ALL USING (public.is_admin());
 
 -- Progress: users can manage own
 CREATE POLICY "Users can manage own progress" ON public.progress_entries FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Admin can view all progress" ON public.progress_entries FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can view all progress" ON public.progress_entries FOR SELECT USING (public.is_admin());
 
 -- Payments: users can view own
 CREATE POLICY "Users can view own payments" ON public.payments FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Admin can manage payments" ON public.payments FOR ALL USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = TRUE)
-);
+CREATE POLICY "Admin can manage payments" ON public.payments FOR ALL USING (public.is_admin());
 
 -- =============================================
 -- TRIGGER: Auto-create profile on signup

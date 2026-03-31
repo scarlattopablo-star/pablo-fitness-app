@@ -44,7 +44,20 @@ export default function LoginPage() {
         if (profile?.is_admin) {
           window.location.href = "/admin";
         } else {
-          window.location.href = "/dashboard";
+          // Check if user has completed a survey
+          const { data: survey } = await supabase
+            .from("surveys")
+            .select("id")
+            .eq("user_id", data.user.id)
+            .limit(1)
+            .single();
+
+          if (!survey) {
+            // No survey - send to survey flow
+            window.location.href = "/encuesta-directa";
+          } else {
+            window.location.href = "/dashboard";
+          }
         }
       }
     } catch {

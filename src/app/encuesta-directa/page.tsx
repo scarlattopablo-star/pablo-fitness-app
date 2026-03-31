@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Dumbbell, UserPlus, Check, Eye, EyeOff, Camera, Upload,
+  Dumbbell, Check, Camera, Upload,
   ArrowRight, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -20,25 +19,14 @@ const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = 
 
 const RESTRICTIONS = ["Ninguna", "Vegetariano", "Vegano", "Sin gluten (celíaco)", "Sin lactosa", "Sin frutos secos", "Diabetes", "Otra"];
 
-function ClienteDirectoForm() {
-  const searchParams = useSearchParams();
-  const code = searchParams.get("code") || "";
-
-  const [validating, setValidating] = useState(true);
-  const [valid, setValid] = useState(false);
-  const [step, setStep] = useState(1); // 1=register, 2=sex+age, 3=weight+height, 4=activity, 5=photos, 6=done
-
-  // Registration
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+export default function EncuestaDirectaPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
+  const [step, setStep] = useState(1); // 1=sex+age, 2=weight+height, 3=activity, 4=photos, 5=done
+  const totalSteps = 5;
 
-  // Survey
+  // Survey fields
   const [sex, setSex] = useState<Sex | "">("");
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
@@ -51,44 +39,25 @@ function ClienteDirectoForm() {
   const [photoSide, setPhotoSide] = useState<File | null>(null);
   const [photoBack, setPhotoBack] = useState<File | null>(null);
 
-  const totalSteps = 6;
-
   useEffect(() => {
-    if (!code) { setValidating(false); return; }
-    fetch(`/api/free-access?code=${code}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.valid || data.plan_slug === "direct-client") setValid(true);
-        setValidating(false);
-      })
-      .catch(() => setValidating(false));
-  }, [code]);
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email, password,
-        options: { data: { full_name: fullName, phone } },
-      });
-      if (authError) { setError(authError.message); setLoading(false); return; }
-      if (data.user) {
-        setUserId(data.user.id);
-        // Mark code as used
-        await supabase.from("free_access_codes")
-          .update({ used: true, used_by: data.user.id })
-          .eq("code", code);
-        // Mark as direct client (no prices)
-        await supabase.from("profiles")
-          .update({ phone, full_name: fullName })
-          .eq("id", data.user.id);
-        setStep(2);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) {
+        router.push("/login");
+        return;
       }
-    } catch { setError("Error inesperado."); }
-    finally { setLoading(false); }
-  };
+      // Check if already has survey
+      supabase.from("surveys").select("id").eq("user_id", session.user.id).limit(1).single()
+        .then(({ data: survey }) => {
+          if (survey) {
+            // Already completed survey, go to dashboard
+            router.push("/dashboard");
+            return;
+          }
+          setUserId(session.user.id);
+          setLoading(false);
+        });
+    });
+  }, [router]);
 
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
@@ -103,20 +72,7 @@ function ClienteDirectoForm() {
       protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
     });
 
-    // Create subscription so client appears in admin and has an active plan
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1); // 1 year for direct clients
-    await supabase.from("subscriptions").insert({
-      user_id: userId,
-      duration: "1-ano",
-      amount_paid: 0,
-      currency: "USD",
-      start_date: new Date().toISOString().split("T")[0],
-      end_date: endDate.toISOString().split("T")[0],
-      status: "active",
-    });
-
-    setStep(6);
+    setStep(5);
   };
 
   const toggleRestriction = (r: string) => {
@@ -127,46 +83,34 @@ function ClienteDirectoForm() {
     });
   };
 
-  if (validating) {
+  if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>;
   }
 
-  if (!valid) {
-    return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
-            <UserPlus className="h-8 w-8 text-danger" />
-          </div>
-          <h1 className="text-2xl font-black mb-2">Código Inválido</h1>
-          <p className="text-muted mb-6">Este código no es válido o ya fue utilizado.</p>
-          <Link href="/" className="text-primary hover:underline">Ir al inicio</Link>
-        </div>
-      </main>
-    );
-  }
-
-  // STEP 6: Done
-  if (step === 6) {
+  // STEP 5: Done - show install app option
+  if (step === 5) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
             <Check className="h-8 w-8 text-black" />
           </div>
-          <h1 className="text-2xl font-black mb-2">¡Registro Completo!</h1>
+          <h1 className="text-2xl font-black mb-2">¡Encuesta Completa!</h1>
           <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutrición.</p>
           <p className="text-sm text-muted mb-6">Te notificaremos cuando esté listo. Mientras tanto, podés descargar la app.</p>
-          <Link
+          <a
             href="/compra-exitosa"
-            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4"
+            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4 w-full text-center"
           >
             Descargar App
-          </Link>
+          </a>
           <br />
-          <Link href="/login" className="text-sm text-primary hover:underline">
-            Iniciar Sesión
-          </Link>
+          <a
+            href="/dashboard"
+            className="inline-block border border-primary text-primary font-bold px-8 py-3 rounded-xl hover:bg-primary/5 mt-3 w-full text-center"
+          >
+            Ir a Mi Plan
+          </a>
         </div>
       </main>
     );
@@ -177,13 +121,13 @@ function ClienteDirectoForm() {
       {/* Header */}
       <div className="glass-card border-b border-card-border sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center gap-4">
-          {step > 1 && step < 6 && (
+          {step > 1 && (
             <button onClick={() => setStep(step - 1)} className="text-muted hover:text-white"><ArrowLeft className="h-5 w-5" /></button>
           )}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <Dumbbell className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Pablo Scarlatto Entrenamientos</span>
+              <span className="text-sm font-medium">Completá tu perfil</span>
             </div>
             <div className="w-full bg-card-border rounded-full h-1.5">
               <div className="gradient-primary h-1.5 rounded-full transition-all duration-300" style={{ width: `${(step / totalSteps) * 100}%` }} />
@@ -194,53 +138,8 @@ function ClienteDirectoForm() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-10">
-        {/* STEP 1: Register */}
+        {/* STEP 1: Sex + Age */}
         {step === 1 && (
-          <div className="animate-fade-in-up">
-            <div className="text-center mb-8">
-              <UserPlus className="h-10 w-10 text-primary mx-auto mb-3" />
-              <h2 className="text-2xl font-black">Bienvenido</h2>
-              <p className="text-muted text-sm mt-1">Creá tu cuenta para recibir tu plan personalizado</p>
-            </div>
-            <form onSubmit={handleRegister} className="glass-card rounded-2xl p-6 space-y-4">
-              {error && <div className="bg-danger/10 border border-danger/30 text-danger text-sm p-3 rounded-xl">{error}</div>}
-              <div>
-                <label className="block text-sm font-medium mb-2">Nombre Completo</label>
-                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Tu nombre" required
-                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required
-                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Teléfono</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+598 99 123 456"
-                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Contraseña</label>
-                <div className="relative">
-                  <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres" required minLength={6}
-                    className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-primary" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white">
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
-              <button type="submit" disabled={loading}
-                className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50">
-                {loading ? "Creando cuenta..." : "Crear Cuenta"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* STEP 2: Sex + Age */}
-        {step === 2 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Datos Personales</h2>
             <p className="text-muted mb-8">Necesitamos estos datos para tu plan personalizado.</p>
@@ -262,15 +161,15 @@ function ClienteDirectoForm() {
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
               </div>
             </div>
-            <button onClick={() => setStep(3)} disabled={!sex || !age}
+            <button onClick={() => setStep(2)} disabled={!sex || !age}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${sex && age ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 3: Weight + Height */}
-        {step === 3 && (
+        {/* STEP 2: Weight + Height */}
+        {step === 2 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tus Medidas</h2>
             <p className="text-muted mb-8">Para calcular tu plan de nutrición personalizado.</p>
@@ -286,15 +185,15 @@ function ClienteDirectoForm() {
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
               </div>
             </div>
-            <button onClick={() => setStep(4)} disabled={!weight || !height}
+            <button onClick={() => setStep(3)} disabled={!weight || !height}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${weight && height ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 4: Activity + Restrictions */}
-        {step === 4 && (
+        {/* STEP 3: Activity + Restrictions */}
+        {step === 3 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tu Actividad</h2>
             <p className="text-muted mb-8">Esto nos ayuda a calcular tu plan.</p>
@@ -323,15 +222,15 @@ function ClienteDirectoForm() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setStep(5)} disabled={!activityLevel}
+            <button onClick={() => setStep(4)} disabled={!activityLevel}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${activityLevel ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 5: Photos */}
-        {step === 5 && (
+        {/* STEP 4: Photos */}
+        {step === 4 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Fotos Iniciales</h2>
             <p className="text-muted mb-6">Subí 3 fotos de cuerpo entero para que tu entrenador vea tu punto de partida.</p>
@@ -367,7 +266,7 @@ function ClienteDirectoForm() {
             </div>
 
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-6">
-              <p className="text-sm text-primary font-medium">🔒 Tus fotos son privadas</p>
+              <p className="text-sm text-primary font-medium">Tus fotos son privadas</p>
               <p className="text-xs text-muted mt-1">Solo vos y tu entrenador pueden verlas.</p>
             </div>
 
@@ -383,13 +282,5 @@ function ClienteDirectoForm() {
         )}
       </div>
     </main>
-  );
-}
-
-export default function ClienteDirectoPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
-      <ClienteDirectoForm />
-    </Suspense>
   );
 }
