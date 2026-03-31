@@ -122,6 +122,40 @@ const t: Translations = {
   },
   "cta.viewAll": { es: "Ver Todos los Planes", en: "View All Plans", pt: "Ver Todos os Planos" },
 
+  // App download section
+  "app.title1": { es: "DESCARGÁ LA", en: "DOWNLOAD THE", pt: "BAIXE O" },
+  "app.title2": { es: "APP", en: "APP", pt: "APP" },
+  "app.desc": {
+    es: "Descargando la app podrás hacer todo el seguimiento de tu proceso: ver tu plan de entrenamiento, nutrición, subir fotos de progreso y registrar tus medidas desde tu celular.",
+    en: "By downloading the app you can track your entire process: view your training plan, nutrition, upload progress photos and log your measurements from your phone.",
+    pt: "Baixando o app você pode acompanhar todo o seu processo: ver seu plano de treino, nutrição, enviar fotos de progresso e registrar suas medidas pelo celular.",
+  },
+  "app.feature1": {
+    es: "Accedé a tu plan de entrenamiento y nutrición",
+    en: "Access your training and nutrition plan",
+    pt: "Acesse seu plano de treino e nutrição",
+  },
+  "app.feature2": {
+    es: "Subí fotos de progreso (frente, lateral, espalda)",
+    en: "Upload progress photos (front, side, back)",
+    pt: "Envie fotos de progresso (frente, lateral, costas)",
+  },
+  "app.feature3": {
+    es: "Registrá tu peso y medidas semanales",
+    en: "Log your weekly weight and measurements",
+    pt: "Registre seu peso e medidas semanais",
+  },
+  "app.feature4": {
+    es: "Videos de cada ejercicio para técnica correcta",
+    en: "Exercise videos for proper technique",
+    pt: "Vídeos de cada exercício para técnica correta",
+  },
+  "app.installDesc": {
+    es: "Instalá la app en tu celular después de comprar tu plan",
+    en: "Install the app on your phone after purchasing your plan",
+    pt: "Instale o app no celular após comprar seu plano",
+  },
+
   // Footer
   "footer.rights": {
     es: "Pablo Scarlatto Entrenamientos. Todos los derechos reservados.",

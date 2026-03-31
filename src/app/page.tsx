@@ -213,6 +213,41 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* APP DOWNLOAD CTA */}
+      <section className="py-20 px-4 bg-card-bg/50">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-10">
+          <div className="flex-1 text-center md:text-left">
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+              {t("app.title1")} <span className="text-gradient">{t("app.title2")}</span>
+            </h2>
+            <p className="text-muted mb-6">
+              {t("app.desc")}
+            </p>
+            <ul className="space-y-3 mb-6">
+              {["app.feature1", "app.feature2", "app.feature3", "app.feature4"].map((key) => (
+                <li key={key} className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                  <span>{t(key)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="glass-card rounded-2xl p-8 text-center min-w-[280px]">
+            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
+              <Dumbbell className="h-8 w-8 text-black" />
+            </div>
+            <p className="font-bold text-lg mb-1">PS Entrenamientos</p>
+            <p className="text-xs text-muted mb-4">{t("app.installDesc")}</p>
+            <Link
+              href="/planes"
+              className="block gradient-primary text-black font-bold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              {t("nav.startNow")}
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* TESTIMONIOS */}
       <section id="testimonios" className="py-20 px-4 bg-card-bg/50">
         <div className="max-w-5xl mx-auto">
