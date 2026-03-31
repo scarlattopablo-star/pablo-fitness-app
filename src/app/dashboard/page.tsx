@@ -74,22 +74,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Photo Reminder - every 20 days */}
+      {/* Photo + Weight Reminder - every 20 days */}
       {MOCK_USER.daysActive % 20 < 3 && (
         <div className="glass-card rounded-2xl p-5 mb-6 border-l-4 border-primary">
           <div className="flex items-start gap-3">
             <Camera className="h-6 w-6 text-primary shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="font-bold">¡Es momento de actualizar tus fotos!</p>
+              <p className="font-bold">¡Es momento de registrar tu progreso!</p>
               <p className="text-sm text-muted mt-1">
-                Subí 3 fotos nuevas (frente, perfil y espalda) de cuerpo entero para comparar tu progreso.
-                Llevás {MOCK_USER.daysActive} días de entrenamiento.
+                Llevás {MOCK_USER.daysActive} días de entrenamiento. Para ver cómo avanzás:
               </p>
+              <ul className="text-sm text-muted mt-2 space-y-1">
+                <li>&#8226; Subí 3 fotos nuevas (frente, perfil y espalda)</li>
+                <li>&#8226; Registrá tu peso actual</li>
+                <li>&#8226; Anotá tus medidas (pecho, cintura, cadera, brazos)</li>
+              </ul>
+              <p className="text-xs text-muted mt-2">Todos los campos son opcionales, completá lo que puedas.</p>
               <Link
                 href="/dashboard/progreso"
-                className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-3 font-medium"
               >
-                Subir fotos ahora <ArrowRight className="h-3 w-3" />
+                Registrar progreso ahora <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Camera, Plus, TrendingDown, Scale, Ruler,
-  Calendar, Upload, X,
+  Calendar, Upload, X, ArrowRight,
 } from "lucide-react";
 
 const MOCK_PROGRESS = [
@@ -158,14 +158,16 @@ export default function ProgresoPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <p className="text-xs text-muted mb-2">Todos los campos son opcionales. Completá lo que puedas.</p>
+
               <div>
-                <label className="block text-sm font-medium mb-1">Peso (kg) *</label>
+                <label className="block text-sm font-medium mb-1">Peso (kg)</label>
                 <input
                   type="number"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  required
                   step={0.1}
+                  placeholder="Ej: 82.5"
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
                 />
               </div>
@@ -194,12 +196,18 @@ export default function ProgresoPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Fotos</label>
-                <div className="border-2 border-dashed border-card-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <Upload className="h-8 w-8 text-muted mx-auto mb-2" />
-                  <p className="text-sm text-muted">Arrastrá o hacé click para subir</p>
-                  <p className="text-xs text-muted mt-1">Frente, lateral y espalda</p>
+                <label className="block text-sm font-medium mb-2">Fotos (frente, perfil, espalda)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Frente", "Perfil", "Espalda"].map((view) => (
+                    <label key={view} className="aspect-[3/4] border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer">
+                      <Camera className="h-6 w-6 text-muted" />
+                      <span className="text-xs text-muted">{view}</span>
+                      <span className="text-[10px] text-primary">Subir</span>
+                      <input type="file" accept="image/*" className="hidden" />
+                    </label>
+                  ))}
                 </div>
+                <p className="text-xs text-muted mt-1">Cuerpo entero, opcional</p>
               </div>
 
               <div>
