@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
@@ -8,6 +8,14 @@ import { supabase } from "@/lib/supabase";
 import { getPlanBySlug, DURATION_LABELS } from "@/lib/plans-data";
 
 export default function RegistroPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
+      <RegistroForm />
+    </Suspense>
+  );
+}
+
+function RegistroForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
