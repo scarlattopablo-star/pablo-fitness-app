@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Dumbbell, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload } from "lucide-react";
 import { calculateMacros } from "@/lib/harris-benedict";
 import { getPlanBySlug, DURATION_LABELS } from "@/lib/plans-data";
 import type { Sex, ActivityLevel, PlanSlug, MacroCalculation } from "@/types";
@@ -34,25 +34,27 @@ export default function EncuestaPage() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [restrictions, setRestrictions] = useState<string[]>([]);
   const [macros, setMacros] = useState<MacroCalculation | null>(null);
+  const [skipPhotos, setSkipPhotos] = useState(false);
 
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const planSlug = (searchParams?.get("plan") || "quema-grasa") as PlanSlug;
   const duration = searchParams?.get("duration") || "3-meses";
   const plan = getPlanBySlug(planSlug);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const canProceed = () => {
     switch (step) {
       case 1: return sex !== "" && age !== "" && Number(age) > 0;
       case 2: return weight !== "" && height !== "" && Number(weight) > 0 && Number(height) > 0;
       case 3: return activityLevel !== "";
+      case 4: return true; // Photos are optional
       default: return true;
     }
   };
 
   const handleNext = () => {
-    if (step === 3 && sex && activityLevel) {
+    if (step === 4 && sex && activityLevel) {
       const result = calculateMacros(
         sex,
         Number(weight),
@@ -243,8 +245,59 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 4: Ready - redirect to payment */}
-        {step === 4 && macros && (
+        {/* STEP 4: Photos */}
+        {step === 4 && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">Fotos Iniciales</h2>
+            <p className="text-muted mb-6">
+              Subí 3 fotos de cuerpo entero para registrar tu punto de partida.
+              Cada 20 días te pediremos nuevas fotos para comparar tu progreso.
+            </p>
+
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {[
+                { label: "Frente", desc: "De frente, cuerpo entero" },
+                { label: "Perfil", desc: "De costado, cuerpo entero" },
+                { label: "Espalda", desc: "De espalda, cuerpo entero" },
+              ].map((view) => (
+                <div
+                  key={view.label}
+                  className="aspect-[3/4] bg-card-bg border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer"
+                >
+                  <Camera className="h-8 w-8 text-muted" />
+                  <span className="text-sm font-medium">{view.label}</span>
+                  <span className="text-[10px] text-muted text-center px-2">{view.desc}</span>
+                  <label className="text-xs text-primary cursor-pointer flex items-center gap-1">
+                    <Upload className="h-3 w-3" /> Subir foto
+                    <input type="file" accept="image/*" className="hidden" />
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div className="glass-card rounded-xl p-4 mb-6">
+              <p className="text-sm text-muted">
+                <strong className="text-white">Consejos para las fotos:</strong>
+              </p>
+              <ul className="text-sm text-muted mt-2 space-y-1">
+                <li>&#8226; Usá ropa ajustada o ropa interior</li>
+                <li>&#8226; Buena iluminación, fondo neutro</li>
+                <li>&#8226; Mismo lugar y hora para futuras comparaciones</li>
+                <li>&#8226; Postura relajada y natural</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => { setSkipPhotos(true); handleNext(); }}
+              className="w-full text-sm text-muted hover:text-white text-center py-2 mb-2"
+            >
+              Subir fotos en otro momento
+            </button>
+          </div>
+        )}
+
+        {/* STEP 5: Ready - redirect to payment */}
+        {step === 5 && macros && (
           <div className="animate-fade-in-up">
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
@@ -299,7 +352,7 @@ export default function EncuestaPage() {
         )}
 
         {/* Navigation */}
-        {step < 4 && (
+        {step < 5 && step !== 4 && (
           <div className="mt-10">
             <button
               onClick={handleNext}

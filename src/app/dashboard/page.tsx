@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   Flame, TrendingUp, ClipboardList, Camera,
-  ArrowRight, Calendar, Target,
+  ArrowRight, Calendar, Target, AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
@@ -73,6 +73,28 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Photo Reminder - every 20 days */}
+      {MOCK_USER.daysActive % 20 < 3 && (
+        <div className="glass-card rounded-2xl p-5 mb-6 border-l-4 border-primary">
+          <div className="flex items-start gap-3">
+            <Camera className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-bold">¡Es momento de actualizar tus fotos!</p>
+              <p className="text-sm text-muted mt-1">
+                Subí 3 fotos nuevas (frente, perfil y espalda) de cuerpo entero para comparar tu progreso.
+                Llevás {MOCK_USER.daysActive} días de entrenamiento.
+              </p>
+              <Link
+                href="/dashboard/progreso"
+                className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
+              >
+                Subir fotos ahora <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

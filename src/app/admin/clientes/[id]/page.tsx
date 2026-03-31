@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, User, ClipboardList, TrendingUp,
   Calendar, Target, Scale, Mail, Phone, Edit,
-  Dumbbell, UtensilsCrossed, Info,
+  Dumbbell, UtensilsCrossed, Info, Camera,
 } from "lucide-react";
 
 // Mock client detail
@@ -184,6 +184,41 @@ export default function ClienteDetailPage({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Progress Photos */}
+      <div className="glass-card rounded-2xl p-6 mt-6">
+        <h2 className="font-bold mb-4 flex items-center gap-2">
+          <Camera className="h-5 w-5 text-primary" />
+          Fotos de Progreso
+        </h2>
+        <div className="space-y-4">
+          {[
+            { date: "15 Mar 2026", label: "Semana 9" },
+            { date: "23 Feb 2026", label: "Semana 6" },
+            { date: "3 Feb 2026", label: "Semana 3" },
+            { date: "15 Ene 2026", label: "Inicio" },
+          ].map((entry) => (
+            <div key={entry.date}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium">{entry.label}</p>
+                <p className="text-xs text-muted">{entry.date}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {["Frente", "Perfil", "Espalda"].map((view) => (
+                  <div
+                    key={view}
+                    className="aspect-[3/4] bg-card-bg border border-card-border rounded-xl flex flex-col items-center justify-center"
+                  >
+                    <Camera className="h-6 w-6 text-muted mb-1" />
+                    <span className="text-[10px] text-muted">{view}</span>
+                    <span className="text-[10px] text-primary mt-0.5">Pendiente</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
