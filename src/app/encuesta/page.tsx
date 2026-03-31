@@ -35,6 +35,9 @@ export default function EncuestaPage() {
   const [restrictions, setRestrictions] = useState<string[]>([]);
   const [macros, setMacros] = useState<MacroCalculation | null>(null);
   const [skipPhotos, setSkipPhotos] = useState(false);
+  const [photoFront, setPhotoFront] = useState<File | null>(null);
+  const [photoSide, setPhotoSide] = useState<File | null>(null);
+  const [photoBack, setPhotoBack] = useState<File | null>(null);
 
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const planSlug = (searchParams?.get("plan") || "quema-grasa") as PlanSlug;
@@ -255,23 +258,48 @@ export default function EncuestaPage() {
             </p>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
-              {[
-                { label: "Frente", desc: "De frente, cuerpo entero" },
-                { label: "Perfil", desc: "De costado, cuerpo entero" },
-                { label: "Espalda", desc: "De espalda, cuerpo entero" },
-              ].map((view) => (
-                <div
+              {([
+                { label: "Frente", desc: "De frente, cuerpo entero", file: photoFront, setter: setPhotoFront },
+                { label: "Perfil", desc: "De costado, cuerpo entero", file: photoSide, setter: setPhotoSide },
+                { label: "Espalda", desc: "De espalda, cuerpo entero", file: photoBack, setter: setPhotoBack },
+              ] as const).map((view) => (
+                <label
                   key={view.label}
-                  className="aspect-[3/4] bg-card-bg border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer"
+                  className="aspect-[3/4] bg-card-bg border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer overflow-hidden relative"
                 >
-                  <Camera className="h-8 w-8 text-muted" />
-                  <span className="text-sm font-medium">{view.label}</span>
-                  <span className="text-[10px] text-muted text-center px-2">{view.desc}</span>
-                  <label className="text-xs text-primary cursor-pointer flex items-center gap-1">
-                    <Upload className="h-3 w-3" /> Subir foto
-                    <input type="file" accept="image/*" className="hidden" />
-                  </label>
-                </div>
+                  {view.file ? (
+                    <>
+                      <img
+                        src={URL.createObjectURL(view.file)}
+                        alt={view.label}
+                        className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center">
+                        <Check className="h-8 w-8 text-primary" />
+                        <span className="text-xs text-white mt-1">{view.label}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="h-8 w-8 text-muted" />
+                      <span className="text-sm font-medium">{view.label}</span>
+                      <span className="text-[10px] text-muted text-center px-2">{view.desc}</span>
+                      <span className="text-xs text-primary flex items-center gap-1">
+                        <Upload className="h-3 w-3" /> Subir foto
+                      </span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) view.setter(f);
+                    }}
+                  />
+                </label>
               ))}
             </div>
 
