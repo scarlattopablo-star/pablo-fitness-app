@@ -333,6 +333,14 @@ export default function HomePage() {
               {t("footer.login")}
             </Link>
           </div>
+          <div className="flex items-center gap-4">
+            <Link href="/terminos" className="text-xs text-muted hover:text-white transition-colors">
+              Términos
+            </Link>
+            <Link href="/privacidad" className="text-xs text-muted hover:text-white transition-colors">
+              Privacidad
+            </Link>
+          </div>
           <p className="text-xs text-muted">
             &copy; 2026 {t("footer.rights")}
           </p>

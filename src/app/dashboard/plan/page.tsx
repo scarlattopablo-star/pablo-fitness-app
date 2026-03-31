@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 // Default training plan
 const TRAINING_DAYS = [
   {
-    day: "Lunes - Pecho y Tríceps",
+    day: "Día 1 - Pecho y Tríceps",
     exercises: [
       { id: "press-banca-plano", name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
       { id: "press-inclinado", name: "Press Inclinado Mancuernas", sets: 4, reps: "10", rest: "90s" },
@@ -21,7 +21,7 @@ const TRAINING_DAYS = [
     instructions: "Descanso entre series: como indicado. Calentar 5 min en cinta.",
   },
   {
-    day: "Martes - Espalda y Bíceps",
+    day: "Día 2 - Espalda y Bíceps",
     exercises: [
       { id: "jalon-polea-alta", name: "Jalón Polea Alta", sets: 4, reps: "10", rest: "90s" },
       { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
@@ -32,7 +32,7 @@ const TRAINING_DAYS = [
     instructions: "Trabajar con control en la fase excéntrica (bajada lenta).",
   },
   {
-    day: "Miércoles - Piernas",
+    day: "Día 3 - Piernas",
     exercises: [
       { id: "sentadilla", name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "120s" },
       { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
@@ -43,7 +43,7 @@ const TRAINING_DAYS = [
     instructions: "En sentadilla: bajar hasta paralelo o más abajo.",
   },
   {
-    day: "Jueves - Hombros y Abdomen",
+    day: "Día 4 - Hombros y Abdomen",
     exercises: [
       { id: "press-hombros", name: "Press Hombros Mancuernas", sets: 4, reps: "10", rest: "90s" },
       { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 4, reps: "15", rest: "60s" },
@@ -53,7 +53,7 @@ const TRAINING_DAYS = [
     instructions: "Elevaciones laterales con peso controlado, no usar impulso.",
   },
   {
-    day: "Viernes - Circuito Full Body + Cardio",
+    day: "Día 5 - Circuito Full Body + Cardio",
     exercises: [
       { id: "sentadilla", name: "Sentadilla", sets: 3, reps: "15", rest: "30s" },
       { id: "press-banca-plano", name: "Press Banca", sets: 3, reps: "12", rest: "30s" },
