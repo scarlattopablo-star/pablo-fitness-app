@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Dumbbell, UtensilsCrossed, Info, Play, X } from "lucide-react";
-import { getExerciseById } from "@/lib/exercises-data";
+import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 
 // Mock training plan - similar to Pablo's format
 const TRAINING_DAYS = [
@@ -240,15 +240,18 @@ export default function PlanPage() {
 
             <p className="text-sm text-muted mb-4">{exerciseDetail.description}</p>
 
-            {exerciseDetail.videoUrl && (
-              <div className="bg-card-bg rounded-xl p-4 mb-4 flex items-center gap-3">
-                <Play className="h-8 w-8 text-primary" />
-                <div>
-                  <p className="font-medium text-sm">Video Demostrativo</p>
-                  <p className="text-xs text-muted">Ver ejecución correcta</p>
-                </div>
+            <a
+              href={getVideoUrl(exerciseDetail)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-card-bg rounded-xl p-4 mb-4 flex items-center gap-3 hover:bg-white/5 transition-colors"
+            >
+              <Play className="h-8 w-8 text-primary" />
+              <div>
+                <p className="font-medium text-sm">Ver Video Demostrativo</p>
+                <p className="text-xs text-muted">Ejecución correcta paso a paso</p>
               </div>
-            )}
+            </a>
 
             <h4 className="font-bold text-sm mb-3">Paso a Paso</h4>
             <ol className="space-y-2">

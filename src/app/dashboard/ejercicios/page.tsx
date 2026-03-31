@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, Play, X, ChevronDown } from "lucide-react";
-import { EXERCISES, MUSCLE_GROUP_LABELS } from "@/lib/exercises-data";
+import { EXERCISES, MUSCLE_GROUP_LABELS, getVideoUrl } from "@/lib/exercises-data";
 import type { Exercise } from "@/types";
 
 const ALL_GROUPS = Object.keys(MUSCLE_GROUP_LABELS);
@@ -112,32 +112,20 @@ export default function EjerciciosPage() {
 
             <p className="text-muted mb-4">{selectedExercise.description}</p>
 
-            {selectedExercise.videoUrl ? (
-              <a
-                href={selectedExercise.videoUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 bg-card-bg rounded-xl p-4 mb-6 hover:bg-white/5 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-lg gradient-primary flex items-center justify-center">
-                  <Play className="h-6 w-6 text-black" />
-                </div>
-                <div>
-                  <p className="font-medium">Ver Video Demostrativo</p>
-                  <p className="text-xs text-muted">Ejecución correcta paso a paso</p>
-                </div>
-              </a>
-            ) : (
-              <div className="flex items-center gap-3 bg-card-bg rounded-xl p-4 mb-6">
-                <div className="w-12 h-12 rounded-lg bg-muted/20 flex items-center justify-center">
-                  <Play className="h-6 w-6 text-muted" />
-                </div>
-                <div>
-                  <p className="font-medium text-muted">Video próximamente</p>
-                  <p className="text-xs text-muted">Se agregará video demostrativo</p>
-                </div>
+            <a
+              href={getVideoUrl(selectedExercise)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-card-bg rounded-xl p-4 mb-6 hover:bg-white/5 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-lg gradient-primary flex items-center justify-center">
+                <Play className="h-6 w-6 text-black" />
               </div>
-            )}
+              <div>
+                <p className="font-medium">Ver Video Demostrativo</p>
+                <p className="text-xs text-muted">Ejecución correcta paso a paso</p>
+              </div>
+            </a>
 
             <h4 className="font-bold mb-3">Ejecución Paso a Paso</h4>
             <ol className="space-y-3">

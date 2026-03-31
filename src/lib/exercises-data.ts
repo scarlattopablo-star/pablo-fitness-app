@@ -14,7 +14,7 @@ export const EXERCISES: Exercise[] = [
       'Empujar la barra hacia arriba hasta extender los brazos sin bloquear los codos',
       'Mantener los omóplatos retraídos durante todo el movimiento',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'aperturas-inclinadas',
@@ -28,7 +28,7 @@ export const EXERCISES: Exercise[] = [
       'Mantener una ligera flexión en los codos durante todo el recorrido',
       'Volver a la posición inicial apretando el pecho',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'press-inclinado',
@@ -42,7 +42,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar controladamente hasta que los codos estén a 90 grados',
       'Mantener los pies firmes en el suelo',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // ESPALDA
   {
@@ -57,7 +57,7 @@ export const EXERCISES: Exercise[] = [
       'Apretar los omóplatos al final del movimiento',
       'Volver arriba controladamente sin soltar completamente la tensión',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'remo-con-barra',
@@ -71,7 +71,7 @@ export const EXERCISES: Exercise[] = [
       'Apretar los omóplatos al final del movimiento',
       'Bajar controladamente manteniendo la postura',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'remo-mancuerna',
@@ -85,7 +85,7 @@ export const EXERCISES: Exercise[] = [
       'Apretar el dorsal en la parte alta del movimiento',
       'Bajar controladamente y repetir',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // HOMBROS
   {
@@ -100,7 +100,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar controladamente hasta la posición inicial',
       'No bloquear los codos en la extensión',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'elevaciones-laterales',
@@ -114,7 +114,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar controladamente sin dejar caer el peso',
       'Evitar usar impulso del cuerpo',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // BICEPS
   {
@@ -129,7 +129,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar controladamente sin extender completamente los codos',
       'No balancear el cuerpo para subir el peso',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'curl-martillo',
@@ -143,7 +143,7 @@ export const EXERCISES: Exercise[] = [
       'Mantener los codos fijos a los lados',
       'Bajar controladamente',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // TRICEPS
   {
@@ -158,7 +158,7 @@ export const EXERCISES: Exercise[] = [
       'Apretar los tríceps en la extensión completa',
       'Volver controladamente a 90 grados',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'fondos-triceps',
@@ -172,7 +172,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar hasta que los codos formen 90 grados',
       'Empujar hacia arriba extendiendo los brazos',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // PIERNAS
   {
@@ -188,7 +188,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar hasta que los muslos estén paralelos al suelo o más abajo',
       'Subir empujando con los talones',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'peso-muerto',
@@ -203,7 +203,7 @@ export const EXERCISES: Exercise[] = [
       'Mantener la barra cerca del cuerpo durante todo el recorrido',
       'Bajar controladamente manteniendo la espalda recta',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'prensa-piernas',
@@ -217,7 +217,7 @@ export const EXERCISES: Exercise[] = [
       'Bajar hasta que las rodillas formen 90 grados',
       'Empujar hacia arriba sin bloquear las rodillas',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'zancadas',
@@ -231,7 +231,7 @@ export const EXERCISES: Exercise[] = [
       'La rodilla delantera no debe pasar la punta del pie',
       'Empujar con el pie delantero para volver a la posición inicial',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // ABDOMEN
   {
@@ -246,7 +246,7 @@ export const EXERCISES: Exercise[] = [
       'No dejar caer las caderas ni subirlas demasiado',
       'Mantener la posición el tiempo indicado',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'crunch-polea',
@@ -260,7 +260,7 @@ export const EXERCISES: Exercise[] = [
       'No tirar con los brazos, el movimiento es del core',
       'Volver controladamente a la posición inicial',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   // CARDIO
   {
@@ -275,7 +275,7 @@ export const EXERCISES: Exercise[] = [
       'Repetir el ciclo 8-12 veces',
       'Enfriar 3 minutos caminando suave',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
   {
     id: 'saltar-cuerda',
@@ -289,9 +289,16 @@ export const EXERCISES: Exercise[] = [
       'Mantener el core activado',
       'Aterrizar suavemente sobre la parte delantera de los pies',
     ],
-    videoUrl: '',
+    videoUrl: 'SEARCH',
   },
 ];
+
+export function getVideoUrl(exercise: Exercise): string {
+  if (exercise.videoUrl && exercise.videoUrl !== 'SEARCH') {
+    return exercise.videoUrl;
+  }
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' tecnica correcta ejercicio gym')}`;
+}
 
 export function getExercisesByMuscleGroup(muscleGroup: string): Exercise[] {
   return EXERCISES.filter(e => e.muscleGroup === muscleGroup);
