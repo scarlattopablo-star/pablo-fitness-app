@@ -7,7 +7,6 @@ import {
   CreditCard, BookOpen, LogOut, Menu, X,
 } from "lucide-react";
 import { useState } from "react";
-import { RequireAdmin } from "@/components/require-auth";
 import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
@@ -24,7 +23,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { signOut } = useAuth();
 
   return (
-    <RequireAdmin>
     <div className="min-h-screen flex">
       {/* SIDEBAR */}
       <aside className="hidden md:flex w-64 glass-card border-r border-card-border flex-col fixed h-screen">
@@ -111,6 +109,5 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
-    </RequireAdmin>
   );
 }

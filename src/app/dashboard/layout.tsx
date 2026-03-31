@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { InstagramIcon } from "@/components/icons";
-import { RequireSubscription } from "@/components/require-auth";
 import { useAuth } from "@/lib/auth-context";
 
 const NAV_ITEMS = [
@@ -31,7 +30,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <RequireSubscription>
       <div className="min-h-screen flex">
         {/* SIDEBAR Desktop */}
         <aside className="hidden md:flex w-64 glass-card border-r border-card-border flex-col fixed h-screen">
@@ -147,6 +145,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
       </div>
-    </RequireSubscription>
   );
 }
