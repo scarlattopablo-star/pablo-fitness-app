@@ -275,6 +275,15 @@ export default function EncuestaPage() {
               ))}
             </div>
 
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
+              <p className="text-sm text-primary font-medium">
+                🔒 Tus fotos son privadas
+              </p>
+              <p className="text-xs text-muted mt-1">
+                Solo vos y tu entrenador pueden verlas. No se comparten ni se publican en ningún lado.
+              </p>
+            </div>
+
             <div className="glass-card rounded-xl p-4 mb-6">
               <p className="text-sm text-muted">
                 <strong className="text-white">Consejos para las fotos:</strong>

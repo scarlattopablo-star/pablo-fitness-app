@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   Camera, Plus, TrendingDown, Scale, Ruler,
-  Calendar, Upload, X, ArrowRight,
+  Calendar, Upload, X, ArrowRight, Check, Loader2,
 } from "lucide-react";
+import { uploadProgressPhoto } from "@/lib/upload-photo";
+import { useAuth } from "@/lib/auth-context";
 
 const MOCK_PROGRESS = [
   { date: "2026-03-28", weight: 82, chest: 100, waist: 85, hips: 95 },
@@ -15,6 +18,7 @@ const MOCK_PROGRESS = [
 ];
 
 export default function ProgresoPage() {
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [weight, setWeight] = useState("");
   const [chest, setChest] = useState("");
@@ -23,16 +27,48 @@ export default function ProgresoPage() {
   const [arms, setArms] = useState("");
   const [legs, setLegs] = useState("");
   const [notes, setNotes] = useState("");
+  const [photoFront, setPhotoFront] = useState<File | null>(null);
+  const [photoSide, setPhotoSide] = useState<File | null>(null);
+  const [photoBack, setPhotoBack] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const latest = MOCK_PROGRESS[0];
   const oldest = MOCK_PROGRESS[MOCK_PROGRESS.length - 1];
   const totalWeightLost = oldest.weight - latest.weight;
   const totalWaistLost = oldest.waist - latest.waist;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Save to Supabase
-    setShowForm(false);
+    if (!user) return;
+    setUploading(true);
+
+    try {
+      // Upload photos if provided
+      const frontUrl = photoFront ? await uploadProgressPhoto(photoFront, user.id, "front") : null;
+      const sideUrl = photoSide ? await uploadProgressPhoto(photoSide, user.id, "side") : null;
+      const backUrl = photoBack ? await uploadProgressPhoto(photoBack, user.id, "back") : null;
+
+      // TODO: Save progress entry to Supabase with photo URLs
+      console.log("Progress saved:", {
+        weight, chest, waist, hips, arms, notes,
+        photos: { front: frontUrl, side: sideUrl, back: backUrl },
+      });
+
+      setUploadSuccess(true);
+      setTimeout(() => {
+        setShowForm(false);
+        setUploadSuccess(false);
+        setPhotoFront(null);
+        setPhotoSide(null);
+        setPhotoBack(null);
+        setWeight(""); setChest(""); setWaist(""); setHips(""); setArms(""); setNotes("");
+      }, 2000);
+    } catch (err) {
+      console.error("Error saving progress:", err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -198,16 +234,48 @@ export default function ProgresoPage() {
               <div>
                 <label className="block text-sm font-medium mb-2">Fotos (frente, perfil, espalda)</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {["Frente", "Perfil", "Espalda"].map((view) => (
-                    <label key={view} className="aspect-[3/4] border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer">
-                      <Camera className="h-6 w-6 text-muted" />
-                      <span className="text-xs text-muted">{view}</span>
-                      <span className="text-[10px] text-primary">Subir</span>
-                      <input type="file" accept="image/*" className="hidden" />
+                  {([
+                    { label: "Frente", file: photoFront, setter: setPhotoFront },
+                    { label: "Perfil", file: photoSide, setter: setPhotoSide },
+                    { label: "Espalda", file: photoBack, setter: setPhotoBack },
+                  ] as const).map((item) => (
+                    <label key={item.label} className="aspect-[3/4] border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer overflow-hidden relative">
+                      {item.file ? (
+                        <>
+                          <img
+                            src={URL.createObjectURL(item.file)}
+                            alt={item.label}
+                            className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <Check className="h-6 w-6 text-primary" />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="h-6 w-6 text-muted" />
+                          <span className="text-xs text-muted">{item.label}</span>
+                          <span className="text-[10px] text-primary">Subir</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) item.setter(f);
+                        }}
+                      />
                     </label>
                   ))}
                 </div>
-                <p className="text-xs text-muted mt-1">Cuerpo entero, opcional</p>
+                <p className="text-xs text-muted mt-1">Cuerpo entero, opcional. Podés usar cámara o galería.</p>
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-2 mt-2">
+                  <p className="text-[11px] text-primary">
+                    🔒 Tus fotos son privadas. Solo vos y tu entrenador pueden verlas. No se comparten ni se publican en ningún lado.
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -223,9 +291,16 @@ export default function ProgresoPage() {
 
               <button
                 type="submit"
-                className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity"
+                disabled={uploading}
+                className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Guardar Progreso
+                {uploadSuccess ? (
+                  <><Check className="h-5 w-5" /> Guardado!</>
+                ) : uploading ? (
+                  <><Loader2 className="h-5 w-5 animate-spin" /> Subiendo fotos...</>
+                ) : (
+                  "Guardar Progreso"
+                )}
               </button>
             </form>
           </div>
