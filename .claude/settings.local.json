@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/acer/Desktop/Claude/pablo-fitness-app -type f \\\\\\(-name *qr* -o -name *registro* -o -name *direct* -o -name *auth* \\\\\\))",
+      "Bash(xargs grep:*)",
+      "Bash(npx next:*)",
+      "Bash(npx --yes pwa-asset-generator --help)",
+      "Bash(node -e \":*)",
+      "Bash(npx --yes sharp-cli -i public/icons/icon.svg -o public/icons/icon-192.png --width 192 --height 192)",
+      "Bash(npx sharp-cli:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(grep -r SUPABASE .env*)",
+      "Bash(grep SUPABASE .env*)",
+      "Bash(cat .env*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

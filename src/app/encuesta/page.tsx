@@ -355,24 +355,24 @@ export default function EncuestaPage() {
               <p className="text-muted mb-2">Tu plan incluye:</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Calorías</p>
-                  <p className="text-lg font-black text-primary">Calculadas</p>
+                  <p className="text-xs text-muted">Calorías/día</p>
+                  <p className="text-lg font-black text-primary">{macros.targetCalories}</p>
                 </div>
                 <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Macros</p>
-                  <p className="text-lg font-black text-primary">Personalizados</p>
+                  <p className="text-xs text-muted">Proteínas</p>
+                  <p className="text-lg font-black text-red-400">{macros.protein}g</p>
                 </div>
                 <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Entrenamiento</p>
-                  <p className="text-lg font-black text-primary">A tu medida</p>
+                  <p className="text-xs text-muted">Carbohidratos</p>
+                  <p className="text-lg font-black text-yellow-400">{macros.carbs}g</p>
                 </div>
                 <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Nutrición</p>
-                  <p className="text-lg font-black text-primary">Personalizada</p>
+                  <p className="text-xs text-muted">Grasas</p>
+                  <p className="text-lg font-black text-blue-400">{macros.fats}g</p>
                 </div>
               </div>
               <p className="text-sm text-muted">
-                Completá el pago para desbloquear tu plan completo con calorías, macros, rutinas y comidas personalizadas.
+                Completá el pago para desbloquear tu plan completo con rutinas y comidas personalizadas.
               </p>
             </div>
 
@@ -386,12 +386,24 @@ export default function EncuestaPage() {
               </div>
             </div>
 
-            <Link
-              href={`/registro?plan=${planSlug}&duration=${duration}`}
+            <button
+              onClick={() => {
+                // Guardar encuesta en localStorage para no perder los datos al ir al registro/pago
+                localStorage.setItem("pendingSurvey", JSON.stringify({
+                  sex, age: Number(age), weight: Number(weight), height: Number(height),
+                  activityLevel, restrictions, planSlug,
+                  macros: {
+                    tmb: macros.tmb, tdee: macros.tdee,
+                    targetCalories: macros.targetCalories,
+                    protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
+                  },
+                }));
+                window.location.href = `/registro?plan=${planSlug}&duration=${duration}`;
+              }}
               className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
             >
               Continuar al Pago <ArrowRight className="h-5 w-5" />
-            </Link>
+            </button>
           </div>
         )}
 

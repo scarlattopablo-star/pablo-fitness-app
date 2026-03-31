@@ -145,6 +145,24 @@ CREATE TABLE public.payments (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 11. Page visits (analytics)
+CREATE TABLE public.page_visits (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  page TEXT NOT NULL DEFAULT '/',
+  visited_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 12. Free access codes (QR codes for free/direct clients)
+CREATE TABLE public.free_access_codes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  plan_slug TEXT NOT NULL DEFAULT 'direct-client',
+  duration TEXT DEFAULT '1-ano',
+  used BOOLEAN DEFAULT FALSE,
+  used_by UUID REFERENCES public.profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- =============================================
 -- ROW LEVEL SECURITY (RLS)
 -- =============================================
@@ -154,6 +172,8 @@ ALTER TABLE public.surveys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.page_visits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.free_access_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exercise_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.training_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.nutrition_plans ENABLE ROW LEVEL SECURITY;
@@ -204,6 +224,15 @@ CREATE POLICY "Admin can view all progress" ON public.progress_entries FOR SELEC
 -- Payments: users can view own
 CREATE POLICY "Users can view own payments" ON public.payments FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admin can manage payments" ON public.payments FOR ALL USING (public.is_admin());
+
+-- Page visits: anyone can insert, admin can read
+CREATE POLICY "Anyone can insert visits" ON public.page_visits FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admin can view visits" ON public.page_visits FOR SELECT USING (public.is_admin());
+
+-- Free access codes: anyone can read/update (for code validation), admin can manage all
+CREATE POLICY "Anyone can read codes" ON public.free_access_codes FOR SELECT USING (true);
+CREATE POLICY "Anyone can update codes" ON public.free_access_codes FOR UPDATE USING (true);
+CREATE POLICY "Admin can manage codes" ON public.free_access_codes FOR ALL USING (public.is_admin());
 
 -- =============================================
 -- TRIGGER: Auto-create profile on signup

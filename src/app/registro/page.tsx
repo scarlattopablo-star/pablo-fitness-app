@@ -72,6 +72,33 @@ function RegistroForm() {
           .eq("id", authData.user.id);
       }
 
+      // 2.5 Save pending survey from /encuesta if it exists
+      const pendingSurvey = localStorage.getItem("pendingSurvey");
+      if (pendingSurvey) {
+        try {
+          const survey = JSON.parse(pendingSurvey);
+          await supabase.from("surveys").insert({
+            user_id: authData.user.id,
+            age: survey.age,
+            sex: survey.sex,
+            weight: survey.weight,
+            height: survey.height,
+            activity_level: survey.activityLevel,
+            dietary_restrictions: survey.restrictions || [],
+            objective: survey.planSlug || planSlug || "quema-grasa",
+            tmb: survey.macros.tmb,
+            tdee: survey.macros.tdee,
+            target_calories: survey.macros.targetCalories,
+            protein: survey.macros.protein,
+            carbs: survey.macros.carbs,
+            fats: survey.macros.fats,
+          });
+          localStorage.removeItem("pendingSurvey");
+        } catch {
+          // Silently fail if survey save fails
+        }
+      }
+
       // 3. Create MercadoPago preference and redirect to payment
       if (plan && price > 0) {
         const response = await fetch("/api/mercadopago/create-preference", {

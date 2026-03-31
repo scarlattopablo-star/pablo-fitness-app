@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Eye, Users, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 
 interface Client {
   id: string;
@@ -14,32 +15,26 @@ interface Client {
 }
 
 export default function ClientesPage() {
+  const { user, loading: authLoading } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    loadClients();
-  }, []);
+    if (!authLoading && user) {
+      loadClients();
+    }
+  }, [authLoading, user]);
 
   const loadClients = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("is_admin", false)
+      .order("created_at", { ascending: false });
 
-      const res = await fetch("/api/admin/clients", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const data = await res.json();
-      if (data.clients) setClients(data.clients);
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
+    if (data) setClients(data);
+    setLoading(false);
   };
 
   const filtered = clients.filter((c) => {

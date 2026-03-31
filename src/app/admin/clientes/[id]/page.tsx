@@ -8,6 +8,7 @@ import {
   Dumbbell, UtensilsCrossed, Camera, Loader2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 
 interface ClientData {
   id: string;
@@ -32,33 +33,46 @@ interface SurveyData {
   tdee: number;
 }
 
+interface SubscriptionData {
+  id: string;
+  duration: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  amount_paid: number;
+}
+
 export default function ClienteDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { user, loading: authLoading } = useAuth();
   const [client, setClient] = useState<ClientData | null>(null);
   const [survey, setSurvey] = useState<SurveyData | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
+  const [hasNutritionPlan, setHasNutritionPlan] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadClient();
-  }, [id]);
+    if (!authLoading && user) {
+      loadClient();
+    }
+  }, [id, authLoading, user]);
 
   const loadClient = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) { setLoading(false); return; }
+      // Perfil del cliente
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (profileData) setClient(profileData);
 
-      // Perfil via API con auth
-      const res = await fetch(`/api/admin/clients?limit=1&id=${id}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const apiData = await res.json();
-      if (apiData.clients?.[0]) setClient(apiData.clients[0]);
-
-      // Survey - el admin tiene permiso RLS directo con la sesion
+      // Survey
       const { data: surveyData } = await supabase
         .from("surveys")
         .select("*")
@@ -68,6 +82,29 @@ export default function ClienteDetailPage({
         .single();
 
       if (surveyData) setSurvey(surveyData);
+
+      // Subscription
+      const { data: subData } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (subData) setSubscription(subData);
+
+      // Check if training/nutrition plans exist
+      const { count: trainingCount } = await supabase
+        .from("training_plans")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", id);
+      setHasTrainingPlan((trainingCount || 0) > 0);
+
+      const { count: nutritionCount } = await supabase
+        .from("nutrition_plans")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", id);
+      setHasNutritionPlan((nutritionCount || 0) > 0);
     } catch {
       // silently fail
     } finally {
@@ -204,6 +241,51 @@ export default function ClienteDetailPage({
           <p className="text-muted">Este cliente aún no completó la encuesta.</p>
         </div>
       )}
+
+      {/* Subscription & Plans Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div className="glass-card rounded-2xl p-5">
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            Suscripción
+          </h3>
+          {subscription ? (
+            <div className="space-y-1 text-sm">
+              <p>Estado: <span className={subscription.status === "active" ? "text-primary font-bold" : "text-danger font-bold"}>{subscription.status === "active" ? "Activa" : subscription.status}</span></p>
+              <p className="text-muted">Duración: {subscription.duration}</p>
+              <p className="text-muted">Inicio: {new Date(subscription.start_date).toLocaleDateString("es")}</p>
+              <p className="text-muted">Fin: {new Date(subscription.end_date).toLocaleDateString("es")}</p>
+              <p className="text-muted">Pagado: ${subscription.amount_paid}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted">Sin suscripción</p>
+          )}
+        </div>
+
+        <div className="glass-card rounded-2xl p-5">
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <Dumbbell className="h-4 w-4 text-primary" />
+            Plan de Entrenamiento
+          </h3>
+          {hasTrainingPlan ? (
+            <p className="text-sm text-primary font-medium">Plan asignado</p>
+          ) : (
+            <p className="text-sm text-muted">Sin plan asignado</p>
+          )}
+        </div>
+
+        <div className="glass-card rounded-2xl p-5">
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <UtensilsCrossed className="h-4 w-4 text-primary" />
+            Plan de Nutrición
+          </h3>
+          {hasNutritionPlan ? (
+            <p className="text-sm text-primary font-medium">Plan asignado</p>
+          ) : (
+            <p className="text-sm text-muted">Sin plan asignado</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

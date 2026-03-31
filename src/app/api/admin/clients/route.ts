@@ -9,26 +9,22 @@ export async function GET(request: NextRequest) {
 
   const token = authHeader.slice(7);
 
-  // Crear cliente con el token del usuario
+  // Crear cliente autenticado con el token del usuario
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 
-  // Verificar que el usuario es admin
+  // Verificar token valido
   const { data: { user } } = await supabase.auth.getUser(token);
   if (!user) {
     return NextResponse.json({ error: "Token invalido" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile?.is_admin) {
+  // Verificar admin usando la funcion SECURITY DEFINER (bypasea RLS)
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 

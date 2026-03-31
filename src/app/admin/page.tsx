@@ -4,6 +4,7 @@ import { Users, Eye, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth-context";
 
 interface ClientInfo {
   id: string;
@@ -13,6 +14,7 @@ interface ClientInfo {
 }
 
 export default function AdminDashboard() {
+  const { user, loading: authLoading } = useAuth();
   const [visits, setVisits] = useState({ total: 0, today: 0, week: 0, month: 0 });
   const [clients, setClients] = useState<ClientInfo[]>([]);
   const [totalClients, setTotalClients] = useState(0);
@@ -23,29 +25,25 @@ export default function AdminDashboard() {
       .then(r => r.json())
       .then(data => setVisits(data))
       .catch(() => {});
-
-    loadClients();
   }, []);
 
-  const loadClients = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch("/api/admin/clients?limit=5", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const data = await res.json();
-      if (data.clients) setClients(data.clients);
-      if (data.total !== undefined) setTotalClients(data.total);
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!authLoading && user) {
+      loadClients();
     }
+  }, [authLoading, user]);
+
+  const loadClients = async () => {
+    const { data, count } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact" })
+      .eq("is_admin", false)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (data) setClients(data);
+    if (count !== null) setTotalClients(count);
+    setLoading(false);
   };
 
   return (
