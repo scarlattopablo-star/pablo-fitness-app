@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, User, ClipboardList, TrendingUp,
   Calendar, Target, Scale, Mail, Phone, Edit,
+  Dumbbell, UtensilsCrossed, Info,
 } from "lucide-react";
 
 // Mock client detail
@@ -183,6 +184,126 @@ export default function ClienteDetailPage({
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Training Plan */}
+      <div className="glass-card rounded-2xl p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" />
+            Plan de Entrenamiento
+          </h2>
+          <Link
+            href={`/admin/clientes/${id}/plan-editor`}
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
+            <Edit className="h-3 w-3" /> Editar
+          </Link>
+        </div>
+        {[
+          {
+            day: "Lunes - Pecho y Tríceps",
+            exercises: [
+              { name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
+              { name: "Press Inclinado Mancuernas", sets: 4, reps: "10", rest: "90s" },
+              { name: "Aperturas Inclinadas", sets: 4, reps: "12", rest: "60s" },
+              { name: "Extensión Tríceps Polea", sets: 4, reps: "12", rest: "60s" },
+              { name: "Fondos de Tríceps", sets: 3, reps: "15", rest: "60s" },
+            ],
+          },
+          {
+            day: "Martes - Espalda y Bíceps",
+            exercises: [
+              { name: "Jalón Polea Alta", sets: 4, reps: "10", rest: "90s" },
+              { name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
+              { name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
+              { name: "Curl Bíceps Barra", sets: 4, reps: "10", rest: "60s" },
+              { name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
+            ],
+          },
+          {
+            day: "Miércoles - Piernas",
+            exercises: [
+              { name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "120s" },
+              { name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
+              { name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
+              { name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
+              { name: "Plancha", sets: 3, reps: "45s", rest: "30s" },
+            ],
+          },
+        ].map((day) => (
+          <div key={day.day} className="mb-4 last:mb-0">
+            <p className="font-medium text-sm mb-2 text-primary">{day.day}</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted border-b border-card-border">
+                    <th className="text-left p-2">Ejercicio</th>
+                    <th className="text-center p-2">Series</th>
+                    <th className="text-center p-2">Reps</th>
+                    <th className="text-center p-2">Desc.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {day.exercises.map((ex, i) => (
+                    <tr key={i} className="border-b border-card-border/30 last:border-0">
+                      <td className="p-2">{ex.name}</td>
+                      <td className="p-2 text-center text-primary font-bold">{ex.sets}</td>
+                      <td className="p-2 text-center">{ex.reps}</td>
+                      <td className="p-2 text-center text-muted">{ex.rest}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Nutrition Plan */}
+      <div className="glass-card rounded-2xl p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold flex items-center gap-2">
+            <UtensilsCrossed className="h-5 w-5 text-primary" />
+            Plan de Nutrición
+          </h2>
+          <Link
+            href={`/admin/clientes/${id}/plan-editor`}
+            className="text-sm text-primary hover:underline flex items-center gap-1"
+          >
+            <Edit className="h-3 w-3" /> Editar
+          </Link>
+        </div>
+
+        <div className="glass-card rounded-xl p-3 mb-4 border-l-4 border-warning">
+          <p className="font-bold text-warning text-xs mb-1">IMPORTANTE</p>
+          <p className="text-xs text-muted">COMER CADA 3 HORAS | TOMAR 3 LITROS DE AGUA | NO AZÚCAR | NO ALCOHOL</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            { name: "DESAYUNO", time: "7:00", foods: ["2 huevos revueltos", "30g avena", "1 fruta", "1 café", "Omega 3 + creatina"] },
+            { name: "COMIDA 2", time: "10:00", foods: ["Yogurt descremado", "30g avena", "1 manzana", "10g nueces"] },
+            { name: "COMIDA 3", time: "13:00", foods: ["150g pollo", "150g boniato", "Ensalada verde"] },
+            { name: "COMIDA 4", time: "16:00", foods: ["4 claras de huevo", "2 galletas de arroz", "1 banana"] },
+            { name: "COMIDA 5", time: "19:00", foods: ["150g pescado o pollo", "200g zapallo y zanahoria al vapor"] },
+            { name: "COMIDA 6", time: "21:00", foods: ["3 claras", "1 galleta de arroz", "Infusión"] },
+          ].map((meal) => (
+            <div key={meal.name} className="bg-card-bg rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-bold text-xs text-primary">{meal.name}</p>
+                <span className="text-[10px] text-muted">{meal.time}</span>
+              </div>
+              <ul className="space-y-0.5">
+                {meal.foods.map((food, i) => (
+                  <li key={i} className="text-xs text-muted flex items-start gap-1">
+                    <span className="text-primary">&#8226;</span> {food}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </div>
     </div>
