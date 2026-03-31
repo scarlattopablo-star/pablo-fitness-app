@@ -4,7 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, User, ClipboardList, TrendingUp,
-  Calendar, Target, Scale, Mail, Phone,
+  Calendar, Target, Scale, Mail, Phone, Edit,
 } from "lucide-react";
 
 // Mock client detail
@@ -67,6 +67,12 @@ export default function ClienteDetailPage({
             <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {client.email}</span>
             <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {client.phone}</span>
           </div>
+          <Link
+            href={`/admin/clientes/${id}/plan-editor`}
+            className="mt-2 inline-flex items-center gap-2 gradient-primary text-black font-semibold text-sm px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+          >
+            <Edit className="h-4 w-4" /> Crear/Editar Plan Personalizado
+          </Link>
         </div>
       </div>
 
