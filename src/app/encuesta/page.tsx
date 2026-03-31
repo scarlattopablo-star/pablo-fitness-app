@@ -297,10 +297,17 @@ export default function EncuestaPage() {
             </div>
 
             <button
-              onClick={() => { setSkipPhotos(true); handleNext(); }}
-              className="w-full text-sm text-muted hover:text-white text-center py-2 mb-2"
+              onClick={() => handleNext()}
+              className="w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-3"
             >
-              Subir fotos en otro momento
+              Siguiente <ArrowRight className="h-5 w-5" />
+            </button>
+
+            <button
+              onClick={() => { setSkipPhotos(true); handleNext(); }}
+              className="w-full text-sm text-muted hover:text-white text-center py-2"
+            >
+              Saltar este paso
             </button>
           </div>
         )}
