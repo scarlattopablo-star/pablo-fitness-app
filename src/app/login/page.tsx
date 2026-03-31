@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, Eye, EyeOff, Mail, ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -11,6 +11,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetError, setResetError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +72,95 @@ export default function LoginPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetError("");
+
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      setResetError(error.message);
+    } else {
+      setResetSent(true);
+    }
+    setResetLoading(false);
+  };
+
+  if (showReset) {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2 mb-6">
+              <Dumbbell className="h-8 w-8 text-primary" />
+              <span className="font-black text-xl">PABLO SCARLATTO</span>
+            </Link>
+            <h1 className="text-2xl font-black">Recuperar Contraseña</h1>
+            <p className="text-muted text-sm mt-2">Te enviaremos un email para crear una nueva contraseña</p>
+          </div>
+
+          {resetSent ? (
+            <div className="glass-card rounded-2xl p-6 text-center">
+              <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
+                <Check className="h-7 w-7 text-black" />
+              </div>
+              <h2 className="font-bold text-lg mb-2">Email Enviado</h2>
+              <p className="text-sm text-muted mb-6">
+                Revisá tu bandeja de entrada en <strong className="text-white">{resetEmail}</strong>.
+                Hace click en el link del email para crear tu nueva contraseña.
+              </p>
+              <button
+                onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}
+                className="text-primary hover:underline text-sm"
+              >
+                Volver al login
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleResetPassword} className="glass-card rounded-2xl p-6 space-y-4">
+              {resetError && (
+                <div className="bg-danger/10 border border-danger/30 text-danger text-sm p-3 rounded-xl">
+                  {resetError}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="tu@email.com"
+                  required
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={resetLoading}
+                className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                {resetLoading ? "Enviando..." : "Enviar Email de Recuperación"}
+              </button>
+            </form>
+          )}
+
+          <p className="text-center mt-6">
+            <button
+              onClick={() => { setShowReset(false); setResetError(""); }}
+              className="text-sm text-muted hover:text-white transition-colors flex items-center gap-1 mx-auto"
+            >
+              <ArrowLeft className="h-4 w-4" /> Volver al login
+            </button>
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -118,6 +212,14 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => { setShowReset(true); setResetEmail(email); }}
+            className="text-sm text-primary hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
 
           <button
             type="submit"
