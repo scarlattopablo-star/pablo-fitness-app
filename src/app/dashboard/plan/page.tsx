@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Dumbbell, UtensilsCrossed, Info, Play, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2 } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
+import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
-// Mock training plan - similar to Pablo's format
+// Default training plan
 const TRAINING_DAYS = [
   {
     day: "Lunes - Pecho y Tríceps",
@@ -37,7 +40,7 @@ const TRAINING_DAYS = [
       { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
       { id: "plancha", name: "Plancha", sets: 3, reps: "45s", rest: "30s" },
     ],
-    instructions: "En sentadilla: bajar hasta paralelo o más abajo. Usar cinturón si es necesario.",
+    instructions: "En sentadilla: bajar hasta paralelo o más abajo.",
   },
   {
     day: "Jueves - Hombros y Abdomen",
@@ -58,85 +61,73 @@ const TRAINING_DAYS = [
       { id: "press-hombros", name: "Press Hombros", sets: 3, reps: "12", rest: "30s" },
       { id: "hiit-cinta", name: "HIIT Cinta", sets: 1, reps: "15 min", rest: "-" },
     ],
-    instructions: "Trabajar en circuito sin descanso entre ejercicios. Descanso de 90s entre vueltas. Ejecutar 3 vueltas.",
+    instructions: "Circuito sin descanso entre ejercicios. 90s entre vueltas. 3 vueltas.",
   },
 ];
 
-const MEAL_PLAN = {
-  meals: [
-    {
-      name: "DESAYUNO",
-      time: "7:00",
-      foods: ["2 huevos revueltos", "30g avena", "1 fruta", "1 café", "1 cápsula omega 3 + creatina"],
-    },
-    {
-      name: "COMIDA 2",
-      time: "10:00",
-      foods: ["Yogurt descremado", "30g avena", "1 manzana", "1 cucharada de miel", "10g nueces"],
-    },
-    {
-      name: "COMIDA 3",
-      time: "13:00",
-      foods: ["150g pollo", "150g boniato", "Ensalada verde", "1 cucharada aceite oliva"],
-    },
-    {
-      name: "COMIDA 4",
-      time: "16:00",
-      foods: ["4 claras de huevo", "2 galletas de arroz", "1 banana"],
-    },
-    {
-      name: "COMIDA 5",
-      time: "19:00",
-      foods: ["150g pescado o pollo (suprema)", "200g zapallo y zanahoria al vapor"],
-    },
-    {
-      name: "COMIDA 6",
-      time: "21:00",
-      foods: ["3 claras", "1 galleta de arroz", "Infusión de cola de caballo"],
-    },
-  ],
-  importantNotes: [
-    "COMER CADA 3 HORAS",
-    "TOMAR 3 LITROS DE AGUA AL DÍA",
-    "NO AZÚCAR, ENDULZAR CON EDULCORANTE",
-    "NO ALCOHOL",
-  ],
-};
-
 export default function PlanPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<"entrenamiento" | "nutricion">("entrenamiento");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+  const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) loadMacros();
+  }, [user]);
+
+  const loadMacros = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("surveys")
+      .select("target_calories, protein, carbs, fats")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data && data.target_calories) {
+      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats));
+    } else {
+      // Default plan for clients without survey
+      setMealPlan(generateMealPlan(2100, 150, 220, 70));
+    }
+    setLoading(false);
+  };
 
   const exerciseDetail = selectedExercise ? getExerciseById(selectedExercise) : null;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-black mb-2">Mi Plan</h1>
-      <p className="text-muted mb-6">Plan Quema Grasa - Semana 5</p>
+      <p className="text-muted mb-6">Plan personalizado</p>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setTab("entrenamiento")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
-            tab === "entrenamiento"
-              ? "gradient-primary text-black"
-              : "glass-card text-muted hover:text-white"
+            tab === "entrenamiento" ? "gradient-primary text-black" : "glass-card text-muted hover:text-white"
           }`}
         >
-          <Dumbbell className="h-4 w-4" />
-          Entrenamiento
+          <Dumbbell className="h-4 w-4" /> Entrenamiento
         </button>
         <button
           onClick={() => setTab("nutricion")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
-            tab === "nutricion"
-              ? "gradient-primary text-black"
-              : "glass-card text-muted hover:text-white"
+            tab === "nutricion" ? "gradient-primary text-black" : "glass-card text-muted hover:text-white"
           }`}
         >
-          <UtensilsCrossed className="h-4 w-4" />
-          Nutrición
+          <UtensilsCrossed className="h-4 w-4" /> Nutrición
         </button>
       </div>
 
@@ -147,9 +138,7 @@ export default function PlanPage() {
             <div key={day.day} className="glass-card rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-card-border">
                 <h3 className="font-bold">{day.day}</h3>
-                {day.instructions && (
-                  <p className="text-xs text-muted mt-1">{day.instructions}</p>
-                )}
+                {day.instructions && <p className="text-xs text-muted mt-1">{day.instructions}</p>}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -170,11 +159,7 @@ export default function PlanPage() {
                         <td className="p-3 text-center">{ex.reps}</td>
                         <td className="p-3 text-center text-muted">{ex.rest}</td>
                         <td className="p-3 text-center">
-                          <button
-                            onClick={() => setSelectedExercise(ex.id)}
-                            className="text-primary hover:text-primary-light transition-colors"
-                            title="Ver cómo se hace"
-                          >
+                          <button onClick={() => setSelectedExercise(ex.id)} className="text-primary hover:text-primary-light">
                             <Info className="h-4 w-4" />
                           </button>
                         </td>
@@ -189,24 +174,27 @@ export default function PlanPage() {
       )}
 
       {/* NUTRITION */}
-      {tab === "nutricion" && (
+      {tab === "nutricion" && mealPlan && (
         <div>
           <div className="glass-card rounded-2xl p-4 mb-4 border-l-4 border-warning">
             <p className="font-bold text-warning text-sm mb-1">IMPORTANTE</p>
             <ul className="space-y-1">
-              {MEAL_PLAN.importantNotes.map((note) => (
+              {mealPlan.importantNotes.map((note) => (
                 <li key={note} className="text-sm text-muted">{note}</li>
               ))}
             </ul>
           </div>
 
           <div className="space-y-3">
-            {MEAL_PLAN.meals.map((meal) => (
+            {mealPlan.meals.map((meal) => (
               <div key={meal.name} className="glass-card rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-1">
                   <h3 className="font-bold text-primary">{meal.name}</h3>
                   <span className="text-xs text-muted">{meal.time}</span>
                 </div>
+                <p className="text-[10px] text-muted mb-2">
+                  ~{meal.approxCalories} kcal | P: {meal.approxProtein}g | C: {meal.approxCarbs}g | G: {meal.approxFats}g
+                </p>
                 <ul className="space-y-1">
                   {meal.foods.map((food, i) => (
                     <li key={i} className="text-sm text-muted flex items-start gap-2">
@@ -231,35 +219,23 @@ export default function PlanPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            <div className="bg-card-bg rounded-xl p-3 mb-4 flex items-center gap-2">
-              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full capitalize">
-                {exerciseDetail.muscleGroup}
-              </span>
-            </div>
-
+            <span className="inline-block text-xs px-2 py-1 bg-primary/10 text-primary rounded-full capitalize mb-4">
+              {exerciseDetail.muscleGroup}
+            </span>
             <p className="text-sm text-muted mb-4">{exerciseDetail.description}</p>
-
-            <a
-              href={getVideoUrl(exerciseDetail)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-card-bg rounded-xl p-4 mb-4 flex items-center gap-3 hover:bg-white/5 transition-colors"
-            >
+            <a href={getVideoUrl(exerciseDetail)} target="_blank" rel="noopener noreferrer"
+              className="bg-card-bg rounded-xl p-4 mb-4 flex items-center gap-3 hover:bg-white/5 transition-colors">
               <Play className="h-8 w-8 text-primary" />
               <div>
                 <p className="font-medium text-sm">Ver Video Demostrativo</p>
                 <p className="text-xs text-muted">Ejecución correcta paso a paso</p>
               </div>
             </a>
-
             <h4 className="font-bold text-sm mb-3">Paso a Paso</h4>
             <ol className="space-y-2">
               {exerciseDetail.steps.map((step, i) => (
                 <li key={i} className="flex gap-3 text-sm">
-                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-                    {i + 1}
-                  </span>
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
                   <span className="text-muted">{step}</span>
                 </li>
               ))}

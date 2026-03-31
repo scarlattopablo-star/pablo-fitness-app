@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { uploadProgressPhoto } from "@/lib/upload-photo";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 const MOCK_PROGRESS = [
   { date: "2026-03-28", weight: 82, chest: 100, waist: 85, hips: 95 },
@@ -49,10 +50,18 @@ export default function ProgresoPage() {
       const sideUrl = photoSide ? await uploadProgressPhoto(photoSide, user.id, "side") : null;
       const backUrl = photoBack ? await uploadProgressPhoto(photoBack, user.id, "back") : null;
 
-      // TODO: Save progress entry to Supabase with photo URLs
-      console.log("Progress saved:", {
-        weight, chest, waist, hips, arms, notes,
-        photos: { front: frontUrl, side: sideUrl, back: backUrl },
+      // Save progress entry to Supabase
+      await supabase.from("progress_entries").insert({
+        user_id: user.id,
+        weight: weight ? Number(weight) : null,
+        chest: chest ? Number(chest) : null,
+        waist: waist ? Number(waist) : null,
+        hips: hips ? Number(hips) : null,
+        arms: arms ? Number(arms) : null,
+        photo_front: frontUrl,
+        photo_side: sideUrl,
+        photo_back: backUrl,
+        notes: notes || null,
       });
 
       setUploadSuccess(true);
