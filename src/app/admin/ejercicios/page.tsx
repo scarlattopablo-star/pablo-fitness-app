@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EXERCISES, MUSCLE_GROUP_LABELS } from "@/lib/exercises-data";
+import { EXERCISES, MUSCLE_GROUP_LABELS, getVideoUrl } from "@/lib/exercises-data";
 import { Search, Plus, Edit, Play, Video } from "lucide-react";
 
 export default function AdminEjerciciosPage() {
@@ -90,15 +90,14 @@ export default function AdminEjerciciosPage() {
                     </span>
                   </td>
                   <td className="p-4 text-center">
-                    {exercise.videoUrl ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-primary">
-                        <Play className="h-3 w-3" /> Sí
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted">
-                        <Video className="h-3 w-3" /> Pendiente
-                      </span>
-                    )}
+                    <a
+                      href={getVideoUrl(exercise)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <Play className="h-3 w-3" /> Ver Video
+                    </a>
                   </td>
                   <td className="p-4 text-center text-muted">{exercise.steps.length}</td>
                   <td className="p-4 text-center">
