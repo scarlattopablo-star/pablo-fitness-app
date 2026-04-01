@@ -93,20 +93,20 @@ export function generateMealPlan(
   };
 }
 
-// Round to nearest 5g for clean numbers
-function round5(n: number): number {
-  return Math.round(n / 5) * 5 || 5;
+// Round to nearest 10g for clean numbers
+function round10(n: number): number {
+  return Math.round(n / 10) * 10 || 10;
 }
 
 function generateFoods(protein: number, carbs: number, fats: number, meal: string): string[] {
-  const proteinGrams = round5(protein / 0.31);
-  const carbGrams = round5(carbs / 0.28);
+  const proteinGrams = round10(protein / 0.31);
+  const carbGrams = round10(carbs / 0.28);
 
   switch (meal) {
     case "desayuno":
       return [
         `${Math.max(1, Math.round(protein / 6.5))} huevos revueltos`,
-        `${round5(carbs / 0.66)}g avena`,
+        `${round10(carbs / 0.66)}g avena`,
         "1 fruta",
         "1 café",
         fats > 8 ? "1 cucharada aceite de oliva o mantequilla de maní" : "",
@@ -115,9 +115,9 @@ function generateFoods(protein: number, carbs: number, fats: number, meal: strin
     case "snack1":
       return [
         "Yogurt descremado",
-        `${round5(carbs / 0.66)}g avena o granola`,
-        protein > 12 ? `${round5(protein / 0.11)}g claras de huevo` : "1 fruta",
-        fats > 5 ? `${round5(fats / 0.7)}g nueces o almendras` : "",
+        `${round10(carbs / 0.66)}g avena o granola`,
+        protein > 12 ? `${round10(protein / 0.11)}g claras de huevo` : "1 fruta",
+        fats > 5 ? `${round10(fats / 0.7)}g nueces o almendras` : "",
       ].filter(Boolean);
 
     case "almuerzo":
