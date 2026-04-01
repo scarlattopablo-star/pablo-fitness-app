@@ -81,26 +81,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="p-4 border-t border-card-border space-y-1">
-          {!isInstalled && (
-            <button
-              onClick={handleInstallApp}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full gradient-primary text-black font-semibold transition-all hover:opacity-90"
-            >
-              <Download className="h-5 w-5" />
-              Descargar App
-            </button>
-          )}
+          <button
+            onClick={handleInstallApp}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full gradient-primary text-black font-semibold transition-all hover:opacity-90"
+          >
+            <Download className="h-5 w-5" />
+            {isInstalled ? "App Instalada" : "Descargar App"}
+          </button>
           {showIOSGuide && isIOS && (
             <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
               <p className="font-bold text-primary">iPhone/iPad:</p>
               <p>1. Toca Compartir (⬆) en Safari</p>
               <p>2. Agregar a pantalla de inicio</p>
               <p>3. Agregar</p>
-            </div>
-          )}
-          {isInstalled && (
-            <div className="flex items-center gap-3 px-4 py-3 text-sm text-primary font-medium">
-              <Smartphone className="h-5 w-5" /> App instalada
             </div>
           )}
           <Link
