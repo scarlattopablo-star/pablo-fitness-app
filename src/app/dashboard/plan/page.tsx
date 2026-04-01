@@ -49,7 +49,7 @@ export default function PlanPage() {
       .single();
 
     if (data && data.target_calories) {
-      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats));
+      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, data.wake_hour || 7, data.sleep_hour || 23));
       setTrainingPlan(generateTrainingPlan(data.training_days || 5));
       setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
       setObjective(data.objective || "");
@@ -186,7 +186,10 @@ export default function PlanPage() {
               <div key={meal.name} className="glass-card rounded-2xl overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold">{meal.name}</h3>
+                    <div>
+                      {meal.time && <span className="text-xs text-primary font-bold">{meal.time} — </span>}
+                      <span className="font-bold">{meal.name}</span>
+                    </div>
                     <span className="text-xs text-primary font-semibold">{meal.approxCalories} kcal</span>
                   </div>
                   <ul className="space-y-1.5 mb-3">

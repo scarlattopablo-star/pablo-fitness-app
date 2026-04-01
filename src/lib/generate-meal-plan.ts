@@ -84,10 +84,34 @@ export function generateMealPlan(
   targetCalories: number,
   protein: number,
   carbs: number,
-  fats: number
+  fats: number,
+  wakeHour: number = 7,
+  sleepHour: number = 23
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
-  // Distribute macros across 6 meals: 20%, 10%, 25%, 10%, 25%, 10%
-  const dist = [0.20, 0.10, 0.25, 0.10, 0.25, 0.10];
+  // Calculate meal times every 3 hours from wake to sleep
+  // Last meal (cena) is always 2h before sleep
+  const awakeHours = (sleepHour > wakeHour ? sleepHour : sleepHour + 24) - wakeHour;
+  const numMeals = Math.min(6, Math.max(4, Math.floor(awakeHours / 3) + 1));
+  const mealTimes: string[] = [];
+  for (let i = 0; i < numMeals; i++) {
+    if (i === numMeals - 1) {
+      // Last meal: 2 hours before sleep
+      const lastHour = sleepHour - 2;
+      mealTimes.push(`${lastHour < 10 ? "0" : ""}${lastHour}:00`);
+    } else {
+      const hour = wakeHour + (i * 3);
+      const h = hour % 24;
+      mealTimes.push(`${h < 10 ? "0" : ""}${h}:00`);
+    }
+  }
+
+  // Distribute macros across meals
+  const distTemplates: Record<number, number[]> = {
+    4: [0.25, 0.15, 0.35, 0.25],
+    5: [0.22, 0.12, 0.26, 0.12, 0.28],
+    6: [0.20, 0.10, 0.25, 0.10, 0.25, 0.10],
+  };
+  const dist = distTemplates[numMeals] || distTemplates[6];
 
   const pPerMeal = dist.map(d => Math.round(protein * d));
   const cPerMeal = dist.map(d => Math.round(carbs * d));
@@ -156,24 +180,51 @@ export function generateMealPlan(
     snack3Foods.push(buildFoodEntryByUnit("galleta-arroz", Math.max(1, Math.round(cPerMeal[5] / 7.4)), 9));
   }
 
-  const meals: MealPlanMeal[] = [
-    mealFromFoods("DESAYUNO", desayunoFoods),
-    mealFromFoods("COMIDA 2", snack1Foods),
-    mealFromFoods("COMIDA 3 (ALMUERZO)", almuerzoFoods),
-    mealFromFoods("COMIDA 4", snack2Foods),
-    mealFromFoods("COMIDA 5 (CENA)", cenaFoods),
-    mealFromFoods("COMIDA 6", snack3Foods),
+  // Build all available meals (cena is always last)
+  const allMealOptions = [
+    { name: "DESAYUNO", foods: desayunoFoods },
+    { name: "COMIDA 2", foods: snack1Foods },
+    { name: "ALMUERZO", foods: almuerzoFoods },
+    { name: "MERIENDA", foods: snack2Foods },
+    { name: "CENA", foods: cenaFoods },
+    { name: "COLACION NOCTURNA", foods: snack3Foods },
   ];
 
+  // Select meals based on numMeals, cena always last
+  const selectedMeals: MealPlanMeal[] = [];
+  if (numMeals === 4) {
+    // Desayuno, Almuerzo, Merienda, Cena
+    const picks = [0, 2, 3, 4];
+    picks.forEach((idx, i) => {
+      const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
+      m.time = mealTimes[i];
+      selectedMeals.push(m);
+    });
+  } else if (numMeals === 5) {
+    // Desayuno, Comida 2, Almuerzo, Merienda, Cena
+    const picks = [0, 1, 2, 3, 4];
+    picks.forEach((idx, i) => {
+      const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
+      m.time = mealTimes[i];
+      selectedMeals.push(m);
+    });
+  } else {
+    // 6 meals: all
+    allMealOptions.forEach((opt, i) => {
+      const m = mealFromFoods(opt.name, opt.foods);
+      m.time = mealTimes[i] || "";
+      selectedMeals.push(m);
+    });
+  }
+
   return {
-    meals,
+    meals: selectedMeals,
     importantNotes: [
       "COMER CADA 3 HORAS",
       `OBJETIVO DIARIO: ${targetCalories} kcal | ${protein}g proteina | ${carbs}g carbos | ${fats}g grasas`,
       "TOMAR 3 LITROS DE AGUA AL DIA",
       "NO AZUCAR, ENDULZAR CON EDULCORANTE",
       "NO ALCOHOL",
-      "Datos nutricionales basados en USDA FoodData Central",
     ],
   };
 }
