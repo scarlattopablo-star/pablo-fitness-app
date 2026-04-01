@@ -1,11 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2 } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Flame } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+
+const OBJECTIVE_LABELS: Record<string, string> = {
+  "quema-grasa": "Quema Grasa",
+  "ganancia-muscular": "Ganancia Muscular",
+  "tonificacion": "Tonificacion",
+  "principiante-total": "Principiante Total",
+  "rendimiento-deportivo": "Rendimiento Deportivo",
+  "post-parto": "Post-Parto",
+  "fuerza-funcional": "Fuerza Funcional",
+  "recomposicion-corporal": "Recomposicion Corporal",
+  "plan-pareja": "Plan Pareja",
+  "competicion": "Competicion",
+  "direct-client": "Plan Personalizado",
+};
 
 // Default training plan
 const TRAINING_DAYS = [
@@ -66,11 +80,13 @@ const TRAINING_DAYS = [
 ];
 
 export default function PlanPage() {
-  const { user } = useAuth();
+  const { user, subscription } = useAuth();
   const [tab, setTab] = useState<"entrenamiento" | "nutricion">("entrenamiento");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [objective, setObjective] = useState("");
+  const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
 
   useEffect(() => {
     if (user) loadMacros();
@@ -81,7 +97,7 @@ export default function PlanPage() {
 
     const { data } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats")
+      .select("target_calories, protein, carbs, fats, objective")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -89,9 +105,11 @@ export default function PlanPage() {
 
     if (data && data.target_calories) {
       setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats));
+      setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
+      setObjective(data.objective || "");
     } else {
-      // Default plan for clients without survey
       setMealPlan(generateMealPlan(2100, 150, 220, 70));
+      setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
     }
     setLoading(false);
   };
@@ -106,10 +124,41 @@ export default function PlanPage() {
     );
   }
 
+  const planName = subscription?.plan_name || OBJECTIVE_LABELS[objective] || "Plan Personalizado";
+
   return (
     <div>
-      <h1 className="text-2xl font-black mb-2">Mi Plan</h1>
-      <p className="text-muted mb-6">Plan personalizado</p>
+      {/* Plan Header */}
+      <div className="glass-card rounded-2xl p-5 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 gradient-primary" />
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+            <Target className="h-6 w-6 text-black" />
+          </div>
+          <div>
+            <p className="text-xs text-primary font-bold tracking-wider">MI PLAN</p>
+            <h1 className="text-xl font-black">{planName}</h1>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-card-bg rounded-lg p-2 text-center">
+            <p className="text-lg font-black text-primary">{macros.calories.toLocaleString()}</p>
+            <p className="text-[9px] text-muted">KCAL/DIA</p>
+          </div>
+          <div className="bg-card-bg rounded-lg p-2 text-center">
+            <p className="text-lg font-black text-red-400">{macros.protein}g</p>
+            <p className="text-[9px] text-muted">PROTEINAS</p>
+          </div>
+          <div className="bg-card-bg rounded-lg p-2 text-center">
+            <p className="text-lg font-black text-yellow-400">{macros.carbs}g</p>
+            <p className="text-[9px] text-muted">CARBOS</p>
+          </div>
+          <div className="bg-card-bg rounded-lg p-2 text-center">
+            <p className="text-lg font-black text-blue-400">{macros.fats}g</p>
+            <p className="text-[9px] text-muted">GRASAS</p>
+          </div>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
@@ -187,22 +236,29 @@ export default function PlanPage() {
 
           <div className="space-y-3">
             {mealPlan.meals.map((meal) => (
-              <div key={meal.name} className="glass-card rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-bold text-primary">{meal.name}</h3>
-                  <span className="text-xs text-muted">{meal.time}</span>
+              <div key={meal.name} className="glass-card rounded-2xl overflow-hidden">
+                <div className="p-4 border-b border-card-border/50">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-bold">{meal.name}</h3>
+                    <span className="text-xs text-primary font-semibold">{meal.time}</span>
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <span className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded">{meal.approxCalories} kcal</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {meal.approxProtein}g</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {meal.approxCarbs}g</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-muted mb-2">
-                  ~{meal.approxCalories} kcal | P: {meal.approxProtein}g | C: {meal.approxCarbs}g | G: {meal.approxFats}g
-                </p>
-                <ul className="space-y-1">
-                  {meal.foods.map((food, i) => (
-                    <li key={i} className="text-sm text-muted flex items-start gap-2">
-                      <span className="text-primary mt-1">&#8226;</span>
-                      {food}
-                    </li>
-                  ))}
-                </ul>
+                <div className="p-4">
+                  <ul className="space-y-1.5">
+                    {meal.foods.map((food, i) => (
+                      <li key={i} className="text-sm flex items-start gap-2">
+                        <span className="text-primary mt-0.5">&#8226;</span>
+                        <span className="text-muted">{food}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             ))}
           </div>

@@ -34,6 +34,13 @@ export default function EncuestaDirectaPage() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [restrictions, setRestrictions] = useState<string[]>([]);
 
+  // Body measurements (optional)
+  const [chest, setChest] = useState("");
+  const [waist, setWaist] = useState("");
+  const [hips, setHips] = useState("");
+  const [arms, setArms] = useState("");
+  const [legs, setLegs] = useState("");
+
   // Photos
   const [photoFront, setPhotoFront] = useState<File | null>(null);
   const [photoSide, setPhotoSide] = useState<File | null>(null);
@@ -70,6 +77,18 @@ export default function EncuestaDirectaPage() {
       objective: "direct-client",
       tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
       protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
+    });
+
+    // Create initial progress entry as baseline
+    await supabase.from("progress_entries").insert({
+      user_id: userId,
+      weight: Number(weight),
+      chest: chest ? Number(chest) : null,
+      waist: waist ? Number(waist) : null,
+      hips: hips ? Number(hips) : null,
+      arms: arms ? Number(arms) : null,
+      legs: legs ? Number(legs) : null,
+      notes: "Registro inicial (encuesta)",
     });
 
     setStep(5);
@@ -168,21 +187,52 @@ export default function EncuestaDirectaPage() {
           </div>
         )}
 
-        {/* STEP 2: Weight + Height */}
+        {/* STEP 2: Weight + Height + Body Measurements */}
         {step === 2 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tus Medidas</h2>
-            <p className="text-muted mb-8">Para calcular tu plan de nutrición personalizado.</p>
+            <p className="text-muted mb-8">Para calcular tu plan de nutricion personalizado.</p>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Peso (kg)</label>
+                <label className="block text-sm font-medium mb-2">Peso (kg) *</label>
                 <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ej: 75" min={30} max={250} step={0.1}
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Altura (cm)</label>
+                <label className="block text-sm font-medium mb-2">Altura (cm) *</label>
                 <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="Ej: 175" min={100} max={250}
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Medidas corporales <span className="text-muted font-normal">(opcional)</span></label>
+                <p className="text-xs text-muted mb-3">Estas medidas sirven como base para medir tu progreso.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Pecho (cm)</label>
+                    <input type="number" value={chest} onChange={(e) => setChest(e.target.value)} placeholder="Ej: 100" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Cintura (cm)</label>
+                    <input type="number" value={waist} onChange={(e) => setWaist(e.target.value)} placeholder="Ej: 85" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Cadera (cm)</label>
+                    <input type="number" value={hips} onChange={(e) => setHips(e.target.value)} placeholder="Ej: 95" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Brazos (cm)</label>
+                    <input type="number" value={arms} onChange={(e) => setArms(e.target.value)} placeholder="Ej: 32" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Piernas (cm)</label>
+                    <input type="number" value={legs} onChange={(e) => setLegs(e.target.value)} placeholder="Ej: 55" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
               </div>
             </div>
             <button onClick={() => setStep(3)} disabled={!weight || !height}

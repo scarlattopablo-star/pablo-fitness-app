@@ -45,6 +45,11 @@ function ClienteDirectoForm() {
   const [height, setHeight] = useState("");
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [restrictions, setRestrictions] = useState<string[]>([]);
+  const [chest, setChest] = useState("");
+  const [waist, setWaist] = useState("");
+  const [hips, setHips] = useState("");
+  const [arms, setArms] = useState("");
+  const [legs, setLegs] = useState("");
 
   // Photos
   const [photoFront, setPhotoFront] = useState<File | null>(null);
@@ -105,7 +110,7 @@ function ClienteDirectoForm() {
 
     // Create subscription so client appears in admin and has an active plan
     const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1); // 1 year for direct clients
+    endDate.setFullYear(endDate.getFullYear() + 1);
     await supabase.from("subscriptions").insert({
       user_id: userId,
       duration: "1-ano",
@@ -114,6 +119,18 @@ function ClienteDirectoForm() {
       start_date: new Date().toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
       status: "active",
+    });
+
+    // Create initial progress entry as baseline
+    await supabase.from("progress_entries").insert({
+      user_id: userId,
+      weight: Number(weight),
+      chest: chest ? Number(chest) : null,
+      waist: waist ? Number(waist) : null,
+      hips: hips ? Number(hips) : null,
+      arms: arms ? Number(arms) : null,
+      legs: legs ? Number(legs) : null,
+      notes: "Registro inicial (encuesta)",
     });
 
     setStep(6);
@@ -269,21 +286,52 @@ function ClienteDirectoForm() {
           </div>
         )}
 
-        {/* STEP 3: Weight + Height */}
+        {/* STEP 3: Weight + Height + Body Measurements */}
         {step === 3 && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tus Medidas</h2>
-            <p className="text-muted mb-8">Para calcular tu plan de nutrición personalizado.</p>
+            <p className="text-muted mb-8">Para calcular tu plan de nutricion personalizado.</p>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Peso (kg)</label>
+                <label className="block text-sm font-medium mb-2">Peso (kg) *</label>
                 <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="Ej: 75" min={30} max={250} step={0.1}
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Altura (cm)</label>
+                <label className="block text-sm font-medium mb-2">Altura (cm) *</label>
                 <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="Ej: 175" min={100} max={250}
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Medidas corporales <span className="text-muted font-normal">(opcional)</span></label>
+                <p className="text-xs text-muted mb-3">Para medir tu progreso desde el dia 1.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Pecho (cm)</label>
+                    <input type="number" value={chest} onChange={(e) => setChest(e.target.value)} placeholder="Ej: 100" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Cintura (cm)</label>
+                    <input type="number" value={waist} onChange={(e) => setWaist(e.target.value)} placeholder="Ej: 85" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Cadera (cm)</label>
+                    <input type="number" value={hips} onChange={(e) => setHips(e.target.value)} placeholder="Ej: 95" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Brazos (cm)</label>
+                    <input type="number" value={arms} onChange={(e) => setArms(e.target.value)} placeholder="Ej: 32" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Piernas (cm)</label>
+                    <input type="number" value={legs} onChange={(e) => setLegs(e.target.value)} placeholder="Ej: 55" step={0.1}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
               </div>
             </div>
             <button onClick={() => setStep(4)} disabled={!weight || !height}
