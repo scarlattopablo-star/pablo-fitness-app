@@ -57,6 +57,7 @@ export default function ClienteDetailPage({
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -116,19 +117,31 @@ export default function ClienteDetailPage({
 
   const handleDelete = async () => {
     setDeleting(true);
+    setDeleteError("");
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return;
-
-    const res = await fetch(`/api/admin/delete-client?id=${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-
-    if (res.ok) {
-      window.location.href = "/admin/clientes";
-    } else {
+    if (!session?.access_token) {
+      setDeleteError("No hay sesion activa. Recarga la pagina e intenta de nuevo.");
       setDeleting(false);
-      setShowDeleteConfirm(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/delete-client?id=${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        window.location.href = "/admin/clientes";
+      } else {
+        setDeleteError(data.error || "Error al eliminar el cliente");
+        setDeleting(false);
+      }
+    } catch {
+      setDeleteError("Error de conexion");
+      setDeleting(false);
     }
   };
 
@@ -191,17 +204,20 @@ export default function ClienteDetailPage({
           {showDeleteConfirm && (
             <div className="mt-3 bg-danger/10 border border-danger/30 rounded-xl p-4">
               <p className="text-sm font-bold text-danger mb-2">¿Eliminar este cliente?</p>
-              <p className="text-xs text-muted mb-3">Se eliminará la cuenta, encuesta, suscripción y todos los datos. Esta acción no se puede deshacer.</p>
+              <p className="text-xs text-muted mb-3">Se eliminara la cuenta, encuesta, suscripcion y todos los datos. Esta accion no se puede deshacer.</p>
+              {deleteError && (
+                <p className="text-xs text-danger bg-danger/20 p-2 rounded-lg mb-3">{deleteError}</p>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={handleDelete}
                   disabled={deleting}
                   className="bg-danger text-white font-bold text-sm px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
                 >
-                  {deleting ? "Eliminando..." : "Sí, eliminar"}
+                  {deleting ? "Eliminando..." : "Si, eliminar"}
                 </button>
                 <button
-                  onClick={() => setShowDeleteConfirm(false)}
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteError(""); }}
                   className="text-sm text-muted hover:text-white px-4 py-2"
                 >
                   Cancelar
