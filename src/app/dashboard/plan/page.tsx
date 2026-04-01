@@ -184,19 +184,12 @@ export default function PlanPage() {
           <div className="space-y-3">
             {mealPlan.meals.map((meal) => (
               <div key={meal.name} className="glass-card rounded-2xl overflow-hidden">
-                <div className="p-4 border-b border-card-border/50">
-                  <div className="mb-1">
-                    <h3 className="font-bold">{meal.name}</h3>
-                  </div>
-                  <div className="flex gap-2 mt-2">
-                    <span className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded">{meal.approxCalories} kcal</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {meal.approxProtein}g</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {meal.approxCarbs}g</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
-                  </div>
-                </div>
                 <div className="p-4">
-                  <ul className="space-y-1.5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold">{meal.name}</h3>
+                    <span className="text-xs text-primary font-semibold">{meal.approxCalories} kcal</span>
+                  </div>
+                  <ul className="space-y-1.5 mb-3">
                     {meal.foods.map((food, i) => (
                       <li key={i} className="text-sm flex items-start gap-2">
                         <span className="text-primary mt-0.5">&#8226;</span>
@@ -204,6 +197,11 @@ export default function PlanPage() {
                       </li>
                     ))}
                   </ul>
+                  <div className="flex gap-2 pt-2 border-t border-card-border/30">
+                    <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {meal.approxProtein}g</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {meal.approxCarbs}g</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
+                  </div>
                 </div>
               </div>
             ))}
