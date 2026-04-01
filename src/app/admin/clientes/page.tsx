@@ -27,13 +27,26 @@ export default function ClientesPage() {
   }, [authLoading, user]);
 
   const loadClients = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setLoading(false); return; }
+
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("is_admin", false)
       .order("created_at", { ascending: false });
 
-    if (data) setClients(data);
+    if (data && data.length > 0) {
+      setClients(data);
+    } else {
+      await new Promise(r => setTimeout(r, 1000));
+      const { data: retry } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("is_admin", false)
+        .order("created_at", { ascending: false });
+      if (retry) setClients(retry);
+    }
     setLoading(false);
   };
 

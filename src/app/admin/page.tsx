@@ -34,6 +34,13 @@ export default function AdminDashboard() {
   }, [authLoading, user]);
 
   const loadClients = async () => {
+    // Wait for session to be ready
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setLoading(false);
+      return;
+    }
+
     const { data, count } = await supabase
       .from("profiles")
       .select("*", { count: "exact" })
@@ -41,8 +48,21 @@ export default function AdminDashboard() {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    if (data) setClients(data);
-    if (count !== null) setTotalClients(count);
+    if (data && data.length > 0) {
+      setClients(data);
+      if (count !== null) setTotalClients(count);
+    } else {
+      // Retry once after small delay (mobile auth can be slow)
+      await new Promise(r => setTimeout(r, 1000));
+      const { data: retry, count: retryCount } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact" })
+        .eq("is_admin", false)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (retry) setClients(retry);
+      if (retryCount !== null) setTotalClients(retryCount);
+    }
     setLoading(false);
   };
 
