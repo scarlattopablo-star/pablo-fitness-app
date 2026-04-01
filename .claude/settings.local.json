@@ -16,7 +16,8 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(ls -la .env*)",
-      "Bash(\"/c/Users/acer/Desktop/Admin Panel.url\":*)"
+      "Bash(\"/c/Users/acer/Desktop/Admin Panel.url\":*)",
+      "WebFetch(domain:pabloscarlattoentrenamientos.com)"
     ]
   }
 }

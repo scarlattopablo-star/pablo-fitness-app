@@ -4,11 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, Users, ClipboardList,
-  CreditCard, BookOpen, LogOut, Menu, X, Gift,
+  CreditCard, BookOpen, LogOut, Menu, X, Gift, Download, Smartphone, Share,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { PWAInstallBanner } from "@/components/pwa-install";
 
 const NAV_ITEMS = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -23,6 +22,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const { signOut } = useAuth();
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsIOS(/iPad|iPhone|iPod/.test(navigator.userAgent));
+    const standalone = window.matchMedia("(display-mode: standalone)").matches;
+    if (standalone) setIsInstalled(true);
+    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      (deferredPrompt as unknown as { prompt: () => Promise<void> }).prompt();
+      const { outcome } = await (deferredPrompt as unknown as { userChoice: Promise<{ outcome: string }> }).userChoice;
+      if (outcome === "accepted") setIsInstalled(true);
+      setDeferredPrompt(null);
+    } else if (isIOS) {
+      setShowIOSGuide(!showIOSGuide);
+    }
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -57,6 +81,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="p-4 border-t border-card-border space-y-1">
+          {!isInstalled && (
+            <button
+              onClick={handleInstallApp}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full gradient-primary text-black font-semibold transition-all hover:opacity-90"
+            >
+              <Download className="h-5 w-5" />
+              Descargar App
+            </button>
+          )}
+          {showIOSGuide && isIOS && (
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
+              <p className="font-bold text-primary">iPhone/iPad:</p>
+              <p>1. Toca Compartir (⬆) en Safari</p>
+              <p>2. Agregar a pantalla de inicio</p>
+              <p>3. Agregar</p>
+            </div>
+          )}
+          {isInstalled && (
+            <div className="flex items-center gap-3 px-4 py-3 text-sm text-primary font-medium">
+              <Smartphone className="h-5 w-5" /> App instalada
+            </div>
+          )}
           <Link
             href="/"
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-white hover:bg-white/5 transition-all"
@@ -110,7 +156,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1 md:ml-64 pt-14 md:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
-      <PWAInstallBanner />
     </div>
   );
 }

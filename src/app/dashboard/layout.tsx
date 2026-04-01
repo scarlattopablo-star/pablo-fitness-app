@@ -4,12 +4,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, ClipboardList, TrendingUp,
-  User, BookOpen, LogOut, Menu, X,
+  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
-import { PWAInstallBanner } from "@/components/pwa-install";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -24,6 +23,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const { profile, signOut, hasActiveSubscription } = useAuth();
+  const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ua = navigator.userAgent;
+    setIsIOS(/iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+    const standalone = window.matchMedia("(display-mode: standalone)").matches
+      || ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone);
+    if (standalone) setIsInstalled(true);
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      (deferredPrompt as unknown as { prompt: () => Promise<void> }).prompt();
+      const { outcome } = await (deferredPrompt as unknown as { userChoice: Promise<{ outcome: string }> }).userChoice;
+      if (outcome === "accepted") setIsInstalled(true);
+      setDeferredPrompt(null);
+    } else if (isIOS) {
+      setShowIOSGuide(!showIOSGuide);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -69,6 +99,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
           </nav>
           <div className="p-4 border-t border-card-border space-y-2">
+            {hasActiveSubscription && !isInstalled && (
+              <div>
+                <button
+                  onClick={handleInstallApp}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full gradient-primary text-black font-semibold transition-all hover:opacity-90"
+                >
+                  <Download className="h-5 w-5" />
+                  Descargar App
+                </button>
+                {showIOSGuide && isIOS && (
+                  <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
+                    <p className="font-bold text-primary flex items-center gap-1"><Share className="h-3 w-3" /> iPhone/iPad:</p>
+                    <p>1. Toca <strong className="text-white">Compartir</strong> (⬆)</p>
+                    <p>2. Toca <strong className="text-white">Agregar a pantalla de inicio</strong></p>
+                    <p>3. Toca <strong className="text-white">Agregar</strong></p>
+                  </div>
+                )}
+              </div>
+            )}
+            {isInstalled && (
+              <div className="flex items-center gap-3 px-4 py-3 text-sm text-primary font-medium">
+                <Smartphone className="h-5 w-5" />
+                App instalada
+              </div>
+            )}
             <a
               href="https://instagram.com/pabloscarlattoentrenamientos"
               target="_blank"
@@ -130,6 +185,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Link>
                 );
               })}
+              {hasActiveSubscription && !isInstalled && (
+                <button
+                  onClick={() => { handleInstallApp(); setMenuOpen(false); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full gradient-primary text-black font-semibold"
+                >
+                  <Download className="h-5 w-5" />
+                  Descargar App
+                </button>
+              )}
+              {showIOSGuide && isIOS && (
+                <div className="mx-4 p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
+                  <p className="font-bold text-primary">iPhone/iPad:</p>
+                  <p>1. Toca <strong className="text-white">Compartir</strong> (⬆) en Safari</p>
+                  <p>2. Toca <strong className="text-white">Agregar a pantalla de inicio</strong></p>
+                  <p>3. Toca <strong className="text-white">Agregar</strong></p>
+                </div>
+              )}
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-danger w-full"
@@ -145,8 +217,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 md:ml-64 pt-14 md:pt-0">
           <div className="p-4 sm:p-6 lg:p-8">{children}</div>
         </main>
-
-        {hasActiveSubscription && <PWAInstallBanner />}
       </div>
   );
 }
