@@ -172,18 +172,21 @@ function ClienteDirectoForm() {
             <Check className="h-8 w-8 text-black" />
           </div>
           <h1 className="text-2xl font-black mb-2">¡Registro Completo!</h1>
-          <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutrición.</p>
-          <p className="text-sm text-muted mb-6">Te notificaremos cuando esté listo. Mientras tanto, podés descargar la app.</p>
+          <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutricion.</p>
+          <p className="text-sm text-muted mb-6">Ingresa a tu plan para ver tus macros y descargar la app.</p>
           <Link
-            href="/compra-exitosa"
-            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4"
+            href="/dashboard"
+            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4 w-full text-center"
           >
-            Descargar App
+            Ir a Mi Plan
           </Link>
-          <br />
-          <Link href="/login" className="text-sm text-primary hover:underline">
-            Iniciar Sesión
-          </Link>
+          <div className="glass-card rounded-xl p-4 mt-4 text-left">
+            <p className="font-bold text-sm mb-2">Descarga la app en tu celular</p>
+            <div className="space-y-1 text-xs text-muted">
+              <p><span className="text-primary font-bold">iPhone:</span> Safari → Compartir (⬆) → Agregar a Inicio</p>
+              <p><span className="text-primary font-bold">Android:</span> Chrome → Menu (⋮) → Instalar app</p>
+            </div>
+          </div>
         </div>
       </main>
     );

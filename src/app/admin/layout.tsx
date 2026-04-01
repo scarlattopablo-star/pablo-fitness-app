@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { PWAInstallBanner } from "@/components/pwa-install";
 
 const NAV_ITEMS = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -109,6 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1 md:ml-64 pt-14 md:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
+      <PWAInstallBanner />
     </div>
   );
 }

@@ -15,7 +15,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(ls -la .env*)"
+      "Bash(ls -la .env*)",
+      "Bash(\"/c/Users/acer/Desktop/Admin Panel.url\":*)"
     ]
   }
 }

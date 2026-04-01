@@ -115,21 +115,21 @@ export default function EncuestaDirectaPage() {
             <Check className="h-8 w-8 text-black" />
           </div>
           <h1 className="text-2xl font-black mb-2">¡Encuesta Completa!</h1>
-          <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutrición.</p>
-          <p className="text-sm text-muted mb-6">Te notificaremos cuando esté listo. Mientras tanto, podés descargar la app.</p>
-          <a
-            href="/compra-exitosa"
-            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4 w-full text-center"
-          >
-            Descargar App
-          </a>
-          <br />
+          <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutricion.</p>
+          <p className="text-sm text-muted mb-6">Ingresa a tu plan para ver tus macros y descargar la app.</p>
           <a
             href="/dashboard"
-            className="inline-block border border-primary text-primary font-bold px-8 py-3 rounded-xl hover:bg-primary/5 mt-3 w-full text-center"
+            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4 w-full text-center"
           >
             Ir a Mi Plan
           </a>
+          <div className="glass-card rounded-xl p-4 text-left mt-3">
+            <p className="font-bold text-sm mb-2">Descarga la app en tu celular</p>
+            <div className="space-y-1 text-xs text-muted">
+              <p><span className="text-primary font-bold">iPhone:</span> Safari → Compartir (⬆) → Agregar a Inicio</p>
+              <p><span className="text-primary font-bold">Android:</span> Chrome → Menu (⋮) → Instalar app</p>
+            </div>
+          </div>
         </div>
       </main>
     );

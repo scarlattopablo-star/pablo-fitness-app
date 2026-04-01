@@ -123,25 +123,27 @@ function AccesoGratisForm() {
             <Check className="h-8 w-8 text-black" />
           </div>
           <h1 className="text-2xl font-black mb-2">¡Acceso Activado!</h1>
-          <p className="text-muted mb-4">Tu plan {planName} está listo.</p>
-          <p className="text-sm text-muted mb-6">Completá la encuesta para que tu entrenador pueda armar tu plan personalizado.</p>
+          <p className="text-muted mb-4">Tu plan {planName} esta listo.</p>
+          <p className="text-sm text-muted mb-6">Completa la encuesta para que tu entrenador pueda armar tu plan personalizado.</p>
           <Link
             href="/encuesta-directa"
             className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 w-full text-center mb-4"
           >
             Completar Encuesta
           </Link>
+          <div className="glass-card rounded-xl p-4 text-left mb-4">
+            <p className="font-bold text-sm mb-2">Descarga la app en tu celular</p>
+            <p className="text-xs text-muted mb-2">Una vez dentro de tu plan podras instalar la app:</p>
+            <div className="space-y-1 text-xs text-muted">
+              <p><span className="text-primary font-bold">iPhone:</span> Safari → Compartir (⬆) → Agregar a Inicio</p>
+              <p><span className="text-primary font-bold">Android:</span> Chrome → Menu (⋮) → Instalar app</p>
+            </div>
+          </div>
           <Link
-            href="/compra-exitosa"
-            className="inline-block border border-primary text-primary font-bold px-8 py-3 rounded-xl hover:bg-primary/5 w-full text-center mb-4"
+            href="/dashboard"
+            className="block text-sm text-primary hover:underline"
           >
-            Descargar App
-          </Link>
-          <Link
-            href="/login"
-            className="block text-sm text-muted hover:text-primary"
-          >
-            Iniciar Sesión
+            Ir a Mi Plan
           </Link>
         </div>
       </main>
