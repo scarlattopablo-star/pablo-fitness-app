@@ -13,26 +13,15 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "ID requerido" }, { status: 400 });
   }
 
-  // Client with user token to verify admin
-  const userClient = createClient(
+  const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 
-  const { data: isAdmin } = await userClient.rpc("is_admin");
-  if (!isAdmin) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-  }
+  // Call the SECURITY DEFINER function that checks is_admin() and deletes from auth.users
+  const { error } = await supabase.rpc("delete_user", { user_id: clientId });
 
-  // Admin client with service role to delete auth user
-  const adminClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-
-  const { error } = await adminClient.auth.admin.deleteUser(clientId);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
