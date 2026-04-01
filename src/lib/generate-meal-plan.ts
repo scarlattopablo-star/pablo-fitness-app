@@ -93,20 +93,20 @@ export function generateMealPlan(
   };
 }
 
-function generateFoods(protein: number, carbs: number, fats: number, meal: string): string[] {
-  // Calculate approximate food portions based on macros
-  // Protein sources: chicken (31g/100g), eggs (13g/2), fish (26g/100g), claras (11g/100g)
-  // Carb sources: rice (28g/100g), sweet potato (20g/100g), oats (66g/100g), fruit (~15g)
-  // Fat sources: olive oil (14g/tbsp), nuts (14g/20g), avocado (15g/100g)
+// Round to nearest 5g for clean numbers
+function round5(n: number): number {
+  return Math.round(n / 5) * 5 || 5;
+}
 
-  const proteinGrams = Math.round(protein / 0.31); // grams of chicken equivalent
-  const carbGrams = Math.round(carbs / 0.28); // grams of rice equivalent
+function generateFoods(protein: number, carbs: number, fats: number, meal: string): string[] {
+  const proteinGrams = round5(protein / 0.31);
+  const carbGrams = round5(carbs / 0.28);
 
   switch (meal) {
     case "desayuno":
       return [
         `${Math.max(1, Math.round(protein / 6.5))} huevos revueltos`,
-        `${Math.round(carbs / 0.66 * 10) / 10}g avena`,
+        `${round5(carbs / 0.66)}g avena`,
         "1 fruta",
         "1 café",
         fats > 8 ? "1 cucharada aceite de oliva o mantequilla de maní" : "",
@@ -115,9 +115,9 @@ function generateFoods(protein: number, carbs: number, fats: number, meal: strin
     case "snack1":
       return [
         "Yogurt descremado",
-        `${Math.round(carbs / 0.66 * 10) / 10}g avena o granola`,
-        protein > 12 ? `${Math.round(protein / 0.11)}g claras de huevo` : "1 fruta",
-        fats > 5 ? `${Math.round(fats / 0.7)}g nueces o almendras` : "",
+        `${round5(carbs / 0.66)}g avena o granola`,
+        protein > 12 ? `${round5(protein / 0.11)}g claras de huevo` : "1 fruta",
+        fats > 5 ? `${round5(fats / 0.7)}g nueces o almendras` : "",
       ].filter(Boolean);
 
     case "almuerzo":
