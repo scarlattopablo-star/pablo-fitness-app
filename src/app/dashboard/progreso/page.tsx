@@ -8,6 +8,8 @@ import {
 import { uploadProgressPhoto } from "@/lib/upload-photo";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { calculateMacros } from "@/lib/harris-benedict";
+import type { Sex, ActivityLevel } from "@/types";
 
 interface ProgressEntry {
   id: string;
@@ -47,6 +49,7 @@ export default function ProgresoPage() {
   const [photoBack, setPhotoBack] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [planUpdated, setPlanUpdated] = useState(false);
 
   useEffect(() => {
     if (user) loadData();
@@ -110,13 +113,49 @@ export default function ProgresoPage() {
         notes: notes || null,
       });
 
+      // Recalculate macros if weight changed
+      if (weight) {
+        const { data: survey } = await supabase
+          .from("surveys")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (survey) {
+          const newMacros = calculateMacros(
+            survey.sex as Sex,
+            Number(weight),
+            survey.height,
+            survey.age,
+            survey.activity_level as ActivityLevel,
+            survey.objective || "quema-grasa"
+          );
+
+          await supabase.from("surveys")
+            .update({
+              weight: Number(weight),
+              tmb: newMacros.tmb,
+              tdee: newMacros.tdee,
+              target_calories: newMacros.targetCalories,
+              protein: newMacros.protein,
+              carbs: newMacros.carbs,
+              fats: newMacros.fats,
+            })
+            .eq("id", survey.id);
+
+          setPlanUpdated(true);
+        }
+      }
+
       setUploadSuccess(true);
       setTimeout(() => {
         setShowForm(false);
         setUploadSuccess(false);
         setPhotoFront(null); setPhotoSide(null); setPhotoBack(null);
         setWeight(""); setChest(""); setWaist(""); setHips(""); setArms(""); setLegs(""); setNotes("");
-        loadData(); // Reload real data
+        loadData();
       }, 1500);
     } catch (err) {
       console.error("Error saving progress:", err);
@@ -147,6 +186,22 @@ export default function ProgresoPage() {
           <Plus className="h-4 w-4" /> Registrar
         </button>
       </div>
+
+      {/* Plan Updated Notification */}
+      {planUpdated && (
+        <div className="rounded-2xl p-4 mb-6 flex items-center gap-3 border border-primary/25 bg-primary/5">
+          <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <Check className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-primary">Tu plan fue actualizado</p>
+            <p className="text-xs text-muted">Tu plan de nutricion y entrenamiento se actualizo con tus nuevos datos.</p>
+          </div>
+          <button onClick={() => setPlanUpdated(false)} className="text-muted hover:text-white shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

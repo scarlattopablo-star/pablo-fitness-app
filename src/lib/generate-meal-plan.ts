@@ -1,6 +1,6 @@
 export interface MealPlanMeal {
   name: string;
-  time: string;
+  time?: string;
   foods: string[];
   approxCalories: number;
   approxProtein: number;
@@ -12,74 +12,61 @@ export function generateMealPlan(
   targetCalories: number,
   protein: number,
   carbs: number,
-  fats: number
+  fats: number,
+  wakeHour: number = 7,
+  sleepHour: number = 23
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
-  // Distribute macros across 6 meals
-  // Meal distribution: 20%, 10%, 25%, 10%, 25%, 10%
-  const dist = [0.20, 0.10, 0.25, 0.10, 0.25, 0.10];
+  // Calculate number of meals based on wake/sleep hours (every 3 hours)
+  const awakeHours = sleepHour > wakeHour ? sleepHour - wakeHour : (24 - wakeHour) + sleepHour;
+  const numMeals = Math.max(3, Math.min(7, Math.floor(awakeHours / 3) + 1));
+
+  // Distribute macros dynamically based on number of meals
+  // First and main meals get more, snacks get less
+  const dist: number[] = [];
+  for (let i = 0; i < numMeals; i++) {
+    if (i === 0) dist.push(0.22); // desayuno
+    else if (i === Math.floor(numMeals / 2)) dist.push(0.25); // almuerzo
+    else if (i === numMeals - 2) dist.push(0.22); // cena
+    else dist.push(0.10); // snacks
+  }
+  // Normalize to 100%
+  const total = dist.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < dist.length; i++) dist[i] = dist[i] / total;
 
   const proteinPerMeal = dist.map(d => Math.round(protein * d));
   const carbsPerMeal = dist.map(d => Math.round(carbs * d));
   const fatsPerMeal = dist.map(d => Math.round(fats * d));
   const calPerMeal = dist.map(d => Math.round(targetCalories * d));
 
-  // Generate food suggestions based on macro targets per meal
-  const meals: MealPlanMeal[] = [
-    {
-      name: "DESAYUNO",
-      time: "07:00",
-      foods: generateFoods(proteinPerMeal[0], carbsPerMeal[0], fatsPerMeal[0], "desayuno"),
-      approxCalories: calPerMeal[0],
-      approxProtein: proteinPerMeal[0],
-      approxCarbs: carbsPerMeal[0],
-      approxFats: fatsPerMeal[0],
-    },
-    {
-      name: "COMIDA 2",
-      time: "10:00",
-      foods: generateFoods(proteinPerMeal[1], carbsPerMeal[1], fatsPerMeal[1], "snack1"),
-      approxCalories: calPerMeal[1],
-      approxProtein: proteinPerMeal[1],
-      approxCarbs: carbsPerMeal[1],
-      approxFats: fatsPerMeal[1],
-    },
-    {
-      name: "COMIDA 3",
-      time: "13:00",
-      foods: generateFoods(proteinPerMeal[2], carbsPerMeal[2], fatsPerMeal[2], "almuerzo"),
-      approxCalories: calPerMeal[2],
-      approxProtein: proteinPerMeal[2],
-      approxCarbs: carbsPerMeal[2],
-      approxFats: fatsPerMeal[2],
-    },
-    {
-      name: "COMIDA 4",
-      time: "16:00",
-      foods: generateFoods(proteinPerMeal[3], carbsPerMeal[3], fatsPerMeal[3], "snack2"),
-      approxCalories: calPerMeal[3],
-      approxProtein: proteinPerMeal[3],
-      approxCarbs: carbsPerMeal[3],
-      approxFats: fatsPerMeal[3],
-    },
-    {
-      name: "COMIDA 5",
-      time: "19:00",
-      foods: generateFoods(proteinPerMeal[4], carbsPerMeal[4], fatsPerMeal[4], "cena"),
-      approxCalories: calPerMeal[4],
-      approxProtein: proteinPerMeal[4],
-      approxCarbs: carbsPerMeal[4],
-      approxFats: fatsPerMeal[4],
-    },
-    {
-      name: "COMIDA 6",
-      time: "21:00",
-      foods: generateFoods(proteinPerMeal[5], carbsPerMeal[5], fatsPerMeal[5], "snack3"),
-      approxCalories: calPerMeal[5],
-      approxProtein: proteinPerMeal[5],
-      approxCarbs: carbsPerMeal[5],
-      approxFats: fatsPerMeal[5],
-    },
-  ];
+  // Meal type mapping based on position
+  const getMealType = (i: number, total: number): string => {
+    if (i === 0) return "desayuno";
+    if (i === total - 1) return "snack3";
+    if (i === Math.floor(total / 2)) return "almuerzo";
+    if (i === total - 2) return "cena";
+    if (i === 1) return "snack1";
+    return "snack2";
+  };
+
+  const getMealName = (i: number, total: number): string => {
+    if (i === 0) return "DESAYUNO";
+    if (total <= 4) return `COMIDA ${i + 1}`;
+    if (i === Math.floor(total / 2)) return "ALMUERZO";
+    if (i === total - 2) return "CENA";
+    return `COMIDA ${i + 1}`;
+  };
+
+  const meals: MealPlanMeal[] = [];
+  for (let i = 0; i < numMeals; i++) {
+    meals.push({
+      name: getMealName(i, numMeals),
+      foods: generateFoods(proteinPerMeal[i], carbsPerMeal[i], fatsPerMeal[i], getMealType(i, numMeals)),
+      approxCalories: calPerMeal[i],
+      approxProtein: proteinPerMeal[i],
+      approxCarbs: carbsPerMeal[i],
+      approxFats: fatsPerMeal[i],
+    });
+  }
 
   return {
     meals,

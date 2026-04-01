@@ -34,6 +34,11 @@ export default function EncuestaDirectaPage() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [restrictions, setRestrictions] = useState<string[]>([]);
 
+  // Training & schedule
+  const [trainingDays, setTrainingDays] = useState("5");
+  const [wakeHour, setWakeHour] = useState("7");
+  const [sleepHour, setSleepHour] = useState("23");
+
   // Body measurements (optional)
   const [chest, setChest] = useState("");
   const [waist, setWaist] = useState("");
@@ -77,6 +82,9 @@ export default function EncuestaDirectaPage() {
       objective: "direct-client",
       tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
       protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
+      training_days: Number(trainingDays),
+      wake_hour: Number(wakeHour),
+      sleep_hour: Number(sleepHour),
     });
 
     // Create initial progress entry as baseline
@@ -258,6 +266,37 @@ export default function EncuestaDirectaPage() {
                       <p className="text-sm text-muted">{ACTIVITY_LABELS[level].desc}</p>
                     </button>
                   ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-3">Dias de entrenamiento por semana</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["3", "4", "5", "6"].map((d) => (
+                    <button key={d} onClick={() => setTrainingDays(d)}
+                      className={`p-3 rounded-xl border text-center font-bold transition-all ${trainingDays === d ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"}`}>
+                      {d} dias
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-3">Tu horario</label>
+                <p className="text-xs text-muted mb-3">Para calcular cuantas comidas necesitas (cada 3 horas).</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Me despierto a las</label>
+                    <select value={wakeHour} onChange={(e) => setWakeHour(e.target.value)}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+                      {[5,6,7,8,9,10].map(h => <option key={h} value={h}>{h}:00</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Me duermo a las</label>
+                    <select value={sleepHour} onChange={(e) => setSleepHour(e.target.value)}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+                      {[20,21,22,23,0,1].map(h => <option key={h} value={h}>{h}:00</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div>

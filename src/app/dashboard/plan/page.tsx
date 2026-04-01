@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Flame } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
+import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 
@@ -21,69 +22,13 @@ const OBJECTIVE_LABELS: Record<string, string> = {
   "direct-client": "Plan Personalizado",
 };
 
-// Default training plan
-const TRAINING_DAYS = [
-  {
-    day: "Día 1 - Pecho y Tríceps",
-    exercises: [
-      { id: "press-banca-plano", name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-inclinado", name: "Press Inclinado Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "aperturas-inclinadas", name: "Aperturas Inclinadas", sets: 4, reps: "12", rest: "60s" },
-      { id: "extension-triceps-polea", name: "Extensión Tríceps Polea", sets: 4, reps: "12", rest: "60s" },
-      { id: "fondos-triceps", name: "Fondos de Tríceps", sets: 3, reps: "15", rest: "60s" },
-    ],
-    instructions: "Descanso entre series: como indicado. Calentar 5 min en cinta.",
-  },
-  {
-    day: "Día 2 - Espalda y Bíceps",
-    exercises: [
-      { id: "jalon-polea-alta", name: "Jalón Polea Alta", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-mancuerna", name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-biceps-barra", name: "Curl Bíceps Barra", sets: 4, reps: "10", rest: "60s" },
-      { id: "curl-martillo", name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
-    ],
-    instructions: "Trabajar con control en la fase excéntrica (bajada lenta).",
-  },
-  {
-    day: "Día 3 - Piernas",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "120s" },
-      { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "45s", rest: "30s" },
-    ],
-    instructions: "En sentadilla: bajar hasta paralelo o más abajo.",
-  },
-  {
-    day: "Día 4 - Hombros y Abdomen",
-    exercises: [
-      { id: "press-hombros", name: "Press Hombros Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 4, reps: "15", rest: "60s" },
-      { id: "crunch-polea", name: "Crunch en Polea", sets: 4, reps: "15", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "60s", rest: "30s" },
-    ],
-    instructions: "Elevaciones laterales con peso controlado, no usar impulso.",
-  },
-  {
-    day: "Día 5 - Circuito Full Body + Cardio",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla", sets: 3, reps: "15", rest: "30s" },
-      { id: "press-banca-plano", name: "Press Banca", sets: 3, reps: "12", rest: "30s" },
-      { id: "jalon-polea-alta", name: "Jalón Polea", sets: 3, reps: "12", rest: "30s" },
-      { id: "press-hombros", name: "Press Hombros", sets: 3, reps: "12", rest: "30s" },
-      { id: "hiit-cinta", name: "HIIT Cinta", sets: 1, reps: "15 min", rest: "-" },
-    ],
-    instructions: "Circuito sin descanso entre ejercicios. 90s entre vueltas. 3 vueltas.",
-  },
-];
 
 export default function PlanPage() {
   const { user, subscription } = useAuth();
   const [tab, setTab] = useState<"entrenamiento" | "nutricion">("entrenamiento");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
+  const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [objective, setObjective] = useState("");
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
@@ -97,18 +42,22 @@ export default function PlanPage() {
 
     const { data } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective")
+      .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
 
     if (data && data.target_calories) {
-      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats));
+      const wakeH = data.wake_hour || 7;
+      const sleepH = data.sleep_hour || 23;
+      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, wakeH, sleepH));
+      setTrainingPlan(generateTrainingPlan(data.training_days || 5));
       setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
       setObjective(data.objective || "");
     } else {
       setMealPlan(generateMealPlan(2100, 150, 220, 70));
+      setTrainingPlan(generateTrainingPlan(5));
       setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
     }
     setLoading(false);
@@ -183,7 +132,7 @@ export default function PlanPage() {
       {/* TRAINING */}
       {tab === "entrenamiento" && (
         <div className="space-y-4">
-          {TRAINING_DAYS.map((day) => (
+          {trainingPlan.map((day) => (
             <div key={day.day} className="glass-card rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-card-border">
                 <h3 className="font-bold">{day.day}</h3>
@@ -238,9 +187,8 @@ export default function PlanPage() {
             {mealPlan.meals.map((meal) => (
               <div key={meal.name} className="glass-card rounded-2xl overflow-hidden">
                 <div className="p-4 border-b border-card-border/50">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="mb-1">
                     <h3 className="font-bold">{meal.name}</h3>
-                    <span className="text-xs text-primary font-semibold">{meal.time}</span>
                   </div>
                   <div className="flex gap-2 mt-2">
                     <span className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded">{meal.approxCalories} kcal</span>
