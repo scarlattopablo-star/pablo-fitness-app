@@ -9,30 +9,35 @@ export async function GET(request: NextRequest) {
 
   const token = authHeader.slice(7);
 
-  // Crear cliente autenticado con el token del usuario
-  const supabase = createClient(
+  // Verify the user token is valid
+  const authClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   );
 
-  // Verificar token valido
-  const { data: { user } } = await supabase.auth.getUser(token);
+  const { data: { user } } = await authClient.auth.getUser(token);
   if (!user) {
     return NextResponse.json({ error: "Token invalido" }, { status: 401 });
   }
 
-  // Verificar admin usando la funcion SECURITY DEFINER (bypasea RLS)
-  const { data: isAdmin } = await supabase.rpc("is_admin");
+  // Verify admin using RPC
+  const { data: isAdmin } = await authClient.rpc("is_admin");
   if (!isAdmin) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  // Obtener clientes
+  // Use service role key to bypass RLS completely
+  const adminClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+
   const limit = Number(request.nextUrl.searchParams.get("limit") || "100");
   const clientId = request.nextUrl.searchParams.get("id");
 
-  let query = supabase
+  let query = adminClient
     .from("profiles")
     .select("*", { count: "exact" })
     .eq("is_admin", false)

@@ -34,44 +34,25 @@ export default function AdminDashboard() {
   }, [authLoading, user]);
 
   const loadClients = async () => {
-    // Wait for session to be ready
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      setLoading(false);
-      return;
-    }
+    if (!session?.access_token) { setLoading(false); return; }
 
-    const { data, count } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact" })
-      .eq("is_admin", false)
-      .order("created_at", { ascending: false })
-      .limit(5);
-
-    if (data && data.length > 0) {
-      setClients(data);
-      if (count !== null) setTotalClients(count);
-    } else {
-      // Retry once after small delay (mobile auth can be slow)
-      await new Promise(r => setTimeout(r, 1000));
-      const { data: retry, count: retryCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact" })
-        .eq("is_admin", false)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      if (retry) setClients(retry);
-      if (retryCount !== null) setTotalClients(retryCount);
-    }
+    try {
+      const res = await fetch("/api/admin/clients?limit=5", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.clients) setClients(data.clients);
+      if (data.total !== undefined) setTotalClients(data.total);
+    } catch {}
     setLoading(false);
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-black mb-2">Panel de Administración</h1>
+      <h1 className="text-2xl font-black mb-2">Panel de Administracion</h1>
       <p className="text-muted mb-8">Bienvenido, Pablo</p>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="glass-card rounded-2xl p-5">
           <Users className="h-5 w-5 text-primary mb-2" />
@@ -95,13 +76,10 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Recent Clients */}
       <div className="glass-card rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-bold">Clientes Recientes</h2>
-          <Link href="/admin/clientes" className="text-sm text-primary hover:underline">
-            Ver todos
-          </Link>
+          <Link href="/admin/clientes" className="text-sm text-primary hover:underline">Ver todos</Link>
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-10">
@@ -110,17 +88,13 @@ export default function AdminDashboard() {
         ) : clients.length === 0 ? (
           <div className="text-center py-10">
             <Users className="h-8 w-8 text-muted mx-auto mb-2" />
-            <p className="text-muted text-sm">No hay clientes todavía</p>
-            <p className="text-xs text-muted mt-1">Aparecerán acá cuando se registren</p>
+            <p className="text-muted text-sm">No hay clientes todavia</p>
           </div>
         ) : (
           <div className="space-y-3">
             {clients.map((client) => (
-              <Link
-                key={client.id}
-                href={`/admin/clientes/${client.id}`}
-                className="flex items-center justify-between py-2 hover:bg-white/[0.02] rounded-lg px-2 -mx-2 transition-colors"
-              >
+              <Link key={client.id} href={`/admin/clientes/${client.id}`}
+                className="flex items-center justify-between py-2 hover:bg-white/[0.02] rounded-lg px-2 -mx-2 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <span className="text-sm font-bold text-primary">

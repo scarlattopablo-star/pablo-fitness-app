@@ -28,25 +28,15 @@ export default function ClientesPage() {
 
   const loadClients = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setLoading(false); return; }
+    if (!session?.access_token) { setLoading(false); return; }
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("is_admin", false)
-      .order("created_at", { ascending: false });
-
-    if (data && data.length > 0) {
-      setClients(data);
-    } else {
-      await new Promise(r => setTimeout(r, 1000));
-      const { data: retry } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("is_admin", false)
-        .order("created_at", { ascending: false });
-      if (retry) setClients(retry);
-    }
+    try {
+      const res = await fetch("/api/admin/clients", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (data.clients) setClients(data.clients);
+    } catch {}
     setLoading(false);
   };
 
@@ -63,13 +53,9 @@ export default function ClientesPage() {
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar cliente..."
-            className="w-full bg-card-bg border border-card-border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-primary"
-          />
+            className="w-full bg-card-bg border border-card-border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-primary" />
         </div>
       </div>
 
@@ -80,8 +66,8 @@ export default function ClientesPage() {
       ) : filtered.length === 0 ? (
         <div className="glass-card rounded-2xl p-10 text-center">
           <Users className="h-10 w-10 text-muted mx-auto mb-3" />
-          <p className="font-bold">No hay clientes todavía</p>
-          <p className="text-sm text-muted mt-1">Los clientes aparecerán acá cuando se registren.</p>
+          <p className="font-bold">No hay clientes todavia</p>
+          <p className="text-sm text-muted mt-1">Los clientes apareceran aca cuando se registren.</p>
         </div>
       ) : (
         <div className="glass-card rounded-2xl overflow-hidden">
@@ -90,7 +76,7 @@ export default function ClientesPage() {
               <thead>
                 <tr className="border-b border-card-border text-muted">
                   <th className="text-left p-4 font-medium">Cliente</th>
-                  <th className="text-left p-4 font-medium hidden sm:table-cell">Teléfono</th>
+                  <th className="text-left p-4 font-medium hidden sm:table-cell">Telefono</th>
                   <th className="text-left p-4 font-medium hidden md:table-cell">Registro</th>
                   <th className="text-center p-4 font-medium w-10"></th>
                 </tr>
@@ -116,10 +102,7 @@ export default function ClientesPage() {
                       {new Date(client.created_at).toLocaleDateString("es")}
                     </td>
                     <td className="p-4 text-center">
-                      <Link
-                        href={`/admin/clientes/${client.id}`}
-                        className="text-muted hover:text-primary transition-colors"
-                      >
+                      <Link href={`/admin/clientes/${client.id}`} className="text-muted hover:text-primary transition-colors">
                         <Eye className="h-4 w-4" />
                       </Link>
                     </td>
