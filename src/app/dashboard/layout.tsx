@@ -50,7 +50,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const { outcome } = await (deferredPrompt as unknown as { userChoice: Promise<{ outcome: string }> }).userChoice;
       if (outcome === "accepted") setIsInstalled(true);
       setDeferredPrompt(null);
-    } else if (isIOS) {
+    } else {
+      // No native prompt available (iOS or unsupported browser) — show manual instructions
       setShowIOSGuide(!showIOSGuide);
     }
   };
@@ -108,7 +109,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Download className="h-5 w-5" />
                   Descargar App
                 </button>
-                {showIOSGuide && isIOS && (
+                {showIOSGuide && (
                   <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
                     <p className="font-bold text-primary flex items-center gap-1"><Share className="h-3 w-3" /> iPhone/iPad:</p>
                     <p>1. Toca <strong className="text-white">Compartir</strong> (⬆)</p>
@@ -194,7 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   Descargar App
                 </button>
               )}
-              {showIOSGuide && isIOS && (
+              {showIOSGuide && (
                 <div className="mx-4 p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
                   <p className="font-bold text-primary">iPhone/iPad:</p>
                   <p>1. Toca <strong className="text-white">Compartir</strong> (⬆) en Safari</p>

@@ -86,14 +86,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm w-full gradient-primary text-black font-semibold transition-all hover:opacity-90"
           >
             <Download className="h-5 w-5" />
-            {isInstalled ? "App Instalada" : "Descargar App"}
+            Descargar App
           </button>
-          {showIOSGuide && isIOS && (
-            <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs text-muted space-y-1">
-              <p className="font-bold text-primary">iPhone/iPad:</p>
-              <p>1. Toca Compartir (⬆) en Safari</p>
-              <p>2. Agregar a pantalla de inicio</p>
-              <p>3. Agregar</p>
+          {showIOSGuide && (
+            <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl text-xs space-y-2">
+              <p className="font-bold text-primary text-sm">Instalar en iPhone/iPad</p>
+              <div className="space-y-1.5 text-muted">
+                <p>1. Toca el icono <strong className="text-white">Compartir</strong> <span className="text-primary text-lg">⬆</span> en la barra de Safari (abajo)</p>
+                <p>2. Desplaza y toca <strong className="text-white">&quot;Agregar a pantalla de inicio&quot;</strong></p>
+                <p>3. Toca <strong className="text-white">&quot;Agregar&quot;</strong> arriba a la derecha</p>
+              </div>
+              <p className="text-primary text-[10px]">La app aparecera en tu pantalla de inicio como cualquier otra app.</p>
             </div>
           )}
           <Link
