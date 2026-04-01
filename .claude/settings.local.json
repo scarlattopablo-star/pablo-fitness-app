@@ -17,7 +17,10 @@
       "Bash(git push:*)",
       "Bash(ls -la .env*)",
       "Bash(\"/c/Users/acer/Desktop/Admin Panel.url\":*)",
-      "WebFetch(domain:pabloscarlattoentrenamientos.com)"
+      "WebFetch(domain:pabloscarlattoentrenamientos.com)",
+      "WebSearch",
+      "Bash(npx @nickvdh/pwa-to-apk --version)",
+      "WebFetch(domain:fdc.nal.usda.gov)"
     ]
   }
 }

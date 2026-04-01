@@ -49,9 +49,7 @@ export default function PlanPage() {
       .single();
 
     if (data && data.target_calories) {
-      const wakeH = data.wake_hour || 7;
-      const sleepH = data.sleep_hour || 23;
-      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, wakeH, sleepH));
+      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats));
       setTrainingPlan(generateTrainingPlan(data.training_days || 5));
       setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
       setObjective(data.objective || "");
