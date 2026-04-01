@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft, User, ClipboardList, TrendingUp,
   Calendar, Target, Scale, Mail, Phone, Edit,
-  Dumbbell, UtensilsCrossed, Camera, Loader2,
+  Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -55,6 +55,8 @@ export default function ClienteDetailPage({
   const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
   const [hasNutritionPlan, setHasNutritionPlan] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -112,6 +114,24 @@ export default function ClienteDetailPage({
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    const res = await fetch(`/api/admin/delete-client?id=${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (res.ok) {
+      window.location.href = "/admin/clientes";
+    } else {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -153,12 +173,42 @@ export default function ClienteDetailPage({
           <p className="text-xs text-muted mt-1">
             Registrado: {new Date(client.created_at).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" })}
           </p>
-          <Link
-            href={`/admin/clientes/${id}/plan-editor`}
-            className="mt-3 inline-flex items-center gap-2 gradient-primary text-black font-semibold text-sm px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
-          >
-            <Edit className="h-4 w-4" /> Crear/Editar Plan Personalizado
-          </Link>
+          <div className="flex gap-2 mt-3">
+            <Link
+              href={`/admin/clientes/${id}/plan-editor`}
+              className="inline-flex items-center gap-2 gradient-primary text-black font-semibold text-sm px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <Edit className="h-4 w-4" /> Crear/Editar Plan
+            </Link>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="inline-flex items-center gap-2 bg-danger/10 text-danger font-semibold text-sm px-4 py-2 rounded-xl hover:bg-danger/20 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" /> Eliminar
+            </button>
+          </div>
+
+          {showDeleteConfirm && (
+            <div className="mt-3 bg-danger/10 border border-danger/30 rounded-xl p-4">
+              <p className="text-sm font-bold text-danger mb-2">¿Eliminar este cliente?</p>
+              <p className="text-xs text-muted mb-3">Se eliminará la cuenta, encuesta, suscripción y todos los datos. Esta acción no se puede deshacer.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="bg-danger text-white font-bold text-sm px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50"
+                >
+                  {deleting ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="text-sm text-muted hover:text-white px-4 py-2"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
