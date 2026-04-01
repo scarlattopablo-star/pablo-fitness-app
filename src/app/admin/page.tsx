@@ -34,12 +34,21 @@ export default function AdminDashboard() {
   }, [authLoading, user]);
 
   const loadClients = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) { setLoading(false); return; }
+    // Try multiple times to get the session token (mobile can be slow)
+    let token = "";
+    for (let i = 0; i < 3; i++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        token = session.access_token;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    if (!token) { setLoading(false); return; }
 
     try {
       const res = await fetch("/api/admin/clients?limit=5", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (data.clients) setClients(data.clients);
