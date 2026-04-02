@@ -86,6 +86,7 @@ export default function PlanPage() {
   const loadMacros = async () => {
     if (!user) return;
 
+    // Load survey data for macros display
     const { data } = await supabase
       .from("surveys")
       .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour")
@@ -95,15 +96,52 @@ export default function PlanPage() {
       .single();
 
     if (data && data.target_calories) {
-      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, data.wake_hour || 7, data.sleep_hour || 23));
-      setTrainingPlan(generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa"));
       setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
       setObjective(data.objective || "");
     } else {
-      setMealPlan(generateMealPlan(2100, 150, 220, 70));
-      setTrainingPlan(generateTrainingPlan(5));
       setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
     }
+
+    // Try to load plans from DB first (admin-edited or auto-generated)
+    const { data: dbTraining } = await supabase
+      .from("training_plans")
+      .select("data")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: dbNutrition } = await supabase
+      .from("nutrition_plans")
+      .select("data, important_notes")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (dbTraining && dbTraining.data?.days?.length > 0) {
+      // Use DB plans (admin-customized or auto-generated)
+      setTrainingPlan(dbTraining.data.days);
+    } else if (data) {
+      // Fallback: generate on-the-fly from survey
+      setTrainingPlan(generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa"));
+    } else {
+      setTrainingPlan(generateTrainingPlan(5));
+    }
+
+    if (dbNutrition && dbNutrition.data?.meals?.length > 0) {
+      // Use DB nutrition plan
+      setMealPlan({
+        meals: dbNutrition.data.meals,
+        importantNotes: dbNutrition.important_notes || dbNutrition.data.importantNotes || [],
+      });
+    } else if (data) {
+      // Fallback: generate on-the-fly from survey
+      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, data.wake_hour || 7, data.sleep_hour || 23));
+    } else {
+      setMealPlan(generateMealPlan(2100, 150, 220, 70));
+    }
+
     setLoading(false);
   };
 

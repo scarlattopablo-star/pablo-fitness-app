@@ -54,6 +54,10 @@ function ClienteDirectoForm() {
   const [arms, setArms] = useState("");
   const [legs, setLegs] = useState("");
 
+  // Code data
+  const [codeDuration, setCodeDuration] = useState("1-ano");
+  const [codePlanSlug, setCodePlanSlug] = useState("direct-client");
+
   // Photos
   const [photoFront, setPhotoFront] = useState<File | null>(null);
   const [photoSide, setPhotoSide] = useState<File | null>(null);
@@ -66,7 +70,11 @@ function ClienteDirectoForm() {
     fetch(`/api/free-access?code=${code}`)
       .then(r => r.json())
       .then(data => {
-        if (data.valid || data.plan_slug === "direct-client") setValid(true);
+        if (data.valid || data.plan_slug === "direct-client") {
+          setValid(true);
+          if (data.duration && data.duration !== "custom") setCodeDuration(data.duration);
+          if (data.plan_slug) setCodePlanSlug(data.plan_slug);
+        }
         setValidating(false);
       })
       .catch(() => setValidating(false));
@@ -135,12 +143,20 @@ function ClienteDirectoForm() {
     const subRes = await fetch("/api/create-subscription", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, duration: "1-ano", amountPaid: 0, currency: "UYU" }),
+      body: JSON.stringify({ userId, duration: codeDuration, amountPaid: 0, currency: "UYU" }),
     });
     if (!subRes.ok) {
       const subErr = await subRes.json();
       console.error("Error creating subscription:", subErr);
     }
+
+    // Auto-generate training + nutrition plans based on survey data
+    const planSlug = codePlanSlug === "direct-client" ? "quema-grasa" : codePlanSlug;
+    await fetch("/api/generate-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, planSlug }),
+    });
 
     // Create initial progress entry as baseline
     await supabase.from("progress_entries").insert({

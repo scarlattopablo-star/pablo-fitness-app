@@ -73,13 +73,24 @@ export default function EncuestaDirectaPage() {
 
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
-    const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, "quema-grasa");
+
+    // Get plan_slug from user's free access code
+    const { data: codeData } = await supabase
+      .from("free_access_codes")
+      .select("plan_slug")
+      .eq("used_by", userId)
+      .limit(1)
+      .maybeSingle();
+    const planSlug = (codeData?.plan_slug && codeData.plan_slug !== "direct-client")
+      ? codeData.plan_slug : "quema-grasa";
+
+    const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug);
 
     await supabase.from("surveys").insert({
       user_id: userId,
       age: Number(age), sex, weight: Number(weight), height: Number(height),
       activity_level: activityLevel, dietary_restrictions: restrictions,
-      objective: "direct-client",
+      objective: planSlug,
       tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
       protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
       training_days: Number(trainingDays),
@@ -97,6 +108,13 @@ export default function EncuestaDirectaPage() {
       arms: arms ? Number(arms) : null,
       legs: legs ? Number(legs) : null,
       notes: "Registro inicial (encuesta)",
+    });
+
+    // Auto-generate training + nutrition plans based on survey data
+    await fetch("/api/generate-plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, planSlug }),
     });
 
     setStep(5);
