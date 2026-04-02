@@ -12,8 +12,9 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
-} from "recharts";
+  WeightChart, MeasurementsLineChart, MeasurementsBarChart,
+  MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
+} from "@/components/progress-charts";
 
 interface ClientData {
   id: string;
@@ -542,10 +543,10 @@ export default function ClienteDetailPage({
       </div>
 
       {/* Progress Section */}
-      <div className="glass-card rounded-2xl p-5 mb-6">
+      <div className="mb-6">
         <button
           onClick={() => setExpandProgress(!expandProgress)}
-          className="w-full flex items-center justify-between"
+          className="w-full glass-card rounded-2xl p-5 flex items-center justify-between"
         >
           <h3 className="font-bold text-sm flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-primary" />
@@ -556,14 +557,12 @@ export default function ClienteDetailPage({
               </span>
             )}
           </h3>
-          {progressEntries.length > 0 && (
+          {progressEntries.length > 0 ? (
             expandProgress ? <ChevronUp className="h-4 w-4 text-muted" /> : <ChevronDown className="h-4 w-4 text-muted" />
+          ) : (
+            <span className="text-sm text-muted">Sin registros</span>
           )}
         </button>
-
-        {progressEntries.length === 0 && (
-          <p className="text-sm text-muted mt-2">Sin registros de progreso</p>
-        )}
 
         {expandProgress && progressEntries.length > 0 && (() => {
           const latest = progressEntries.find(e => e.weight);
@@ -576,101 +575,56 @@ export default function ClienteDetailPage({
           const latestWaist = progressEntries.find(e => e.waist)?.waist || null;
           const waistDiff = firstWaist && latestWaist ? Number((firstWaist - latestWaist).toFixed(1)) : null;
 
-          const weightData = [...progressEntries].filter(e => e.weight).reverse().map(e => ({
-            date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
-            peso: e.weight,
-          }));
-
-          const measurementData = [...progressEntries].reverse()
-            .filter(e => e.waist || e.chest || e.hips || e.arms || e.legs)
-            .map(e => ({
-              date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
-              cintura: e.waist, pecho: e.chest, cadera: e.hips, brazos: e.arms, piernas: e.legs,
-            }));
-
           const entriesWithPhotos = progressEntries.filter(e => e.photo_front || e.photo_side || e.photo_back);
           const firstPhoto = entriesWithPhotos.length > 0 ? entriesWithPhotos[entriesWithPhotos.length - 1] : null;
           const latestPhoto = entriesWithPhotos.length > 1 ? entriesWithPhotos[0] : null;
+
+          const macrosData = survey ? { calories: survey.target_calories, protein: survey.protein, carbs: survey.carbs, fats: survey.fats } : null;
 
           return (
             <div className="mt-4 space-y-4">
               {/* Stats Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="bg-card-bg rounded-xl p-3 text-center">
+                <div className="glass-card rounded-xl p-3 text-center">
                   <Scale className="h-4 w-4 text-primary mx-auto mb-1" />
                   <p className="text-lg font-black">{currentWeight || "-"}<span className="text-xs text-muted">kg</span></p>
                   <p className="text-[10px] text-muted">Peso actual</p>
                 </div>
-                <div className="bg-card-bg rounded-xl p-3 text-center">
+                <div className="glass-card rounded-xl p-3 text-center">
                   <TrendingUp className="h-4 w-4 text-primary mx-auto mb-1" />
                   <p className={`text-lg font-black ${totalDiff && totalDiff > 0 ? "text-primary" : ""}`}>
                     {totalDiff !== null ? `${totalDiff > 0 ? "-" : "+"}${Math.abs(totalDiff)}` : "-"}<span className="text-xs text-muted">kg</span>
                   </p>
                   <p className="text-[10px] text-muted">Cambio peso</p>
                 </div>
-                <div className="bg-card-bg rounded-xl p-3 text-center">
+                <div className="glass-card rounded-xl p-3 text-center">
                   <Ruler className="h-4 w-4 text-primary mx-auto mb-1" />
                   <p className={`text-lg font-black ${waistDiff && waistDiff > 0 ? "text-primary" : ""}`}>
                     {waistDiff !== null ? `${waistDiff > 0 ? "-" : "+"}${Math.abs(waistDiff)}` : "-"}<span className="text-xs text-muted">cm</span>
                   </p>
                   <p className="text-[10px] text-muted">Cintura</p>
                 </div>
-                <div className="bg-card-bg rounded-xl p-3 text-center">
+                <div className="glass-card rounded-xl p-3 text-center">
                   <Calendar className="h-4 w-4 text-primary mx-auto mb-1" />
                   <p className="text-lg font-black">{progressEntries.length}</p>
                   <p className="text-[10px] text-muted">Registros</p>
                 </div>
               </div>
 
-              {/* Weight Chart */}
-              {weightData.length > 1 && (
-                <div>
-                  <p className="text-xs font-bold text-muted mb-2">Evolucion de Peso</p>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={weightData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} />
-                      <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 10, fill: "#888" }} width={40} />
-                      <Tooltip
-                        contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
-                        labelStyle={{ color: "#888" }}
-                        itemStyle={{ color: "#00f593" }}
-                        formatter={(value) => [`${value} kg`, "Peso"]}
-                      />
-                      <Line type="monotone" dataKey="peso" stroke="#00f593" strokeWidth={2} dot={{ fill: "#00f593", r: 3 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              {/* Charts Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <WeightChart entries={progressEntries} initialWeight={survey?.weight} />
+                <MacrosPieChart macros={macrosData} />
+                <MeasurementsBarChart entries={progressEntries} />
+                <MeasurementsChangeChart entries={progressEntries} />
+                <WeightChangeBarChart entries={progressEntries} />
+                <MeasurementsLineChart entries={progressEntries} />
+              </div>
 
-              {/* Body Measurements Chart */}
-              {measurementData.length > 1 && (
-                <div>
-                  <p className="text-xs font-bold text-muted mb-2">Medidas Corporales</p>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={measurementData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} />
-                      <YAxis tick={{ fontSize: 10, fill: "#888" }} width={40} />
-                      <Tooltip
-                        contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
-                        labelStyle={{ color: "#888" }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: "10px" }} />
-                      <Line type="monotone" dataKey="cintura" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey="pecho" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey="cadera" stroke="#a855f7" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey="brazos" stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey="piernas" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* Progress Photos: Before / After */}
+              {/* Progress Photos */}
               {firstPhoto && (
-                <div>
-                  <p className="text-xs font-bold text-muted mb-2 flex items-center gap-1">
+                <div className="glass-card rounded-2xl p-4">
+                  <p className="text-xs font-bold text-muted mb-3 flex items-center gap-1">
                     <Image className="h-3 w-3" />
                     {latestPhoto ? "Antes / Despues" : "Fotos de Progreso"}
                   </p>
@@ -685,9 +639,7 @@ export default function ClienteDetailPage({
                             {path && photoUrls[path] ? (
                               <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Camera className="h-3 w-3 text-muted" />
-                              </div>
+                              <div className="w-full h-full flex items-center justify-center"><Camera className="h-3 w-3 text-muted" /></div>
                             )}
                           </div>
                         ))}
@@ -704,9 +656,7 @@ export default function ClienteDetailPage({
                               {path && photoUrls[path] ? (
                                 <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Camera className="h-3 w-3 text-muted" />
-                                </div>
+                                <div className="w-full h-full flex items-center justify-center"><Camera className="h-3 w-3 text-muted" /></div>
                               )}
                             </div>
                           ))}
@@ -718,8 +668,8 @@ export default function ClienteDetailPage({
               )}
 
               {/* History */}
-              <div>
-                <p className="text-xs font-bold text-muted mb-2">Historial</p>
+              <div className="glass-card rounded-2xl p-4">
+                <p className="text-xs font-bold text-muted mb-3">Historial</p>
                 <div className="space-y-1.5">
                   {progressEntries.map((entry, i) => {
                     const prev = progressEntries[i + 1];

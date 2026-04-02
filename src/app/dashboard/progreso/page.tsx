@@ -11,8 +11,9 @@ import { supabase } from "@/lib/supabase";
 import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 import { calculateMacros } from "@/lib/harris-benedict";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
-} from "recharts";
+  WeightChart, MeasurementsLineChart, MeasurementsBarChart,
+  MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
+} from "@/components/progress-charts";
 import type { Sex, ActivityLevel } from "@/types";
 
 interface ProgressEntry {
@@ -39,6 +40,7 @@ export default function ProgresoPage() {
   const { user, isExpired } = useAuth();
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [baseline, setBaseline] = useState<SurveyBaseline | null>(null);
+  const [macrosData, setMacrosData] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -66,16 +68,26 @@ export default function ProgresoPage() {
     try {
       setLoadError(false);
 
-      // Load survey baseline (initial weight)
+      // Load survey baseline (initial weight + macros)
       const { data: surveyData } = await supabase
         .from("surveys")
-        .select("weight, created_at")
+        .select("weight, created_at, target_calories, protein, carbs, fats")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
 
-      if (surveyData) setBaseline(surveyData);
+      if (surveyData) {
+        setBaseline(surveyData);
+        if (surveyData.target_calories) {
+          setMacrosData({
+            calories: surveyData.target_calories,
+            protein: surveyData.protein,
+            carbs: surveyData.carbs,
+            fats: surveyData.fats,
+          });
+        }
+      }
 
       // Load all progress entries
       const { data: progressData, error } = await supabase
@@ -273,75 +285,23 @@ export default function ProgresoPage() {
         </div>
       </div>
 
-      {/* Weight Chart */}
-      {entries.filter(e => e.weight).length > 0 ? (() => {
-        const weightData = [...entries].filter(e => e.weight).reverse().map(e => ({
-          date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
-          peso: e.weight,
-        }));
-        return (
-          <div className="glass-card rounded-2xl p-6 mb-6">
-            <h2 className="font-bold mb-4">Evolucion de Peso</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={weightData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} />
-                <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 10, fill: "#888" }} width={40} />
-                <Tooltip
-                  contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
-                  labelStyle={{ color: "#888" }}
-                  itemStyle={{ color: "#00f593" }}
-                  formatter={(value) => [`${value} kg`, "Peso"]}
-                />
-                <Line type="monotone" dataKey="peso" stroke="#00f593" strokeWidth={2} dot={{ fill: "#00f593", r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        );
-      })() : (
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <WeightChart entries={entries} initialWeight={baseline?.weight} />
+        <MacrosPieChart macros={macrosData} />
+        <MeasurementsBarChart entries={entries} />
+        <MeasurementsChangeChart entries={entries} />
+        <WeightChangeBarChart entries={entries} />
+        <MeasurementsLineChart entries={entries} />
+      </div>
+
+      {entries.filter(e => e.weight).length === 0 && (
         <div className="glass-card rounded-2xl p-6 mb-6 text-center">
           <Scale className="h-8 w-8 text-muted mx-auto mb-2" />
           <p className="text-muted text-sm">Aun no hay registros de peso.</p>
-          <p className="text-xs text-muted mt-1">Registra tu primer progreso para ver el grafico.</p>
+          <p className="text-xs text-muted mt-1">Registra tu primer progreso para ver los graficos.</p>
         </div>
       )}
-
-      {/* Body Measurements Chart */}
-      {(() => {
-        const measurementData = [...entries].reverse()
-          .filter(e => e.waist || e.chest || e.hips || e.arms || e.legs)
-          .map(e => ({
-            date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
-            cintura: e.waist,
-            pecho: e.chest,
-            cadera: e.hips,
-            brazos: e.arms,
-            piernas: e.legs,
-          }));
-        if (measurementData.length < 2) return null;
-        return (
-          <div className="glass-card rounded-2xl p-6 mb-6">
-            <h2 className="font-bold mb-4">Medidas Corporales</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={measurementData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#888" }} width={40} />
-                <Tooltip
-                  contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
-                  labelStyle={{ color: "#888" }}
-                />
-                <Legend wrapperStyle={{ fontSize: "11px" }} />
-                <Line type="monotone" dataKey="cintura" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line type="monotone" dataKey="pecho" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line type="monotone" dataKey="cadera" stroke="#a855f7" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line type="monotone" dataKey="brazos" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line type="monotone" dataKey="piernas" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        );
-      })()}
 
       {/* Progress Photos: Before / After */}
       {(() => {
