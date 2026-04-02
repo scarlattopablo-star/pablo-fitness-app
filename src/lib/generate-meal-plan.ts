@@ -105,11 +105,13 @@ export function generateMealPlan(
     }
   }
 
-  // Distribute macros across meals
+  // Distribution templates per meal count. All have 6 entries (one per meal slot).
+  // Slots: [DESAYUNO, COMIDA2, ALMUERZO, MERIENDA, CENA, COLACION]
+  // Unused meals get 0% so their builders produce minimal portions (harmless).
   const distTemplates: Record<number, number[]> = {
-    4: [0.25, 0.15, 0.35, 0.25],
-    5: [0.22, 0.12, 0.26, 0.12, 0.28],
-    6: [0.20, 0.10, 0.25, 0.10, 0.25, 0.10],
+    4: [0.25, 0.00, 0.30, 0.15, 0.30, 0.00],  // Desayuno, Almuerzo, Merienda, Cena
+    5: [0.22, 0.12, 0.26, 0.12, 0.28, 0.00],  // + Comida 2
+    6: [0.20, 0.10, 0.25, 0.10, 0.25, 0.10],  // All meals
   };
   const dist = distTemplates[numMeals] || distTemplates[6];
 
