@@ -1,3 +1,14 @@
+// Training plan generator based on ACSM & NSCA guidelines
+// Sources:
+// - ACSM Position Stand: Progression Models in Resistance Training (2009)
+// - NSCA: Using Intensity Based on Sets and Repetitions
+// - ACSM 2026 Resistance Training Guidelines Update
+//
+// HYPERTROPHY: 3-4 sets x 8-12 reps, 60-75% 1RM, 60-90s rest
+// STRENGTH: 3-5 sets x 4-6 reps, 80-90% 1RM, 2-3min rest
+// FAT LOSS: 3-4 sets x 12-15 reps, 50-65% 1RM, 30-60s rest
+// BEGINNER: 2-3 sets x 10-15 reps, 50-65% 1RM, 60-90s rest
+
 export interface TrainingExercise {
   id: string;
   name: string;
@@ -12,223 +23,193 @@ export interface TrainingDay {
   instructions: string;
 }
 
-export function generateTrainingPlan(days: number): TrainingDay[] {
-  if (days === 3) return PLAN_3_DAYS;
-  if (days === 4) return PLAN_4_DAYS;
-  if (days === 6) return PLAN_6_DAYS;
-  return PLAN_5_DAYS; // default
+interface TrainingParams {
+  sets: number;
+  reps: string;
+  restCompound: string;
+  restIsolation: string;
+  instructions: string;
 }
 
-const PLAN_3_DAYS: TrainingDay[] = [
-  {
-    day: "Dia 1 - Full Body A",
-    instructions: "Calentar 5 min. Descanso entre series como indicado.",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-banca-plano", name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
-      { id: "jalon-polea-alta", name: "Jalon Polea Alta", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-hombros", name: "Press Hombros Mancuernas", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-biceps-barra", name: "Curl Biceps Barra", sets: 3, reps: "12", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "45s", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 2 - Full Body B",
-    instructions: "Trabajar con control en la fase excentrica.",
-    exercises: [
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-inclinado", name: "Press Inclinado Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 3, reps: "15", rest: "60s" },
-      { id: "extension-triceps-polea", name: "Extension Triceps Polea", sets: 3, reps: "12", rest: "60s" },
-      { id: "crunch-polea", name: "Crunch en Polea", sets: 3, reps: "15", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 3 - Full Body C",
-    instructions: "Circuito: 90s entre vueltas. Cardio al final.",
-    exercises: [
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "aperturas-inclinadas", name: "Aperturas Inclinadas", sets: 3, reps: "12", rest: "60s" },
-      { id: "remo-mancuerna", name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-martillo", name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
-      { id: "fondos-triceps", name: "Fondos de Triceps", sets: 3, reps: "15", rest: "60s" },
-      { id: "hiit-cinta", name: "HIIT Cinta", sets: 1, reps: "15 min", rest: "-" },
-    ],
-  },
-];
+function getParams(objective: string): TrainingParams {
+  switch (objective) {
+    case "ganancia-muscular":
+      return { sets: 4, reps: "8-12", restCompound: "90s", restIsolation: "60s", instructions: "Fase excentrica lenta (2-3s). Peso moderado-alto. 10-20 series/musculo/semana." };
+    case "fuerza-funcional":
+    case "competicion":
+    case "rendimiento-deportivo":
+      return { sets: 4, reps: "4-6", restCompound: "3min", restIsolation: "90s", instructions: "Peso alto (80-90% 1RM). Tecnica perfecta. Descanso completo." };
+    case "quema-grasa":
+    case "recomposicion-corporal":
+      return { sets: 3, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Ritmo alto, descansos cortos. Mantener frecuencia cardiaca elevada." };
+    case "tonificacion":
+    case "post-parto":
+      return { sets: 3, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Peso moderado. Movimientos controlados. Enfocarse en la contraccion." };
+    case "principiante-total":
+      return { sets: 3, reps: "10-15", restCompound: "90s", restIsolation: "60s", instructions: "Aprender tecnica. Peso liviano, aumentar gradualmente semana a semana." };
+    default:
+      return { sets: 4, reps: "10-12", restCompound: "90s", restIsolation: "60s", instructions: "Peso moderado. Buena tecnica. Aumentar carga progresivamente." };
+  }
+}
 
-const PLAN_4_DAYS: TrainingDay[] = [
-  {
-    day: "Dia 1 - Tren Superior A",
-    instructions: "Calentar 5 min. Enfoque en pecho y espalda.",
-    exercises: [
-      { id: "press-banca-plano", name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
-      { id: "jalon-polea-alta", name: "Jalon Polea Alta", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-inclinado", name: "Press Inclinado Mancuernas", sets: 3, reps: "12", rest: "60s" },
-      { id: "remo-mancuerna", name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-biceps-barra", name: "Curl Biceps Barra", sets: 3, reps: "12", rest: "60s" },
-      { id: "extension-triceps-polea", name: "Extension Triceps Polea", sets: 3, reps: "12", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 2 - Tren Inferior A",
-    instructions: "En sentadilla: bajar hasta paralelo o mas abajo.",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "120s" },
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "60s", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 3 - Tren Superior B",
-    instructions: "Enfoque en hombros y brazos.",
-    exercises: [
-      { id: "press-hombros", name: "Press Hombros Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 4, reps: "15", rest: "60s" },
-      { id: "aperturas-inclinadas", name: "Aperturas Inclinadas", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-martillo", name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
-      { id: "fondos-triceps", name: "Fondos de Triceps", sets: 3, reps: "15", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 4 - Tren Inferior B + Cardio",
-    instructions: "Circuito final con cardio HIIT.",
-    exercises: [
-      { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "crunch-polea", name: "Crunch en Polea", sets: 4, reps: "15", rest: "30s" },
-      { id: "hiit-cinta", name: "HIIT Cinta", sets: 1, reps: "15 min", rest: "-" },
-    ],
-  },
-];
+function ex(id: string, name: string, p: TrainingParams, compound: boolean): TrainingExercise {
+  const isSpecial = id === "plancha" || id === "plancha-lateral";
+  return {
+    id, name,
+    sets: compound ? p.sets : Math.max(3, p.sets - 1),
+    reps: isSpecial ? "45s" : id === "hiit-cinta" ? "15 min" : p.reps,
+    rest: compound ? p.restCompound : p.restIsolation,
+  };
+}
 
-const PLAN_5_DAYS: TrainingDay[] = [
-  {
-    day: "Dia 1 - Pecho y Triceps",
-    instructions: "Calentar 5 min en cinta.",
-    exercises: [
-      { id: "press-banca-plano", name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-inclinado", name: "Press Inclinado Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "aperturas-inclinadas", name: "Aperturas Inclinadas", sets: 4, reps: "12", rest: "60s" },
-      { id: "extension-triceps-polea", name: "Extension Triceps Polea", sets: 4, reps: "12", rest: "60s" },
-      { id: "fondos-triceps", name: "Fondos de Triceps", sets: 3, reps: "15", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 2 - Espalda y Biceps",
-    instructions: "Trabajar con control en la fase excentrica.",
-    exercises: [
-      { id: "jalon-polea-alta", name: "Jalon Polea Alta", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-mancuerna", name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-biceps-barra", name: "Curl Biceps Barra", sets: 4, reps: "10", rest: "60s" },
-      { id: "curl-martillo", name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 3 - Piernas",
-    instructions: "En sentadilla: bajar hasta paralelo o mas abajo.",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "120s" },
-      { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "45s", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 4 - Hombros y Abdomen",
-    instructions: "Elevaciones laterales con peso controlado.",
-    exercises: [
-      { id: "press-hombros", name: "Press Hombros Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 4, reps: "15", rest: "60s" },
-      { id: "crunch-polea", name: "Crunch en Polea", sets: 4, reps: "15", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "60s", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 5 - Full Body + Cardio",
-    instructions: "Circuito: 90s entre vueltas. 3 vueltas.",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla", sets: 3, reps: "15", rest: "30s" },
-      { id: "press-banca-plano", name: "Press Banca", sets: 3, reps: "12", rest: "30s" },
-      { id: "jalon-polea-alta", name: "Jalon Polea", sets: 3, reps: "12", rest: "30s" },
-      { id: "press-hombros", name: "Press Hombros", sets: 3, reps: "12", rest: "30s" },
-      { id: "hiit-cinta", name: "HIIT Cinta", sets: 1, reps: "15 min", rest: "-" },
-    ],
-  },
-];
+export function generateTrainingPlan(days: number = 5, objective: string = "quema-grasa"): TrainingDay[] {
+  const p = getParams(objective);
 
-const PLAN_6_DAYS: TrainingDay[] = [
-  {
-    day: "Dia 1 - Push (Pecho/Hombros/Triceps)",
-    instructions: "Calentar 5 min.",
-    exercises: [
-      { id: "press-banca-plano", name: "Press Banca Plano", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-inclinado", name: "Press Inclinado Mancuernas", sets: 4, reps: "10", rest: "90s" },
-      { id: "press-hombros", name: "Press Hombros", sets: 3, reps: "12", rest: "60s" },
-      { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 3, reps: "15", rest: "60s" },
-      { id: "extension-triceps-polea", name: "Extension Triceps", sets: 3, reps: "12", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 2 - Pull (Espalda/Biceps)",
-    instructions: "Control en la fase excentrica.",
-    exercises: [
-      { id: "jalon-polea-alta", name: "Jalon Polea Alta", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-mancuerna", name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-biceps-barra", name: "Curl Biceps", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-martillo", name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 3 - Legs (Piernas)",
-    instructions: "Sentadilla profunda. Descanso largo en compuestos.",
-    exercises: [
-      { id: "sentadilla", name: "Sentadilla con Barra", sets: 4, reps: "10", rest: "120s" },
-      { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "45s", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 4 - Push B",
-    instructions: "Variaciones distintas al dia 1.",
-    exercises: [
-      { id: "aperturas-inclinadas", name: "Aperturas Inclinadas", sets: 4, reps: "12", rest: "60s" },
-      { id: "press-banca-plano", name: "Press Banca", sets: 4, reps: "10", rest: "90s" },
-      { id: "elevaciones-laterales", name: "Elevaciones Laterales", sets: 4, reps: "15", rest: "60s" },
-      { id: "fondos-triceps", name: "Fondos de Triceps", sets: 3, reps: "15", rest: "60s" },
-      { id: "crunch-polea", name: "Crunch en Polea", sets: 3, reps: "15", rest: "30s" },
-    ],
-  },
-  {
-    day: "Dia 5 - Pull B",
-    instructions: "Mas volumen en espalda.",
-    exercises: [
-      { id: "remo-con-barra", name: "Remo con Barra", sets: 4, reps: "10", rest: "90s" },
-      { id: "jalon-polea-alta", name: "Jalon Polea Alta", sets: 4, reps: "10", rest: "90s" },
-      { id: "remo-mancuerna", name: "Remo Mancuerna", sets: 3, reps: "12", rest: "60s" },
-      { id: "curl-biceps-barra", name: "Curl Biceps", sets: 4, reps: "10", rest: "60s" },
-      { id: "curl-martillo", name: "Curl Martillo", sets: 3, reps: "12", rest: "60s" },
-    ],
-  },
-  {
-    day: "Dia 6 - Legs B + Cardio",
-    instructions: "Piernas + HIIT al final.",
-    exercises: [
-      { id: "prensa-piernas", name: "Prensa de Piernas", sets: 4, reps: "12", rest: "90s" },
-      { id: "zancadas", name: "Zancadas", sets: 3, reps: "12 c/pierna", rest: "60s" },
-      { id: "peso-muerto", name: "Peso Muerto Rumano", sets: 4, reps: "10", rest: "90s" },
-      { id: "plancha", name: "Plancha", sets: 3, reps: "60s", rest: "30s" },
-      { id: "hiit-cinta", name: "HIIT Cinta", sets: 1, reps: "15 min", rest: "-" },
-    ],
-  },
-];
+  if (days === 3) {
+    return [
+      { day: "Dia 1 - Full Body A", instructions: p.instructions, exercises: [
+        ex("press-banca-plano", "Press Banca Plano", p, true),
+        ex("jalon-polea-alta", "Jalon Polea Alta", p, true),
+        ex("sentadilla", "Sentadilla con Barra", p, true),
+        ex("press-hombros", "Press Hombros", p, true),
+        ex("plancha", "Plancha", p, false),
+      ]},
+      { day: "Dia 2 - Full Body B", instructions: p.instructions, exercises: [
+        ex("peso-muerto", "Peso Muerto Rumano", p, true),
+        ex("press-inclinado", "Press Inclinado Mancuernas", p, true),
+        ex("remo-con-barra", "Remo con Barra", p, true),
+        ex("prensa-piernas", "Prensa de Piernas", p, true),
+        ex("crunch-polea", "Crunch en Polea", p, false),
+      ]},
+      { day: "Dia 3 - Full Body C + Cardio", instructions: "Circuito: 2 min descanso entre rondas. " + p.instructions, exercises: [
+        ex("sentadilla", "Sentadilla", { ...p, sets: 3 }, true),
+        ex("press-banca-plano", "Press Banca", { ...p, sets: 3 }, true),
+        ex("jalon-polea-alta", "Jalon Polea", { ...p, sets: 3 }, true),
+        ex("elevaciones-laterales", "Elevaciones Laterales", { ...p, sets: 3 }, false),
+        ex("hiit-cinta", "HIIT en Cinta", p, false),
+      ]},
+    ];
+  }
+
+  if (days === 4) {
+    return [
+      { day: "Dia 1 - Tren Superior (Fuerza)", instructions: p.instructions, exercises: [
+        ex("press-banca-plano", "Press Banca Plano", p, true),
+        ex("remo-con-barra", "Remo con Barra", p, true),
+        ex("press-hombros", "Press Hombros", p, true),
+        ex("curl-biceps-barra", "Curl Biceps Barra", p, false),
+        ex("extension-triceps-polea", "Extension Triceps Polea", p, false),
+      ]},
+      { day: "Dia 2 - Tren Inferior (Fuerza)", instructions: p.instructions, exercises: [
+        ex("sentadilla", "Sentadilla con Barra", p, true),
+        ex("peso-muerto", "Peso Muerto Rumano", p, true),
+        ex("zancadas", "Zancadas", p, false),
+        ex("elevacion-gemelos", "Elevacion de Gemelos", p, false),
+        ex("crunch-polea", "Crunch en Polea", p, false),
+      ]},
+      { day: "Dia 3 - Tren Superior (Volumen)", instructions: p.instructions, exercises: [
+        ex("press-inclinado", "Press Inclinado Mancuernas", p, true),
+        ex("jalon-polea-alta", "Jalon Polea Alta", p, true),
+        ex("aperturas-inclinadas", "Aperturas Inclinadas", p, false),
+        ex("elevaciones-laterales", "Elevaciones Laterales", p, false),
+        ex("curl-martillo", "Curl Martillo", p, false),
+        ex("fondos-triceps", "Fondos de Triceps", p, false),
+      ]},
+      { day: "Dia 4 - Tren Inferior (Volumen)", instructions: p.instructions, exercises: [
+        ex("prensa-piernas", "Prensa de Piernas", p, true),
+        ex("extension-cuadriceps", "Extension Cuadriceps", p, false),
+        ex("curl-femoral", "Curl Femoral", p, false),
+        ex("elevacion-gemelos", "Elevacion de Gemelos", p, false),
+        ex("plancha", "Plancha", p, false),
+        ex("elevacion-piernas", "Elevacion de Piernas", p, false),
+      ]},
+    ];
+  }
+
+  if (days === 5) {
+    return [
+      { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
+        ex("press-banca-plano", "Press Banca Plano", p, true),
+        ex("press-inclinado", "Press Inclinado Mancuernas", p, true),
+        ex("aperturas-inclinadas", "Aperturas Inclinadas", p, false),
+        ex("extension-triceps-polea", "Extension Triceps Polea", p, false),
+        ex("fondos-triceps", "Fondos de Triceps", p, false),
+      ]},
+      { day: "Dia 2 - Espalda y Biceps", instructions: p.instructions, exercises: [
+        ex("jalon-polea-alta", "Jalon Polea Alta", p, true),
+        ex("remo-con-barra", "Remo con Barra", p, true),
+        ex("remo-mancuerna", "Remo Mancuerna", p, false),
+        ex("curl-biceps-barra", "Curl Biceps Barra", p, false),
+        ex("curl-martillo", "Curl Martillo", p, false),
+      ]},
+      { day: "Dia 3 - Piernas", instructions: p.instructions, exercises: [
+        ex("sentadilla", "Sentadilla con Barra", p, true),
+        ex("prensa-piernas", "Prensa de Piernas", p, true),
+        ex("peso-muerto", "Peso Muerto Rumano", p, true),
+        ex("zancadas", "Zancadas", p, false),
+        ex("elevacion-gemelos", "Elevacion de Gemelos", p, false),
+      ]},
+      { day: "Dia 4 - Hombros y Abdomen", instructions: p.instructions, exercises: [
+        ex("press-hombros", "Press Hombros", p, true),
+        ex("elevaciones-laterales", "Elevaciones Laterales", p, false),
+        ex("pajaros", "Pajaros (Deltoides Posterior)", p, false),
+        ex("crunch-polea", "Crunch en Polea", p, false),
+        ex("plancha", "Plancha", p, false),
+      ]},
+      { day: "Dia 5 - Full Body + Cardio", instructions: "Circuito con descanso minimo. " + p.instructions, exercises: [
+        ex("sentadilla", "Sentadilla", { ...p, sets: 3 }, true),
+        ex("press-banca-plano", "Press Banca", { ...p, sets: 3 }, true),
+        ex("jalon-polea-alta", "Jalon Polea", { ...p, sets: 3 }, true),
+        ex("press-hombros", "Press Hombros", { ...p, sets: 3 }, true),
+        ex("hiit-cinta", "HIIT en Cinta", p, false),
+      ]},
+    ];
+  }
+
+  // 6 days: Push/Pull/Legs x2
+  return [
+    { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
+      ex("press-banca-plano", "Press Banca Plano", p, true),
+      ex("press-inclinado", "Press Inclinado Mancuernas", p, true),
+      ex("aperturas-inclinadas", "Aperturas Inclinadas", p, false),
+      ex("extension-triceps-polea", "Extension Triceps Polea", p, false),
+      ex("press-frances", "Press Frances", p, false),
+    ]},
+    { day: "Dia 2 - Espalda y Biceps", instructions: p.instructions, exercises: [
+      ex("jalon-polea-alta", "Jalon Polea Alta", p, true),
+      ex("remo-con-barra", "Remo con Barra", p, true),
+      ex("remo-mancuerna", "Remo Mancuerna", p, false),
+      ex("curl-biceps-barra", "Curl Biceps Barra", p, false),
+      ex("curl-concentrado", "Curl Concentrado", p, false),
+    ]},
+    { day: "Dia 3 - Piernas y Abdomen", instructions: p.instructions, exercises: [
+      ex("sentadilla", "Sentadilla con Barra", p, true),
+      ex("peso-muerto", "Peso Muerto Rumano", p, true),
+      ex("zancadas", "Zancadas", p, false),
+      ex("elevacion-gemelos", "Elevacion de Gemelos", p, false),
+      ex("crunch-polea", "Crunch en Polea", p, false),
+    ]},
+    { day: "Dia 4 - Hombros y Triceps", instructions: p.instructions, exercises: [
+      ex("press-hombros", "Press Hombros", p, true),
+      ex("elevaciones-laterales", "Elevaciones Laterales", p, false),
+      ex("pajaros", "Pajaros (Deltoides Posterior)", p, false),
+      ex("fondos-triceps", "Fondos de Triceps", p, false),
+      ex("extension-triceps-polea", "Extension Triceps Polea", p, false),
+    ]},
+    { day: "Dia 5 - Espalda y Biceps (Volumen)", instructions: p.instructions, exercises: [
+      ex("jalon-polea-alta", "Jalon Polea Alta", p, true),
+      ex("pullover", "Pullover con Mancuerna", p, false),
+      ex("remo-mancuerna", "Remo Mancuerna", p, false),
+      ex("curl-martillo", "Curl Martillo", p, false),
+      ex("curl-biceps-barra", "Curl Biceps Barra", p, false),
+    ]},
+    { day: "Dia 6 - Piernas (Volumen) + Cardio", instructions: p.instructions, exercises: [
+      ex("prensa-piernas", "Prensa de Piernas", p, true),
+      ex("extension-cuadriceps", "Extension Cuadriceps", p, false),
+      ex("curl-femoral", "Curl Femoral", p, false),
+      ex("elevacion-gemelos", "Elevacion de Gemelos", p, false),
+      ex("elevacion-piernas", "Elevacion de Piernas", p, false),
+      ex("hiit-cinta", "HIIT en Cinta", p, false),
+    ]},
+  ];
+}

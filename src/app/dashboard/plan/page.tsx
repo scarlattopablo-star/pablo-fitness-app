@@ -95,7 +95,7 @@ export default function PlanPage() {
 
     if (data && data.target_calories) {
       setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, data.wake_hour || 7, data.sleep_hour || 23));
-      setTrainingPlan(generateTrainingPlan(data.training_days || 5));
+      setTrainingPlan(generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa"));
       setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
       setObjective(data.objective || "");
     } else {
