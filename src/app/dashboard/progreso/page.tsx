@@ -13,6 +13,7 @@ import { calculateMacros } from "@/lib/harris-benedict";
 import {
   WeightChart, MeasurementsLineChart, MeasurementsBarChart,
   MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
+  ExerciseProgressCharts,
 } from "@/components/progress-charts";
 import type { Sex, ActivityLevel } from "@/types";
 
@@ -41,6 +42,7 @@ export default function ProgresoPage() {
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [baseline, setBaseline] = useState<SurveyBaseline | null>(null);
   const [macrosData, setMacrosData] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null);
+  const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -115,6 +117,14 @@ export default function ProgresoPage() {
           setPhotoUrls(urls);
         }
       }
+
+      // Load exercise logs
+      const { data: exLogs } = await supabase
+        .from("exercise_logs")
+        .select("exercise_id, exercise_name, sets_data, date")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+      if (exLogs) setExerciseLogs(exLogs);
     } catch {
       setLoadError(true);
     } finally {
@@ -293,6 +303,11 @@ export default function ProgresoPage() {
         <MeasurementsChangeChart entries={entries} />
         <WeightChangeBarChart entries={entries} />
         <MeasurementsLineChart entries={entries} />
+      </div>
+
+      {/* Exercise Progress */}
+      <div className="mb-6">
+        <ExerciseProgressCharts logs={exerciseLogs} />
       </div>
 
       {entries.filter(e => e.weight).length === 0 && (

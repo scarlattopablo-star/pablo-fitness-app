@@ -14,6 +14,7 @@ import { getPhotoUrl } from "@/lib/upload-photo";
 import {
   WeightChart, MeasurementsLineChart, MeasurementsBarChart,
   MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
+  ExerciseProgressCharts,
 } from "@/components/progress-charts";
 
 interface ClientData {
@@ -88,6 +89,7 @@ export default function ClienteDetailPage({
   const [expandNutrition, setExpandNutrition] = useState(false);
   const [expandProgress, setExpandProgress] = useState(true);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
+  const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -163,6 +165,14 @@ export default function ClienteDetailPage({
         setPhotoUrls(urls);
       }
     }
+
+    // Load exercise logs
+    const { data: exLogs } = await supabase
+      .from("exercise_logs")
+      .select("exercise_id, exercise_name, sets_data, date")
+      .eq("user_id", id)
+      .order("date", { ascending: false });
+    if (exLogs) setExerciseLogs(exLogs);
 
     setLoading(false);
   };
@@ -620,6 +630,9 @@ export default function ClienteDetailPage({
                 <WeightChangeBarChart entries={progressEntries} />
                 <MeasurementsLineChart entries={progressEntries} />
               </div>
+
+              {/* Exercise Progress */}
+              <ExerciseProgressCharts logs={exerciseLogs} />
 
               {/* Progress Photos */}
               {firstPhoto && (

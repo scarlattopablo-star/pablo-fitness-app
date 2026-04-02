@@ -1,5 +1,6 @@
 "use client";
 
+import { Dumbbell } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
@@ -39,29 +40,22 @@ const MEASUREMENT_COLORS: Record<string, string> = {
 
 const MACRO_COLORS = ["#ef4444", "#f59e0b", "#3b82f6"];
 
-// ==========================================
 // 1. Weight Evolution (Line Chart)
-// ==========================================
 export function WeightChart({ entries, initialWeight }: { entries: ProgressEntry[]; initialWeight?: number | null }) {
   const weightEntries = [...entries].filter(e => e.weight).reverse();
   if (weightEntries.length === 0 && !initialWeight) return null;
 
   const data = [];
-  // Add initial weight from survey if available and different from first entry
   if (initialWeight && (weightEntries.length === 0 || weightEntries[0].weight !== initialWeight)) {
     const firstDate = weightEntries.length > 0
       ? new Date(new Date(weightEntries[0].date).getTime() - 86400000)
       : new Date();
-    data.push({
-      date: firstDate.toLocaleDateString("es", { day: "2-digit", month: "short" }),
-      peso: initialWeight,
-    });
+    data.push({ date: firstDate.toLocaleDateString("es", { day: "2-digit", month: "short" }), peso: initialWeight });
   }
   data.push(...weightEntries.map(e => ({
     date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
     peso: e.weight,
   })));
-
   if (data.length === 0) return null;
 
   return (
@@ -80,9 +74,7 @@ export function WeightChart({ entries, initialWeight }: { entries: ProgressEntry
   );
 }
 
-// ==========================================
 // 2. Body Measurements Over Time (Line Chart)
-// ==========================================
 export function MeasurementsLineChart({ entries }: { entries: ProgressEntry[] }) {
   const data = [...entries].reverse()
     .filter(e => e.waist || e.chest || e.hips || e.arms || e.legs)
@@ -111,9 +103,7 @@ export function MeasurementsLineChart({ entries }: { entries: ProgressEntry[] })
   );
 }
 
-// ==========================================
 // 3. Measurements Comparison Bar Chart (Initial vs Current)
-// ==========================================
 export function MeasurementsBarChart({ entries }: { entries: ProgressEntry[] }) {
   const reversed = [...entries].reverse();
   const first = reversed.find(e => e.waist || e.chest || e.hips || e.arms || e.legs);
@@ -131,7 +121,6 @@ export function MeasurementsBarChart({ entries }: { entries: ProgressEntry[] }) 
   const data = mappings
     .filter(m => m.get(first) != null)
     .map(m => ({ name: m.label, inicial: m.get(first) || 0, actual: m.get(last) || 0 }));
-
   if (data.length === 0) return null;
 
   return (
@@ -152,9 +141,7 @@ export function MeasurementsBarChart({ entries }: { entries: ProgressEntry[] }) 
   );
 }
 
-// ==========================================
 // 4. Change per Measurement (Horizontal Bar)
-// ==========================================
 export function MeasurementsChangeChart({ entries }: { entries: ProgressEntry[] }) {
   const reversed = [...entries].reverse();
   const first = reversed.find(e => e.waist || e.chest || e.hips || e.arms || e.legs);
@@ -171,11 +158,7 @@ export function MeasurementsChangeChart({ entries }: { entries: ProgressEntry[] 
 
   const data = mappings
     .filter(m => m.get(first) != null && m.get(last) != null)
-    .map(m => ({
-      name: m.label,
-      cambio: Number(((m.get(last) || 0) - (m.get(first) || 0)).toFixed(1)),
-    }));
-
+    .map(m => ({ name: m.label, cambio: Number(((m.get(last) || 0) - (m.get(first) || 0)).toFixed(1)) }));
   if (data.length === 0) return null;
 
   return (
@@ -198,9 +181,7 @@ export function MeasurementsChangeChart({ entries }: { entries: ProgressEntry[] 
   );
 }
 
-// ==========================================
 // 5. Macros Distribution (Pie/Donut Chart)
-// ==========================================
 export function MacrosPieChart({ macros }: { macros: MacrosData | null }) {
   if (!macros || !macros.protein) return null;
 
@@ -221,24 +202,10 @@ export function MacrosPieChart({ macros }: { macros: MacrosData | null }) {
       <div className="flex items-center gap-4">
         <ResponsiveContainer width={140} height={140}>
           <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={35}
-              outerRadius={60}
-              paddingAngle={3}
-              dataKey="value"
-              strokeWidth={0}
-            >
-              {data.map((_, i) => (
-                <Cell key={i} fill={MACRO_COLORS[i]} />
-              ))}
+            <Pie data={data} cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={3} dataKey="value" strokeWidth={0}>
+              {data.map((_, i) => (<Cell key={i} fill={MACRO_COLORS[i]} />))}
             </Pie>
-            <Tooltip
-              {...TOOLTIP_STYLE}
-              formatter={(value, name) => [`${value}g`, name]}
-            />
+            <Tooltip {...TOOLTIP_STYLE} formatter={(value, name) => [`${value}g`, name]} />
           </PieChart>
         </ResponsiveContainer>
         <div className="flex-1 space-y-2">
@@ -263,19 +230,16 @@ export function MacrosPieChart({ macros }: { macros: MacrosData | null }) {
   );
 }
 
-// ==========================================
 // 6. Weight Change Bar Chart (per entry)
-// ==========================================
 export function WeightChangeBarChart({ entries }: { entries: ProgressEntry[] }) {
   const withWeight = [...entries].filter(e => e.weight).reverse();
   if (withWeight.length < 2) return null;
 
   const data = withWeight.slice(1).map((entry, i) => {
     const prev = withWeight[i];
-    const diff = Number(((entry.weight || 0) - (prev.weight || 0)).toFixed(1));
     return {
       date: new Date(entry.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
-      cambio: diff,
+      cambio: Number(((entry.weight || 0) - (prev.weight || 0)).toFixed(1)),
     };
   });
 
@@ -290,11 +254,94 @@ export function WeightChangeBarChart({ entries }: { entries: ProgressEntry[] }) 
           <Tooltip {...TOOLTIP_STYLE} formatter={(value) => [`${Number(value) > 0 ? "+" : ""}${value} kg`, "Cambio"]} />
           <Bar dataKey="cambio" radius={[4, 4, 0, 0]}>
             {data.map((entry, i) => (
-              <Cell key={i} fill={entry.cambio <= 0 ? "#00f593" : "#ef4444"} />
+              <Cell key={`wc-${i}`} fill={entry.cambio <= 0 ? "#00f593" : "#ef4444"} />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+// 7. Exercise Progress Mini Charts
+interface ExerciseLog {
+  exercise_id: string;
+  exercise_name: string;
+  sets_data: { set: number; weight: number; reps: number }[];
+  date: string;
+}
+
+export function ExerciseProgressCharts({ logs }: { logs: ExerciseLog[] }) {
+  if (!logs || logs.length === 0) return null;
+
+  const byExercise: Record<string, { name: string; sessions: { date: string; weight: number }[] }> = {};
+  for (const log of logs) {
+    if (!byExercise[log.exercise_id]) {
+      byExercise[log.exercise_id] = { name: log.exercise_name, sessions: [] };
+    }
+    const maxSet = log.sets_data.reduce((best, s) => s.weight > best.weight ? s : best, log.sets_data[0]);
+    byExercise[log.exercise_id].sessions.push({ date: log.date, weight: maxSet.weight });
+  }
+
+  const exercises = Object.entries(byExercise)
+    .map(([id, data]) => ({
+      id,
+      name: data.name,
+      sessions: data.sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    }))
+    .filter(e => e.sessions.length > 0)
+    .sort((a, b) => b.sessions.length - a.sessions.length);
+
+  if (exercises.length === 0) return null;
+
+  return (
+    <div className="glass-card rounded-2xl p-4">
+      <p className="text-xs font-bold text-muted mb-3 flex items-center gap-1">
+        <Dumbbell className="h-3 w-3" />
+        Progresion por Ejercicio
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {exercises.map(ex => {
+          const latest = ex.sessions[ex.sessions.length - 1];
+          const first = ex.sessions[0];
+          const diff = ex.sessions.length > 1 ? latest.weight - first.weight : 0;
+          const chartData = ex.sessions.map(s => ({
+            date: new Date(s.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
+            kg: s.weight,
+          }));
+
+          return (
+            <div key={ex.id} className="bg-card-bg rounded-xl p-3">
+              <p className="text-[10px] font-bold truncate mb-1" title={ex.name}>{ex.name}</p>
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-sm font-black text-primary">{latest.weight}kg</span>
+                {diff !== 0 && (
+                  <span className={`text-[10px] font-bold ${diff > 0 ? "text-primary" : "text-danger"}`}>
+                    {diff > 0 ? "+" : ""}{diff}kg
+                  </span>
+                )}
+              </div>
+              {chartData.length > 1 ? (
+                <ResponsiveContainer width="100%" height={60}>
+                  <LineChart data={chartData}>
+                    <XAxis dataKey="date" hide />
+                    <YAxis hide domain={["dataMin - 2", "dataMax + 2"]} />
+                    <Tooltip
+                      contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", fontSize: "10px", padding: "4px 8px" }}
+                      labelStyle={{ color: "#888", fontSize: "9px" }}
+                      itemStyle={{ color: "#00f593" }}
+                      formatter={(value) => [`${value} kg`, ""]}
+                    />
+                    <Line type="monotone" dataKey="kg" stroke="#00f593" strokeWidth={1.5} dot={{ fill: "#00f593", r: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-[9px] text-muted">1 registro</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
