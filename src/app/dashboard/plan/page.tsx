@@ -105,10 +105,9 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(true);
   const [objective, setObjective] = useState("");
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
-  const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weight: number; reps: number }>>({});
+  const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weight: number; reps: number; date: string; prevWeight?: number }>>({});
   const [editingExercise, setEditingExercise] = useState<string | null>(null);
-  const [editWeight, setEditWeight] = useState("");
-  const [editReps, setEditReps] = useState("");
+  const [editSets, setEditSets] = useState<{ set: number; weight: number; reps: number }[]>([]);
   const [savingLog, setSavingLog] = useState(false);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
@@ -133,12 +132,18 @@ export default function PlanPage() {
       .order("date", { ascending: false });
 
     if (data) {
-      const latest: Record<string, { weight: number; reps: number }> = {};
+      const latest: Record<string, { weight: number; reps: number; date: string; prevWeight?: number }> = {};
       data.forEach(log => {
-        if (!latest[log.exercise_id] && log.sets_data?.length > 0) {
-          const maxSet = log.sets_data.reduce((best: { weight: number; reps: number }, s: { weight: number; reps: number }) =>
-            s.weight > best.weight ? s : best, log.sets_data[0]);
-          latest[log.exercise_id] = { weight: maxSet.weight, reps: maxSet.reps };
+        if (!log.sets_data?.length) return;
+        const maxSet = log.sets_data.reduce(
+          (best: { weight: number; reps: number }, s: { weight: number; reps: number }) =>
+            s.weight > best.weight ? s : best,
+          log.sets_data[0]
+        );
+        if (!latest[log.exercise_id]) {
+          latest[log.exercise_id] = { weight: maxSet.weight, reps: maxSet.reps, date: log.date };
+        } else if (!latest[log.exercise_id].prevWeight) {
+          latest[log.exercise_id].prevWeight = maxSet.weight;
         }
       });
       setExerciseLogs(latest);
@@ -146,19 +151,35 @@ export default function PlanPage() {
   };
 
   const saveExerciseLog = async (exerciseId: string, exerciseName: string) => {
-    if (!user || !editWeight) return;
+    if (!user) return;
+    const validSets = editSets.filter(s => s.weight > 0);
+    if (validSets.length === 0) return;
     setSavingLog(true);
     await supabase.from("exercise_logs").insert({
       user_id: user.id,
       exercise_id: exerciseId,
       exercise_name: exerciseName,
-      sets_data: [{ set: 1, weight: Number(editWeight), reps: Number(editReps) || 10 }],
+      sets_data: validSets,
     });
-    setExerciseLogs(prev => ({ ...prev, [exerciseId]: { weight: Number(editWeight), reps: Number(editReps) || 10 } }));
+    const maxSet = validSets.reduce((best, s) => s.weight > best.weight ? s : best, validSets[0]);
+    const prevWeight = exerciseLogs[exerciseId]?.weight;
+    setExerciseLogs(prev => ({
+      ...prev,
+      [exerciseId]: { weight: maxSet.weight, reps: maxSet.reps, date: new Date().toISOString(), prevWeight },
+    }));
     setEditingExercise(null);
-    setEditWeight("");
-    setEditReps("");
+    setEditSets([]);
     setSavingLog(false);
+  };
+
+  const startEditing = (dayName: string, exId: string, numSets: number, lastWeight: number) => {
+    setEditingExercise(`${dayName}-${exId}`);
+    const sets = Array.from({ length: numSets }, (_, i) => ({
+      set: i + 1,
+      weight: lastWeight,
+      reps: 10,
+    }));
+    setEditSets(sets);
   };
 
   const handleSwap = async (newFoodId: string) => {
@@ -390,6 +411,8 @@ export default function PlanPage() {
                 {day.exercises.map((ex, i) => {
                   const log = exerciseLogs[ex.id];
                   const isEditing = editingExercise === `${day.day}-${ex.id}`;
+                  const numSets = parseInt(String(ex.sets)) || 4;
+                  const weightDiff = log?.prevWeight != null ? log.weight - log.prevWeight : null;
                   return (
                     <div key={i} className="p-3">
                       <div className="flex items-center justify-between">
@@ -399,15 +422,22 @@ export default function PlanPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           {log && !isEditing ? (
-                            <button
-                              onClick={() => { setEditingExercise(`${day.day}-${ex.id}`); setEditWeight(String(log.weight)); setEditReps(String(log.reps)); }}
-                              className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-bold flex items-center gap-1"
-                            >
-                              {log.weight}kg <Edit3 className="h-3 w-3" />
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              {weightDiff !== null && weightDiff !== 0 && (
+                                <span className={`text-[10px] font-bold ${weightDiff > 0 ? "text-primary" : "text-danger"}`}>
+                                  {weightDiff > 0 ? "+" : ""}{weightDiff}kg
+                                </span>
+                              )}
+                              <button
+                                onClick={() => startEditing(day.day, ex.id, numSets, log.weight)}
+                                className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-bold flex items-center gap-1"
+                              >
+                                {log.weight}kg <Edit3 className="h-3 w-3" />
+                              </button>
+                            </div>
                           ) : !isEditing ? (
                             <button
-                              onClick={() => { setEditingExercise(`${day.day}-${ex.id}`); setEditWeight(""); setEditReps("10"); }}
+                              onClick={() => startEditing(day.day, ex.id, numSets, 0)}
                               className="text-xs bg-card-border text-muted px-2 py-1 rounded-lg flex items-center gap-1 hover:text-primary"
                             >
                               + Peso
@@ -419,19 +449,40 @@ export default function PlanPage() {
                         </div>
                       </div>
                       {isEditing && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <input type="number" value={editWeight} onChange={e => setEditWeight(e.target.value)}
-                            placeholder="Peso (kg)" className="w-20 bg-card-bg border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
-                          <span className="text-xs text-muted">x</span>
-                          <input type="number" value={editReps} onChange={e => setEditReps(e.target.value)}
-                            placeholder="Reps" className="w-16 bg-card-bg border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
-                          <button onClick={() => saveExerciseLog(ex.id, ex.name)} disabled={savingLog || !editWeight}
-                            className="gradient-primary text-black text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50">
-                            {savingLog ? "..." : "OK"}
-                          </button>
-                          <button onClick={() => setEditingExercise(null)} className="text-muted text-xs">
-                            <X className="h-4 w-4" />
-                          </button>
+                        <div className="mt-3 bg-card-bg rounded-xl p-3 space-y-2">
+                          <p className="text-[10px] text-muted font-bold">REGISTRAR SESION</p>
+                          {editSets.map((s, si) => (
+                            <div key={si} className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted w-5">S{s.set}</span>
+                              <input
+                                type="number"
+                                value={s.weight || ""}
+                                onChange={e => setEditSets(prev => prev.map((ps, pi) => pi === si ? { ...ps, weight: Number(e.target.value) } : ps))}
+                                placeholder="kg"
+                                className="flex-1 bg-background border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+                              />
+                              <span className="text-[10px] text-muted">x</span>
+                              <input
+                                type="number"
+                                value={s.reps || ""}
+                                onChange={e => setEditSets(prev => prev.map((ps, pi) => pi === si ? { ...ps, reps: Number(e.target.value) } : ps))}
+                                placeholder="reps"
+                                className="w-14 bg-background border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
+                              />
+                            </div>
+                          ))}
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              onClick={() => saveExerciseLog(ex.id, ex.name)}
+                              disabled={savingLog || editSets.every(s => s.weight === 0)}
+                              className="flex-1 gradient-primary text-black text-xs font-bold py-2 rounded-lg disabled:opacity-50"
+                            >
+                              {savingLog ? "Guardando..." : "Guardar sesion"}
+                            </button>
+                            <button onClick={() => setEditingExercise(null)} className="text-muted text-xs px-3 py-2">
+                              Cancelar
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
