@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { X, Search, Loader2, ArrowRight } from "lucide-react";
+import { X, Search, Loader2, ArrowRight, ChevronDown } from "lucide-react";
 import {
   type FoodItem,
+  FOOD_DATABASE,
   getFoodById,
   findFoodByName,
-  getSwapAlternatives,
   calculateSwapGrams,
   calculateFoodMacros,
 } from "@/lib/food-database";
@@ -28,23 +28,56 @@ interface FoodSwapModalProps {
   onClose: () => void;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  protein: "Proteinas",
+  carb: "Carbohidratos",
+  fat: "Grasas saludables",
+  dairy: "Lacteos",
+  fruit: "Frutas",
+  vegetable: "Verduras",
+  snack: "Snacks",
+};
+
+const CATEGORY_ORDER = ["protein", "carb", "fat", "dairy", "fruit", "vegetable", "snack"];
+
 export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSwapModalProps) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const currentDbFood = useMemo(() => findFoodByName(currentFood.name), [currentFood.name]);
 
-  const alternatives = useMemo(() => {
-    if (!currentDbFood) return [];
-    return getSwapAlternatives(currentDbFood.id, mealName);
-  }, [currentDbFood, mealName]);
+  // All foods except the current one
+  const allFoods = useMemo(() => {
+    return FOOD_DATABASE.filter(f => !currentDbFood || f.id !== currentDbFood.id);
+  }, [currentDbFood]);
 
+  // Filter by search
   const filtered = useMemo(() => {
-    if (!search.trim()) return alternatives;
+    if (!search.trim()) return allFoods;
     const q = search.toLowerCase();
-    return alternatives.filter((f) => f.name.toLowerCase().includes(q));
-  }, [alternatives, search]);
+    return allFoods.filter((f) =>
+      f.name.toLowerCase().includes(q) || f.id.includes(q)
+    );
+  }, [allFoods, search]);
+
+  // Group by category
+  const grouped = useMemo(() => {
+    const groups: Record<string, FoodItem[]> = {};
+    filtered.forEach(f => {
+      if (!groups[f.category]) groups[f.category] = [];
+      groups[f.category].push(f);
+    });
+    return groups;
+  }, [filtered]);
+
+  // When searching, show flat list. When not searching, show categories.
+  const isSearching = search.trim().length > 0;
+
+  // Auto-expand same category on open
+  const defaultCategory = currentDbFood?.category || null;
+  const activeCategory = expandedCategory ?? (isSearching ? null : defaultCategory);
 
   const selectedFood = selected ? getFoodById(selected) : null;
   const preview = useMemo(() => {
@@ -61,14 +94,38 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
     setSwapping(false);
   };
 
-  const categoryLabel: Record<string, string> = {
-    protein: "Proteina",
-    carb: "Carbohidrato",
-    fat: "Grasa",
-    vegetable: "Verdura",
-    fruit: "Fruta",
-    dairy: "Lacteo",
-    snack: "Snack",
+  const renderFoodItem = (food: FoodItem) => {
+    const isSelected = selected === food.id;
+    const grams = currentDbFood ? calculateSwapGrams(currentDbFood, currentFood.grams, food) : 100;
+    const macros = calculateFoodMacros(food, grams);
+    const isSameCategory = currentDbFood && food.category === currentDbFood.category;
+    return (
+      <button
+        key={food.id}
+        onClick={() => setSelected(isSelected ? null : food.id)}
+        className={`w-full text-left rounded-xl p-3 transition-all ${
+          isSelected
+            ? "bg-primary/10 border border-primary/40"
+            : "bg-card-bg border border-transparent hover:border-card-border"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm">{food.name}</p>
+            {isSameCategory && (
+              <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">RECOMENDADO</span>
+            )}
+          </div>
+          <span className="text-xs text-primary font-bold">{grams}g</span>
+        </div>
+        <div className="flex gap-2 mt-1">
+          <span className="text-[10px] text-muted">{macros.calories} kcal</span>
+          <span className="text-[10px] text-red-400">P:{macros.protein}g</span>
+          <span className="text-[10px] text-yellow-400">C:{macros.carbs}g</span>
+          <span className="text-[10px] text-blue-400">G:{macros.fat}g</span>
+        </div>
+      </button>
+    );
   };
 
   return (
@@ -88,7 +145,7 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
           <div className="bg-card-bg rounded-xl p-3">
             <p className="text-xs text-muted mb-1">Alimento actual</p>
             <p className="font-bold text-sm">{currentFood.name}</p>
-            <div className="flex gap-2 mt-1.5">
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
               <span className="text-[10px] px-1.5 py-0.5 bg-white/5 rounded">{currentFood.grams}g</span>
               <span className="text-[10px] px-1.5 py-0.5 bg-white/5 rounded">{currentFood.calories} kcal</span>
               <span className="text-[10px] px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded">P:{currentFood.protein}g</span>
@@ -110,73 +167,78 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
               className="w-full bg-card-bg border border-card-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-primary"
             />
           </div>
-          {currentDbFood && (
-            <p className="text-[10px] text-muted mt-2">
-              Categoria: {categoryLabel[currentDbFood.category] || currentDbFood.category} — {filtered.length} alternativas
-            </p>
-          )}
+          <p className="text-[10px] text-muted mt-2">
+            {filtered.length} alimentos disponibles{isSearching ? ` para "${search}"` : ""}
+          </p>
         </div>
 
-        {/* Alternatives list */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5">
+        {/* Food list */}
+        <div className="flex-1 overflow-y-auto px-4 py-2">
           {!currentDbFood ? (
             <p className="text-sm text-muted text-center py-6">
               Este alimento no esta en la base de datos. No se puede intercambiar.
             </p>
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted text-center py-6">
-              No hay alternativas disponibles
+              No se encontraron alimentos
             </p>
+          ) : isSearching ? (
+            // Flat list when searching
+            <div className="space-y-1.5">
+              {filtered.map(renderFoodItem)}
+            </div>
           ) : (
-            filtered.map((food) => {
-              const isSelected = selected === food.id;
-              const grams = calculateSwapGrams(currentDbFood, currentFood.grams, food);
-              const macros = calculateFoodMacros(food, grams);
-              return (
-                <button
-                  key={food.id}
-                  onClick={() => setSelected(isSelected ? null : food.id)}
-                  className={`w-full text-left rounded-xl p-3 transition-all ${
-                    isSelected
-                      ? "bg-primary/10 border border-primary/40"
-                      : "bg-card-bg border border-transparent hover:border-card-border"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm">{food.name}</p>
-                    <span className="text-xs text-primary font-bold">{grams}g</span>
+            // Grouped by category when browsing
+            <div className="space-y-2">
+              {CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => {
+                const isOpen = activeCategory === cat;
+                const foods = grouped[cat];
+                return (
+                  <div key={cat}>
+                    <button
+                      onClick={() => setExpandedCategory(isOpen ? null : cat)}
+                      className="w-full flex items-center justify-between py-2 px-1"
+                    >
+                      <span className="text-xs font-bold text-muted uppercase tracking-wider">
+                        {CATEGORY_LABELS[cat] || cat} ({foods.length})
+                      </span>
+                      <ChevronDown className={`h-4 w-4 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    </button>
+                    {isOpen && (
+                      <div className="space-y-1.5 pb-2">
+                        {foods.map(renderFoodItem)}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex gap-2 mt-1">
-                    <span className="text-[10px] text-muted">{macros.calories} kcal</span>
-                    <span className="text-[10px] text-red-400">P:{macros.protein}g</span>
-                    <span className="text-[10px] text-yellow-400">C:{macros.carbs}g</span>
-                    <span className="text-[10px] text-blue-400">G:{macros.fat}g</span>
-                  </div>
-                </button>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
 
         {/* Preview + Confirm */}
-        {selected && preview && (
+        {selected && preview && selectedFood && (
           <div className="p-4 border-t border-card-border shrink-0">
-            <div className="flex items-center gap-2 mb-3 text-xs">
-              <div className="flex-1 text-center">
-                <p className="text-muted">Actual</p>
-                <p className="font-bold">{currentFood.calories} kcal</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-primary shrink-0" />
-              <div className="flex-1 text-center">
-                <p className="text-muted">Nuevo</p>
-                <p className="font-bold">{preview.calories} kcal</p>
-              </div>
-              <div className="flex-1 text-center">
-                <p className="text-muted">Diferencia</p>
-                <p className={`font-bold ${Math.abs(preview.calories - currentFood.calories) > 30 ? "text-warning" : "text-primary"}`}>
-                  {preview.calories - currentFood.calories > 0 ? "+" : ""}
-                  {preview.calories - currentFood.calories} kcal
-                </p>
+            <div className="bg-card-bg rounded-xl p-3 mb-3">
+              <p className="text-xs text-muted mb-1">Vas a comer</p>
+              <p className="font-bold text-sm text-primary">{preview.grams}g de {selectedFood.name}</p>
+              <div className="flex items-center gap-3 mt-2 text-xs">
+                <div className="text-center">
+                  <p className="text-muted">Actual</p>
+                  <p className="font-bold">{currentFood.calories} kcal</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+                <div className="text-center">
+                  <p className="text-muted">Nuevo</p>
+                  <p className="font-bold">{preview.calories} kcal</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-muted">Dif.</p>
+                  <p className={`font-bold ${Math.abs(preview.calories - currentFood.calories) > 30 ? "text-warning" : "text-primary"}`}>
+                    {preview.calories - currentFood.calories > 0 ? "+" : ""}
+                    {preview.calories - currentFood.calories}
+                  </p>
+                </div>
               </div>
             </div>
             <button
@@ -187,7 +249,7 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
               {swapping ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>Cambiar a {selectedFood?.name}</>
+                <>Cambiar a {selectedFood.name}</>
               )}
             </button>
           </div>
