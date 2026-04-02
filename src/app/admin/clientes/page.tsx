@@ -27,25 +27,27 @@ export default function ClientesPage() {
   }, [authLoading, user]);
 
   const loadClients = async () => {
-    let token = "";
-    for (let i = 0; i < 3; i++) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        token = session.access_token;
-        break;
-      }
-      await new Promise(r => setTimeout(r, 1000));
-    }
-    if (!token) { setLoading(false); return; }
-
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/admin/clients", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
+      if (!res.ok) {
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
       if (data.clients) setClients(data.clients);
-    } catch {}
-    setLoading(false);
+    } catch {
+      // Network error - silently fail
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filtered = clients.filter((c) => {
