@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setSubscription({

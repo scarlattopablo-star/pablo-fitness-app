@@ -28,21 +28,32 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      loadClients();
+    if (!authLoading) {
+      if (user) {
+        loadClients();
+      } else {
+        // No user after auth loaded - stop spinner
+        setLoading(false);
+      }
     }
   }, [authLoading, user]);
+
+  // Safety timeout: never show spinner for more than 10 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 10000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
   const loadClients = async () => {
     // Try multiple times to get the session token (mobile can be slow)
     let token = "";
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) {
         token = session.access_token;
         break;
       }
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 1500));
     }
     if (!token) { setLoading(false); return; }
 
