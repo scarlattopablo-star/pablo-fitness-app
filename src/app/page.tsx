@@ -17,7 +17,7 @@ import {
   Star,
   ChevronRight,
 } from "lucide-react";
-import { PLANS } from "@/lib/plans-data";
+import { PLANS, formatPrice } from "@/lib/plans-data";
 import { InstagramIcon } from "@/components/icons";
 import { LanguageSelector } from "@/components/language-selector";
 import { useI18n } from "@/lib/i18n";
@@ -167,7 +167,7 @@ export default function HomePage() {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-primary font-bold">
-                      {t("plans.from")} ${plan.prices["1-mes"]}/{t("plans.month")}
+                      {t("plans.from")} ${formatPrice(plan.prices["1-mes"])}/{t("plans.month")}
                     </span>
                     <ChevronRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
                   </div>

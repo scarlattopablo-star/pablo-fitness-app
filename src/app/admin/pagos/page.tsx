@@ -83,7 +83,7 @@ export default function PagosPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <div className="glass-card rounded-2xl p-5">
           <DollarSign className="h-5 w-5 text-primary mb-2" />
-          <p className="text-2xl font-black">${totalApproved}</p>
+          <p className="text-2xl font-black">${totalApproved.toLocaleString("es-UY")}</p>
           <p className="text-xs text-muted">Total cobrado</p>
         </div>
         <div className="glass-card rounded-2xl p-5">
@@ -135,7 +135,7 @@ export default function PagosPage() {
                     <td className="p-4 hidden md:table-cell text-muted">
                       {durationLabel(payment.duration)}
                     </td>
-                    <td className="p-4 text-right font-bold">${payment.amount}</td>
+                    <td className="p-4 text-right font-bold">${Number(payment.amount).toLocaleString("es-UY")}</td>
                     <td className="p-4 hidden lg:table-cell text-muted">
                       {new Date(payment.created_at).toLocaleDateString("es")}
                     </td>

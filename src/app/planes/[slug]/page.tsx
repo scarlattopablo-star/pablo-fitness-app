@@ -7,7 +7,7 @@ import {
   Heart, Shield, RefreshCw, Users, Medal,
   ArrowLeft, Check, ArrowRight, Clock, Target, Zap,
 } from "lucide-react";
-import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage } from "@/lib/plans-data";
+import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
 import type { Duration } from "@/types";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -150,10 +150,10 @@ export default function PlanDetailPage({
                           )}
                         </div>
                         {d !== "1-mes" && (
-                          <p className="text-xs text-muted">${monthly}/mes</p>
+                          <p className="text-xs text-muted">${formatPrice(monthly)}/mes</p>
                         )}
                       </div>
-                      <span className="font-bold text-lg">${p}</span>
+                      <span className="font-bold text-lg">${formatPrice(p)}</span>
                     </button>
                   );
                 })}
@@ -168,7 +168,7 @@ export default function PlanDetailPage({
               <div className="border-t border-card-border pt-4 mb-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-muted">Plan {plan.name}</span>
-                  <span className="font-bold">${price}</span>
+                  <span className="font-bold">${formatPrice(price)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted">Duración</span>

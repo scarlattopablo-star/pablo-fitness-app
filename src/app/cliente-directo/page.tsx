@@ -138,7 +138,7 @@ function ClienteDirectoForm() {
       user_id: userId,
       duration: "1-ano",
       amount_paid: 0,
-      currency: "USD",
+      currency: "UYU",
       start_date: new Date().toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
       status: "active",

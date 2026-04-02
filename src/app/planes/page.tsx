@@ -6,7 +6,7 @@ import {
   Heart, Shield, RefreshCw, Users, Medal,
   ArrowLeft, ChevronRight, Check,
 } from "lucide-react";
-import { PLANS, DURATION_LABELS, DURATION_DESCRIPTIONS, getDiscountPercentage } from "@/lib/plans-data";
+import { PLANS, DURATION_LABELS, DURATION_DESCRIPTIONS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
 import { useState } from "react";
 import type { Duration } from "@/types";
 
@@ -107,7 +107,7 @@ export default function PlanesPage() {
 
                   <div className="mb-4">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-primary">${price}</span>
+                      <span className="text-3xl font-black text-primary">${formatPrice(price)}</span>
                       <span className="text-sm text-muted">/ {DURATION_LABELS[selectedDuration].toLowerCase()}</span>
                     </div>
                     {selectedDuration !== "1-mes" && (

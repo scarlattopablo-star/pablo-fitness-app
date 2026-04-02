@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload } from "lucide-react";
 import { calculateMacros } from "@/lib/harris-benedict";
-import { getPlanBySlug, DURATION_LABELS } from "@/lib/plans-data";
+import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
 import type { Sex, ActivityLevel, PlanSlug, MacroCalculation } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
@@ -119,7 +119,7 @@ export default function EncuestaPage() {
               <p className="font-bold">{plan.name} - {DURATION_LABELS[duration]}</p>
             </div>
             <span className="text-primary font-bold text-lg">
-              ${plan.prices[duration as keyof typeof plan.prices]}
+              ${formatPrice(plan.prices[duration as keyof typeof plan.prices])}
             </span>
           </div>
         )}

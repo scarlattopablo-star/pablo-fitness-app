@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
           description: `Plan de entrenamiento y nutrición personalizado - Pablo Scarlatto Entrenamientos`,
           quantity: 1,
           unit_price: Number(price),
-          currency_id: "USD",
+          currency_id: "UYU",
         },
       ],
       payer: { email, name },

@@ -17,8 +17,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Flame',
     color: '#FF4444',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '2',
@@ -36,8 +36,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Dumbbell',
     color: '#4CAF50',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '3',
@@ -55,8 +55,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Sparkles',
     color: '#FF9800',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '4',
@@ -74,8 +74,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'GraduationCap',
     color: '#2196F3',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '5',
@@ -93,8 +93,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Trophy',
     color: '#9C27B0',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '6',
@@ -112,8 +112,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Heart',
     color: '#E91E63',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '7',
@@ -131,8 +131,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Shield',
     color: '#607D8B',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '8',
@@ -150,8 +150,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'RefreshCw',
     color: '#00BCD4',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
   {
     id: '9',
@@ -169,8 +169,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Users',
     color: '#FF5722',
-    prices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
     isCouple: true,
   },
   {
@@ -189,8 +189,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Medal',
     color: '#FFD700',
-    prices: { '1-mes': 50, '3-meses': 120, '6-meses': 200, '1-ano': 300 },
-    couplePrices: { '1-mes': 80, '3-meses': 190, '6-meses': 320, '1-ano': 480 },
+    prices: { '1-mes': 2800, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 4480, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
 ];
 
@@ -210,6 +210,10 @@ export const DURATION_DESCRIPTIONS: Record<string, string> = {
 
 export function getPlanBySlug(slug: string): Plan | undefined {
   return PLANS.find(p => p.slug === slug);
+}
+
+export function formatPrice(price: number): string {
+  return price.toLocaleString("es-UY");
 }
 
 export function getDiscountPercentage(duration: string): number {

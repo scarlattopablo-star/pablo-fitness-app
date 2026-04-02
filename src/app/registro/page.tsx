@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { getPlanBySlug, DURATION_LABELS } from "@/lib/plans-data";
+import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
 
 export default function RegistroPage() {
   return (
@@ -150,7 +150,7 @@ function RegistroForm() {
               <p className="text-sm text-muted">Plan seleccionado</p>
               <p className="font-bold">{plan.name} - {DURATION_LABELS[duration]}</p>
             </div>
-            <span className="text-primary font-bold text-lg">${price}</span>
+            <span className="text-primary font-bold text-lg">${formatPrice(price)}</span>
           </div>
         )}
 
@@ -223,7 +223,7 @@ function RegistroForm() {
             disabled={loading}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? "Procesando..." : plan ? `Crear Cuenta y Pagar $${price}` : "Crear Cuenta"}
+            {loading ? "Procesando..." : plan ? `Crear Cuenta y Pagar $${formatPrice(price)}` : "Crear Cuenta"}
           </button>
 
           <p className="text-xs text-muted text-center">
