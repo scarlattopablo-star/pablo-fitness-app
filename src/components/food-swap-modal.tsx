@@ -45,39 +45,31 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
   const [selected, setSelected] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
 
   const currentDbFood = useMemo(() => findFoodByName(currentFood.name), [currentFood.name]);
 
-  // All foods except the current one
-  const allFoods = useMemo(() => {
-    return FOOD_DATABASE.filter(f => !currentDbFood || f.id !== currentDbFood.id);
+  // Same category foods (excluding current)
+  const sameCategoryFoods = useMemo(() => {
+    if (!currentDbFood) return [];
+    return FOOD_DATABASE.filter(f => f.id !== currentDbFood.id && f.category === currentDbFood.category);
   }, [currentDbFood]);
 
-  // Filter by search
-  const filtered = useMemo(() => {
-    if (!search.trim()) return allFoods;
+  // All OTHER category foods (excluding current)
+  const otherFoods = useMemo(() => {
+    if (!currentDbFood) return FOOD_DATABASE;
+    return FOOD_DATABASE.filter(f => f.id !== currentDbFood.id && f.category !== currentDbFood.category);
+  }, [currentDbFood]);
+
+  // Filter by search across ALL foods
+  const filteredSearch = useMemo(() => {
+    if (!search.trim()) return [];
     const q = search.toLowerCase();
-    return allFoods.filter((f) =>
-      f.name.toLowerCase().includes(q) || f.id.includes(q)
-    );
-  }, [allFoods, search]);
+    const all = FOOD_DATABASE.filter(f => !currentDbFood || f.id !== currentDbFood.id);
+    return all.filter((f) => f.name.toLowerCase().includes(q) || f.id.includes(q));
+  }, [search, currentDbFood]);
 
-  // Group by category
-  const grouped = useMemo(() => {
-    const groups: Record<string, FoodItem[]> = {};
-    filtered.forEach(f => {
-      if (!groups[f.category]) groups[f.category] = [];
-      groups[f.category].push(f);
-    });
-    return groups;
-  }, [filtered]);
-
-  // When searching, show flat list. When not searching, show categories.
   const isSearching = search.trim().length > 0;
-
-  // Auto-expand same category on open
-  const defaultCategory = currentDbFood?.category || null;
-  const activeCategory = expandedCategory ?? (isSearching ? null : defaultCategory);
 
   const selectedFood = selected ? getFoodById(selected) : null;
   const preview = useMemo(() => {
@@ -98,7 +90,6 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
     const isSelected = selected === food.id;
     const grams = currentDbFood ? calculateSwapGrams(currentDbFood, currentFood.grams, food) : 100;
     const macros = calculateFoodMacros(food, grams);
-    const isSameCategory = currentDbFood && food.category === currentDbFood.category;
     return (
       <button
         key={food.id}
@@ -110,12 +101,7 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
         }`}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <p className="font-medium text-sm">{food.name}</p>
-            {isSameCategory && (
-              <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">RECOMENDADO</span>
-            )}
-          </div>
+          <p className="font-medium text-sm">{food.name}</p>
           <span className="text-xs text-primary font-bold">{grams}g</span>
         </div>
         <div className="flex gap-2 mt-1">
@@ -168,7 +154,11 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
             />
           </div>
           <p className="text-[10px] text-muted mt-2">
-            {filtered.length} alimentos disponibles{isSearching ? ` para "${search}"` : ""}
+            {isSearching
+              ? `${filteredSearch.length} resultados para "${search}"`
+              : currentDbFood
+                ? `${sameCategoryFoods.length} alternativas en ${CATEGORY_LABELS[currentDbFood.category] || currentDbFood.category}`
+                : ""}
           </p>
         </div>
 
@@ -178,40 +168,58 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
             <p className="text-sm text-muted text-center py-6">
               Este alimento no esta en la base de datos. No se puede intercambiar.
             </p>
-          ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted text-center py-6">
-              No se encontraron alimentos
-            </p>
           ) : isSearching ? (
-            // Flat list when searching
-            <div className="space-y-1.5">
-              {filtered.map(renderFoodItem)}
-            </div>
+            // Search results across all categories
+            filteredSearch.length === 0 ? (
+              <p className="text-sm text-muted text-center py-6">
+                No se encontraron alimentos
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {filteredSearch.map(renderFoodItem)}
+              </div>
+            )
           ) : (
-            // Grouped by category when browsing
-            <div className="space-y-2">
-              {CATEGORY_ORDER.filter(cat => grouped[cat]?.length > 0).map(cat => {
-                const isOpen = activeCategory === cat;
-                const foods = grouped[cat];
-                return (
-                  <div key={cat}>
-                    <button
-                      onClick={() => setExpandedCategory(isOpen ? null : cat)}
-                      className="w-full flex items-center justify-between py-2 px-1"
-                    >
-                      <span className="text-xs font-bold text-muted uppercase tracking-wider">
-                        {CATEGORY_LABELS[cat] || cat} ({foods.length})
-                      </span>
-                      <ChevronDown className={`h-4 w-4 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                    </button>
-                    {isOpen && (
-                      <div className="space-y-1.5 pb-2">
-                        {foods.map(renderFoodItem)}
+            // Default: same category list + link to see all
+            <div>
+              <div className="space-y-1.5">
+                {sameCategoryFoods.map(renderFoodItem)}
+              </div>
+              {!showAllCategories && otherFoods.length > 0 && (
+                <button
+                  onClick={() => setShowAllCategories(true)}
+                  className="w-full text-center text-xs text-primary font-medium py-3 mt-2 hover:underline"
+                >
+                  Ver todos los alimentos ({otherFoods.length} mas)
+                </button>
+              )}
+              {showAllCategories && (
+                <div className="mt-3 space-y-2">
+                  {CATEGORY_ORDER.filter(cat => cat !== currentDbFood.category).map(cat => {
+                    const foods = otherFoods.filter(f => f.category === cat);
+                    if (foods.length === 0) return null;
+                    const isOpen = expandedCategory === cat;
+                    return (
+                      <div key={cat}>
+                        <button
+                          onClick={() => setExpandedCategory(isOpen ? null : cat)}
+                          className="w-full flex items-center justify-between py-2 px-1"
+                        >
+                          <span className="text-xs font-bold text-muted uppercase tracking-wider">
+                            {CATEGORY_LABELS[cat] || cat} ({foods.length})
+                          </span>
+                          <ChevronDown className={`h-4 w-4 text-muted transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                        </button>
+                        {isOpen && (
+                          <div className="space-y-1.5 pb-2">
+                            {foods.map(renderFoodItem)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
