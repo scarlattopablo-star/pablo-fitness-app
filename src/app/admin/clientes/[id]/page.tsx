@@ -58,6 +58,11 @@ export default function ClienteDetailPage({
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -182,7 +187,37 @@ export default function ClienteDetailPage({
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted">
             <span className="flex items-center gap-1"><Mail className="h-3 w-3" /> {client.email}</span>
             {client.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {client.phone}</span>}
+            <button onClick={() => { setShowEditProfile(true); setEditName(client.full_name || ""); setEditPhone(client.phone || ""); }}
+              className="text-primary text-xs hover:underline">Editar datos</button>
           </div>
+          {showEditProfile && (
+            <div className="mt-3 bg-card-bg border border-card-border rounded-xl p-4 space-y-3">
+              <div>
+                <label className="block text-xs text-muted mb-1">Nombre</label>
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+                  className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted mb-1">Telefono</label>
+                <input type="tel" value={editPhone} onChange={e => setEditPhone(e.target.value)}
+                  className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={async () => {
+                  setSavingProfile(true);
+                  await supabase.from("profiles").update({ full_name: editName, phone: editPhone }).eq("id", id);
+                  setClient({ ...client, full_name: editName, phone: editPhone });
+                  setSavingProfile(false);
+                  setProfileSaved(true);
+                  setTimeout(() => { setShowEditProfile(false); setProfileSaved(false); }, 1500);
+                }} disabled={savingProfile}
+                  className="gradient-primary text-black text-sm font-bold px-4 py-2 rounded-lg disabled:opacity-50">
+                  {profileSaved ? "Guardado!" : savingProfile ? "Guardando..." : "Guardar"}
+                </button>
+                <button onClick={() => setShowEditProfile(false)} className="text-sm text-muted">Cancelar</button>
+              </div>
+            </div>
+          )}
           <p className="text-xs text-muted mt-1">
             Registrado: {new Date(client.created_at).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" })}
           </p>
