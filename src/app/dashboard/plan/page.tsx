@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
@@ -96,9 +97,13 @@ const OBJECTIVE_LABELS: Record<string, string> = {
 };
 
 
-export default function PlanPage() {
+function PlanContent() {
+  const searchParams = useSearchParams();
+  const initialView = (searchParams.get("v") === "entrenamiento" || searchParams.get("v") === "nutricion")
+    ? searchParams.get("v") as "entrenamiento" | "nutricion"
+    : "overview";
   const { user, subscription, isExpired, hasActiveSubscription } = useAuth();
-  const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">("overview");
+  const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">(initialView);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
   const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
@@ -696,5 +701,13 @@ export default function PlanPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PlanPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>}>
+      <PlanContent />
+    </Suspense>
   );
 }

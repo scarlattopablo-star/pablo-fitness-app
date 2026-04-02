@@ -10,6 +10,8 @@ import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { OfflineBanner } from "@/components/offline-banner";
+import { cacheData, getCachedData } from "@/lib/offline-cache";
 
 interface SurveyData {
   target_calories: number;
@@ -53,40 +55,48 @@ export default function DashboardPage() {
   const loadData = async () => {
     if (!user) return;
 
-    const { data: surveyData } = await supabase
-      .from("surveys")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    try {
+      const { data: surveyData } = await supabase
+        .from("surveys")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (surveyData) {
-      setSurvey(surveyData);
-      const start = new Date(surveyData.created_at);
-      const now = new Date();
-      setDaysActive(Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-    }
-
-    // Load latest progress entry for real stats
-    const { data: progressEntries } = await supabase
-      .from("progress_entries")
-      .select("weight, date, created_at")
-      .eq("user_id", user.id)
-      .order("date", { ascending: false })
-      .limit(1);
-
-    if (progressEntries && progressEntries.length > 0 && progressEntries[0].weight) {
-      setCurrentWeight(progressEntries[0].weight);
-      if (surveyData?.weight) {
-        setWeightLost(Number((surveyData.weight - progressEntries[0].weight).toFixed(1)));
+      if (surveyData) {
+        setSurvey(surveyData);
+        const start = new Date(surveyData.created_at);
+        const now = new Date();
+        setDaysActive(Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+        cacheData("dashboard", { survey: surveyData });
       }
-      const lastDate = new Date(progressEntries[0].date || progressEntries[0].created_at);
-      setDaysSinceProgress(Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)));
-    } else {
-      // No progress entries yet — use survey weight as current
-      if (surveyData?.weight) setCurrentWeight(surveyData.weight);
-      setDaysSinceProgress(999);
+
+      const { data: progressEntries } = await supabase
+        .from("progress_entries")
+        .select("weight, date, created_at")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .limit(1);
+
+      if (progressEntries && progressEntries.length > 0 && progressEntries[0].weight) {
+        setCurrentWeight(progressEntries[0].weight);
+        if (surveyData?.weight) {
+          setWeightLost(Number((surveyData.weight - progressEntries[0].weight).toFixed(1)));
+        }
+        const lastDate = new Date(progressEntries[0].date || progressEntries[0].created_at);
+        setDaysSinceProgress(Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)));
+      } else {
+        if (surveyData?.weight) setCurrentWeight(surveyData.weight);
+        setDaysSinceProgress(999);
+      }
+    } catch {
+      // Offline fallback
+      const cached = getCachedData<{ survey: SurveyData }>("dashboard");
+      if (cached?.survey) {
+        setSurvey(cached.survey);
+        if (cached.survey.weight) setCurrentWeight(cached.survey.weight);
+      }
     }
 
     setLoading(false);
@@ -109,6 +119,7 @@ export default function DashboardPage() {
 
   return (
     <div>
+      <OfflineBanner />
       {/* HERO HEADER */}
       <div className="relative rounded-2xl overflow-hidden mb-6 p-6 sm:p-8" style={{ background: "linear-gradient(135deg, #0f1a0f 0%, #0a0a0a 50%, #0a1a0a 100%)" }}>
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -223,14 +234,14 @@ export default function DashboardPage() {
         <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Acciones Rapidas
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <Link href="/dashboard/plan" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
+        <Link href="/dashboard/plan?v=entrenamiento" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
           <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
             <Dumbbell className="h-6 w-6 text-primary" />
           </div>
           <p className="font-bold group-hover:text-primary transition-colors">Mi Plan de Entrenamiento</p>
           <p className="text-xs text-muted mt-1">Tu rutina personalizada</p>
         </Link>
-        <Link href="/dashboard/plan" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
+        <Link href="/dashboard/plan?v=nutricion" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
           <div className="w-11 h-11 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
             <UtensilsCrossed className="h-6 w-6 text-warning" />
           </div>
