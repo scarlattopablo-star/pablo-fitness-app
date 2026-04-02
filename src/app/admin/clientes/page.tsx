@@ -21,49 +21,41 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!authLoading) {
-      if (user) {
-        loadClients();
-      } else {
-        setLoading(false);
+    if (authLoading) return;
+    if (!user) { setLoading(false); return; }
+
+    // Listen for auth state to get a fresh token
+    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.access_token) {
+          await fetchClients(session.access_token);
+          authSub.unsubscribe();
+        }
       }
-    }
+    );
+
+    // Also try immediately in case session is already available
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        fetchClients(session.access_token).then(() => authSub.unsubscribe());
+      }
+    });
+
+    // Safety timeout
+    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 12000);
+    return () => { authSub.unsubscribe(); clearTimeout(timeout); };
   }, [authLoading, user]);
 
-  // Safety timeout
-  useEffect(() => {
-    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 10000);
-    return () => clearTimeout(timeout);
-  }, [loading]);
-
-  const loadClients = async () => {
-    // Retry getting session token (mobile can be slow)
-    let token = "";
-    for (let i = 0; i < 5; i++) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        token = session.access_token;
-        break;
-      }
-      await new Promise(r => setTimeout(r, 1500));
-    }
-    if (!token) { setLoading(false); return; }
-
+  const fetchClients = async (token: string) => {
     try {
       const res = await fetch("/api/admin/clients", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        setLoading(false);
-        return;
-      }
+      if (!res.ok) { setLoading(false); return; }
       const data = await res.json();
       if (data.clients) setClients(data.clients);
-    } catch {
-      // Network error
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+    setLoading(false);
   };
 
   const filtered = clients.filter((c) => {
