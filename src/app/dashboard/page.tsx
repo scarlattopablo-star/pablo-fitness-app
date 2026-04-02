@@ -118,7 +118,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
+    <div className="relative">
+      {/* Background image - grayscale, blurred, faded */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.07]"
+          style={{
+            backgroundImage: "url(/images/gym-bg.png)",
+            filter: "grayscale(100%) blur(2px)",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
+      </div>
+
       <OfflineBanner />
       {/* HERO HEADER */}
       <div className="relative rounded-2xl overflow-hidden mb-6 p-6 sm:p-8" style={{ background: "linear-gradient(135deg, #0f1a0f 0%, #0a0a0a 50%, #0a1a0a 100%)" }}>
