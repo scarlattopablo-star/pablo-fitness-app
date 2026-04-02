@@ -25,37 +25,29 @@ function getFood(id: string): FoodItem {
   return FOOD_DATABASE.find(f => f.id === id)!;
 }
 
-function round10(n: number): number {
-  return Math.round(n / 10) * 10 || 10;
+function round5(n: number): number {
+  return Math.max(10, Math.round(n / 5) * 5);
 }
 
-function buildFoodEntry(foodId: string, grams: number): MealFood {
+function buildFood(foodId: string, grams: number): MealFood {
   const food = getFood(foodId);
-  const macros = calculateFoodMacros(food, grams);
-  return {
-    name: food.name,
-    grams,
-    unit: food.unit,
-    calories: macros.calories,
-    protein: macros.protein,
-    carbs: macros.carbs,
-    fat: macros.fat,
-  };
+  const g = Math.max(10, grams);
+  const macros = calculateFoodMacros(food, g);
+  return { name: food.name, grams: g, unit: food.unit, ...macros };
 }
 
-function buildFoodEntryByUnit(foodId: string, units: number, gramsPerUnit: number): MealFood {
+function buildFoodByUnit(foodId: string, units: number, gramsPerUnit: number): MealFood {
   const food = getFood(foodId);
-  const totalGrams = units * gramsPerUnit;
+  const totalGrams = Math.max(1, units) * gramsPerUnit;
   const macros = calculateFoodMacros(food, totalGrams);
-  return {
-    name: `${units} ${food.name}`,
-    grams: totalGrams,
-    unit: food.unit,
-    calories: macros.calories,
-    protein: macros.protein,
-    carbs: macros.carbs,
-    fat: macros.fat,
-  };
+  return { name: `${Math.max(1, units)} ${food.name}`, grams: totalGrams, unit: food.unit, ...macros };
+}
+
+// Calculate grams of a food to hit a target macro, using its per-100g value
+function gramsFor(food: FoodItem, target: number, macro: "protein" | "carbs" | "fat"): number {
+  const per100 = food[macro];
+  if (per100 <= 0 || target <= 0) return 0;
+  return round5((target / per100) * 100);
 }
 
 function sumMacros(foods: MealFood[]) {
@@ -80,6 +72,16 @@ function mealFromFoods(name: string, foodDetails: MealFood[]): MealPlanMeal {
   };
 }
 
+// Remaining macro budget after placed foods
+function remaining(target: { p: number; c: number; f: number }, placed: MealFood[]) {
+  const totals = sumMacros(placed);
+  return {
+    p: Math.max(0, target.p - totals.protein),
+    c: Math.max(0, target.c - totals.carbs),
+    f: Math.max(0, target.f - totals.fat),
+  };
+}
+
 export function generateMealPlan(
   targetCalories: number,
   protein: number,
@@ -88,101 +90,131 @@ export function generateMealPlan(
   wakeHour: number = 7,
   sleepHour: number = 23
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
-  // Calculate meal times every 3 hours from wake to sleep
-  // Last meal (cena) is always 2h before sleep
   const awakeHours = (sleepHour > wakeHour ? sleepHour : sleepHour + 24) - wakeHour;
   const numMeals = Math.min(6, Math.max(4, Math.floor(awakeHours / 3) + 1));
+
+  // Meal times
   const mealTimes: string[] = [];
   for (let i = 0; i < numMeals; i++) {
     if (i === numMeals - 1) {
-      // Last meal: 2 hours before sleep
       const lastHour = sleepHour - 2;
       mealTimes.push(`${lastHour < 10 ? "0" : ""}${lastHour}:00`);
     } else {
-      const hour = wakeHour + (i * 3);
-      const h = hour % 24;
+      const h = (wakeHour + i * 3) % 24;
       mealTimes.push(`${h < 10 ? "0" : ""}${h}:00`);
     }
   }
 
-  // Distribution templates per meal count. All have 6 entries (one per meal slot).
-  // Slots: [DESAYUNO, COMIDA2, ALMUERZO, MERIENDA, CENA, COLACION]
-  // Unused meals get 0% so their builders produce minimal portions (harmless).
+  // Distribution per meal count (6 slots: DESAYUNO, COMIDA2, ALMUERZO, MERIENDA, CENA, COLACION)
   const distTemplates: Record<number, number[]> = {
-    4: [0.25, 0.00, 0.30, 0.15, 0.30, 0.00],  // Desayuno, Almuerzo, Merienda, Cena
-    5: [0.22, 0.12, 0.26, 0.12, 0.28, 0.00],  // + Comida 2
-    6: [0.20, 0.10, 0.25, 0.10, 0.25, 0.10],  // All meals
+    4: [0.25, 0.00, 0.30, 0.15, 0.30, 0.00],
+    5: [0.22, 0.12, 0.26, 0.12, 0.28, 0.00],
+    6: [0.20, 0.10, 0.25, 0.10, 0.25, 0.10],
   };
   const dist = distTemplates[numMeals] || distTemplates[6];
 
-  const pPerMeal = dist.map(d => Math.round(protein * d));
-  const cPerMeal = dist.map(d => Math.round(carbs * d));
-  const fPerMeal = dist.map(d => Math.round(fats * d));
+  const targets = dist.map(d => ({
+    p: Math.round(protein * d),
+    c: Math.round(carbs * d),
+    f: Math.round(fats * d),
+  }));
 
-  // MEAL 1: DESAYUNO (20%)
-  const m1Eggs = Math.max(1, Math.round(pPerMeal[0] / 6.5)); // each egg ~6.5g protein
-  const m1EggFood = buildFoodEntryByUnit("huevo-entero", m1Eggs, 50);
-  const m1OatGrams = round10(cPerMeal[0] / 0.66); // oats 66g carbs per 100g
-  const m1Oat = buildFoodEntry("avena", m1OatGrams);
-  const m1Banana = buildFoodEntryByUnit("banana", 1, 120);
-  const desayunoFoods = [m1EggFood, m1Oat, m1Banana];
-  if (fPerMeal[0] > m1EggFood.fat + m1Oat.fat + 2) {
-    desayunoFoods.push(buildFoodEntry("mani", 16)); // 1 cucharada
+  // === MEAL 1: DESAYUNO ===
+  // Strategy: eggs (protein+fat) → subtract → oats for remaining carbs. No blind banana.
+  const t0 = targets[0];
+  const m1Eggs = Math.max(1, Math.min(3, Math.round(t0.p / 6.5))); // cap at 3 eggs
+  const m1Egg = buildFoodByUnit("huevo-entero", m1Eggs, 50);
+  const r0 = remaining(t0, [m1Egg]);
+  const m1OatGrams = gramsFor(getFood("avena"), r0.c, "carbs");
+  const m1Oat = buildFood("avena", m1OatGrams);
+  const desayunoFoods: MealFood[] = [m1Egg, m1Oat];
+  const r0b = remaining(t0, desayunoFoods);
+  // Only add banana if there's carb budget left (>10g)
+  if (r0b.c > 10) {
+    desayunoFoods.push(buildFoodByUnit("banana", 1, 120));
+  }
+  // Add fat source only if under fat budget
+  const r0c = remaining(t0, desayunoFoods);
+  if (r0c.f > 5) {
+    desayunoFoods.push(buildFood("mani", round5(r0c.f / 0.50 * 100 / 100)));
   }
 
-  // MEAL 2: COMIDA 2 - Snack (10%)
-  const m2Yogurt = buildFoodEntry("yogurt-descremado", 200);
-  const m2OatGrams = round10(Math.max(10, (cPerMeal[1] - m2Yogurt.carbs) / 0.66));
-  const m2Oat = buildFoodEntry("avena", m2OatGrams);
-  const snack1Foods: MealFood[] = [m2Yogurt, m2Oat];
-  if (pPerMeal[1] > m2Yogurt.protein + m2Oat.protein + 5) {
-    const extraP = pPerMeal[1] - m2Yogurt.protein - m2Oat.protein;
-    const claraGrams = round10(extraP / 0.11);
-    snack1Foods.push(buildFoodEntry("clara-huevo", claraGrams));
+  // === MEAL 2: COMIDA 2 - Snack ===
+  const t1 = targets[1];
+  const m2Yogurt = buildFood("yogurt-descremado", 200);
+  const r1 = remaining(t1, [m2Yogurt]);
+  const snack1Foods: MealFood[] = [m2Yogurt];
+  if (r1.c > 5) {
+    snack1Foods.push(buildFood("avena", gramsFor(getFood("avena"), r1.c, "carbs")));
   }
-  if (fPerMeal[1] > 5) {
-    snack1Foods.push(buildFoodEntry("almendras", round10(fPerMeal[1] / 0.50)));
+  const r1b = remaining(t1, snack1Foods);
+  if (r1b.f > 3) {
+    snack1Foods.push(buildFood("almendras", gramsFor(getFood("almendras"), r1b.f, "fat")));
   }
 
-  // MEAL 3: COMIDA 3 - Almuerzo (25%)
-  const m3ProteinGrams = round10(pPerMeal[2] / 0.31); // chicken 31g protein per 100g
-  const m3Chicken = buildFoodEntry("pollo-pechuga", m3ProteinGrams);
-  const m3CarbGrams = round10(cPerMeal[2] / 0.28); // rice 28g carbs per 100g
-  const m3Rice = buildFoodEntry("arroz-integral", m3CarbGrams);
-  const m3Veg = buildFoodEntry("brocoli", 150);
+  // === MEAL 3: ALMUERZO ===
+  const t2 = targets[2];
+  // Vegetables first (fixed, low macro impact)
+  const m3Veg = buildFood("brocoli", 150);
+  const r2 = remaining(t2, [m3Veg]);
+  // Protein source: chicken. Size by remaining protein after veg
+  const m3Chicken = buildFood("pollo-pechuga", gramsFor(getFood("pollo-pechuga"), r2.p, "protein"));
+  const r2b = remaining(t2, [m3Veg, m3Chicken]);
+  // Carb source: brown rice. Size by remaining carbs
+  const m3Rice = buildFood("arroz-integral", gramsFor(getFood("arroz-integral"), r2b.c, "carbs"));
   const almuerzoFoods: MealFood[] = [m3Chicken, m3Rice, m3Veg];
-  if (fPerMeal[2] > m3Chicken.fat + m3Rice.fat + 2) {
-    almuerzoFoods.push(buildFoodEntry("aceite-oliva", 14)); // 1 cucharada
+  // Olive oil only if fat budget allows
+  const r2c = remaining(t2, almuerzoFoods);
+  if (r2c.f > 5) {
+    const oilGrams = Math.min(14, round5(r2c.f / 1.0 * 100 / 100)); // 1g fat per 1g oil
+    almuerzoFoods.push(buildFood("aceite-oliva", oilGrams));
   }
 
-  // MEAL 4: COMIDA 4 - Snack (10%)
-  const m4Claras = round10(pPerMeal[3] / 0.11);
-  const m4Clara = buildFoodEntry("clara-huevo", m4Claras);
-  const m4Rice = buildFoodEntryByUnit("galleta-arroz", Math.max(1, Math.round(cPerMeal[3] / 7.4)), 9); // each rice cake ~7.4g carbs
-  const snack2Foods: MealFood[] = [m4Clara, m4Rice];
-  if (cPerMeal[3] > 15) {
-    snack2Foods.push(buildFoodEntryByUnit("banana", 1, 120));
+  // === MEAL 4: MERIENDA ===
+  const t3 = targets[3];
+  // Whey protein as protein source (low fat, low carb)
+  const m4Whey = buildFood("whey-protein", gramsFor(getFood("whey-protein"), t3.p, "protein"));
+  const r3 = remaining(t3, [m4Whey]);
+  const snack2Foods: MealFood[] = [m4Whey];
+  // Rice cakes for carbs
+  if (r3.c > 5) {
+    const numCakes = Math.max(1, Math.min(4, Math.round(r3.c / 7.4)));
+    snack2Foods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
+  }
+  // Banana only if carb budget still has room
+  const r3b = remaining(t3, snack2Foods);
+  if (r3b.c > 15) {
+    snack2Foods.push(buildFoodByUnit("banana", 1, 120));
   }
 
-  // MEAL 5: COMIDA 5 - Cena (25%)
-  const m5ProteinGrams = round10(pPerMeal[4] / 0.20); // salmon 20g protein per 100g
-  const m5Fish = buildFoodEntry("salmon", m5ProteinGrams);
-  const m5CarbGrams = round10(cPerMeal[4] / 0.21); // sweet potato 21g carbs per 100g
-  const m5Boniato = buildFoodEntry("boniato", m5CarbGrams);
-  const m5Veg = buildFoodEntry("espinaca", 100);
+  // === MEAL 5: CENA ===
+  const t4 = targets[4];
+  const m5Veg = buildFood("espinaca", 100);
+  const r4 = remaining(t4, [m5Veg]);
+  // Use merluza (low fat) instead of salmon to avoid fat overshoot
+  const m5Fish = buildFood("merluza", gramsFor(getFood("merluza"), r4.p, "protein"));
+  const r4b = remaining(t4, [m5Veg, m5Fish]);
+  // Sweet potato for carbs
+  const m5Boniato = buildFood("boniato", gramsFor(getFood("boniato"), r4b.c, "carbs"));
   const cenaFoods: MealFood[] = [m5Fish, m5Boniato, m5Veg];
-  if (fPerMeal[4] > m5Fish.fat + 2) {
-    cenaFoods.push(buildFoodEntry("aceite-oliva", 14));
+  // Olive oil if fat budget remains
+  const r4c = remaining(t4, cenaFoods);
+  if (r4c.f > 3) {
+    const oilGrams = Math.min(14, round5(r4c.f / 1.0 * 100 / 100));
+    cenaFoods.push(buildFood("aceite-oliva", oilGrams));
   }
 
-  // MEAL 6: COMIDA 6 - Snack nocturno (10%)
-  const m6Cottage = buildFoodEntry("queso-cottage", round10(pPerMeal[5] / 0.11));
+  // === MEAL 6: COLACION NOCTURNA ===
+  const t5 = targets[5];
+  const m6Cottage = buildFood("queso-cottage", gramsFor(getFood("queso-cottage"), t5.p, "protein"));
   const snack3Foods: MealFood[] = [m6Cottage];
-  if (cPerMeal[5] > 5) {
-    snack3Foods.push(buildFoodEntryByUnit("galleta-arroz", Math.max(1, Math.round(cPerMeal[5] / 7.4)), 9));
+  const r5 = remaining(t5, snack3Foods);
+  if (r5.c > 5) {
+    const numCakes = Math.max(1, Math.min(3, Math.round(r5.c / 7.4)));
+    snack3Foods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
   }
 
-  // Build all available meals (cena is always last)
+  // Build all meal options
   const allMealOptions = [
     { name: "DESAYUNO", foods: desayunoFoods },
     { name: "COMIDA 2", foods: snack1Foods },
@@ -192,33 +224,19 @@ export function generateMealPlan(
     { name: "COLACION NOCTURNA", foods: snack3Foods },
   ];
 
-  // Select meals based on numMeals, cena always last
-  const selectedMeals: MealPlanMeal[] = [];
-  if (numMeals === 4) {
-    // Desayuno, Almuerzo, Merienda, Cena
-    const picks = [0, 2, 3, 4];
-    picks.forEach((idx, i) => {
-      const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
-      m.time = mealTimes[i];
-      selectedMeals.push(m);
-    });
-  } else if (numMeals === 5) {
-    // Desayuno, Comida 2, Almuerzo, Merienda, Cena
-    const picks = [0, 1, 2, 3, 4];
-    picks.forEach((idx, i) => {
-      const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
-      m.time = mealTimes[i];
-      selectedMeals.push(m);
-    });
-  } else {
-    // 6 meals: all — Colación Nocturna before Cena so Cena is always last
-    const picks = [0, 1, 2, 3, 5, 4];
-    picks.forEach((idx, i) => {
-      const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
-      m.time = mealTimes[i] || "";
-      selectedMeals.push(m);
-    });
-  }
+  // Select meals based on count, cena always last
+  const picksByCount: Record<number, number[]> = {
+    4: [0, 2, 3, 4],
+    5: [0, 1, 2, 3, 4],
+    6: [0, 1, 2, 3, 5, 4], // Colacion before Cena so Cena is last
+  };
+  const picks = picksByCount[numMeals] || picksByCount[6];
+
+  const selectedMeals: MealPlanMeal[] = picks.map((idx, i) => {
+    const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
+    m.time = mealTimes[i] || "";
+    return m;
+  });
 
   return {
     meals: selectedMeals,

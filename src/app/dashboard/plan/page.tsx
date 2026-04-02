@@ -97,7 +97,7 @@ const OBJECTIVE_LABELS: Record<string, string> = {
 
 
 export default function PlanPage() {
-  const { user, subscription, isExpired } = useAuth();
+  const { user, subscription, isExpired, hasActiveSubscription } = useAuth();
   const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">("overview");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
@@ -307,7 +307,7 @@ export default function PlanPage() {
     );
   }
 
-  if (isExpired) return <SubscriptionExpiredBanner />;
+  if (!hasActiveSubscription) return <SubscriptionExpiredBanner />;
 
   const planName = subscription?.plan_name || OBJECTIVE_LABELS[objective] || "Plan Personalizado";
   const planData = PLANS.find(p => p.slug === objective);

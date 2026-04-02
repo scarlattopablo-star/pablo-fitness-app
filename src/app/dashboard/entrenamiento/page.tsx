@@ -8,6 +8,8 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
+import { OfflineBanner } from "@/components/offline-banner";
+import { cacheData, getCachedData } from "@/lib/offline-cache";
 import { EXERCISES } from "@/lib/exercises-data";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
@@ -27,7 +29,7 @@ interface ExerciseLog {
 }
 
 export default function EntrenamientoPage() {
-  const { user, isExpired } = useAuth();
+  const { user, isExpired, hasActiveSubscription } = useAuth();
   const [logs, setLogs] = useState<ExerciseLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -62,9 +64,18 @@ export default function EntrenamientoPage() {
         .limit(50);
 
       if (error) throw error;
-      if (data) setLogs(data);
+      if (data) {
+        setLogs(data);
+        cacheData("exercise_logs", data);
+      }
     } catch {
-      setLoadError(true);
+      // Offline fallback
+      const cached = getCachedData<typeof logs>("exercise_logs");
+      if (cached) {
+        setLogs(cached);
+      } else {
+        setLoadError(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -150,7 +161,7 @@ export default function EntrenamientoPage() {
     );
   }
 
-  if (isExpired) return <SubscriptionExpiredBanner />;
+  if (!hasActiveSubscription) return <SubscriptionExpiredBanner />;
 
   if (loadError) {
     return (
@@ -164,6 +175,7 @@ export default function EntrenamientoPage() {
 
   return (
     <div>
+      <OfflineBanner />
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-black">Mis Pesos</h1>

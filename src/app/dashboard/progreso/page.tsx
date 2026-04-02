@@ -38,7 +38,7 @@ interface SurveyBaseline {
 }
 
 export default function ProgresoPage() {
-  const { user, isExpired } = useAuth();
+  const { user, isExpired, hasActiveSubscription } = useAuth();
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [baseline, setBaseline] = useState<SurveyBaseline | null>(null);
   const [macrosData, setMacrosData] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null);
@@ -224,7 +224,7 @@ export default function ProgresoPage() {
     );
   }
 
-  if (isExpired) return <SubscriptionExpiredBanner />;
+  if (!hasActiveSubscription) return <SubscriptionExpiredBanner />;
 
   if (loadError) {
     return (
