@@ -43,7 +43,7 @@ export function calculateMacros(
   const tdee = calculateTDEE(tmb, activityLevel);
 
   const adjustment = OBJECTIVE_ADJUSTMENTS[objective] ?? 0;
-  const targetCalories = Math.round(tdee * (1 + adjustment));
+  const targetCalories = Math.max(1200, Math.round(tdee * (1 + adjustment)));
 
   const protein = Math.round(weight * 2);
   const proteinCalories = protein * 4;
@@ -53,7 +53,7 @@ export function calculateMacros(
   const fats = Math.round(fatCalories / 9);
 
   const carbCalories = targetCalories - proteinCalories - fatCalories;
-  const carbs = Math.round(carbCalories / 4);
+  const carbs = Math.max(50, Math.round(carbCalories / 4));
 
   return {
     tmb: Math.round(tmb),

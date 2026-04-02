@@ -41,8 +41,7 @@ export async function POST(request: NextRequest) {
       init_point: preference.init_point,
       sandbox_init_point: preference.sandbox_init_point,
     });
-  } catch (error) {
-    console.error("MercadoPago preference error:", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to create payment preference" },
       { status: 500 }

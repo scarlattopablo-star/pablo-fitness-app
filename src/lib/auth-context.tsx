@@ -124,15 +124,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSubscription(null);
   };
 
+  // Compare dates without time to avoid timezone issues (end_date is DATE, not TIMESTAMPTZ)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const endDate = subscription ? new Date(subscription.end_date + "T23:59:59") : null;
+
   const hasActiveSubscription =
     !!subscription &&
     subscription.status === "active" &&
-    new Date(subscription.end_date) > new Date();
+    !!endDate &&
+    endDate >= today;
 
   const isExpired =
     !!subscription &&
     subscription.status === "active" &&
-    new Date(subscription.end_date) <= new Date();
+    !!endDate &&
+    endDate < today;
 
   return (
     <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, signOut }}>

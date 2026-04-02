@@ -30,6 +30,7 @@ export default function EntrenamientoPage() {
   const { user, isExpired } = useAuth();
   const [logs, setLogs] = useState<ExerciseLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -51,15 +52,22 @@ export default function EntrenamientoPage() {
 
   const loadLogs = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("exercise_logs")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("date", { ascending: false })
-      .limit(50);
+    try {
+      setLoadError(false);
+      const { data, error } = await supabase
+        .from("exercise_logs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .limit(50);
 
-    if (data) setLogs(data);
-    setLoading(false);
+      if (error) throw error;
+      if (data) setLogs(data);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -143,6 +151,16 @@ export default function EntrenamientoPage() {
   }
 
   if (isExpired) return <SubscriptionExpiredBanner />;
+
+  if (loadError) {
+    return (
+      <div className="glass-card rounded-2xl p-8 text-center mt-10">
+        <p className="text-danger font-bold mb-2">Error al cargar datos</p>
+        <p className="text-sm text-muted mb-4">Verifica tu conexion e intenta de nuevo.</p>
+        <button onClick={() => { setLoading(true); loadLogs(); }} className="gradient-primary text-black font-bold px-5 py-2 rounded-full text-sm">Reintentar</button>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Dumbbell, Eye, EyeOff, Mail, ArrowLeft, Check } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -47,7 +49,7 @@ export default function LoginPage() {
           .single();
 
         if (profile?.is_admin) {
-          window.location.href = "/admin";
+          router.push("/admin");
         } else {
           // Check if user has completed a survey
           const { data: survey } = await supabase
@@ -59,9 +61,9 @@ export default function LoginPage() {
 
           if (!survey) {
             // No survey - send to survey flow
-            window.location.href = "/encuesta-directa";
+            router.push("/encuesta-directa");
           } else {
-            window.location.href = "/dashboard";
+            router.push("/dashboard");
           }
         }
       }

@@ -100,9 +100,20 @@ function ClienteDirectoForm() {
 
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
-    const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, "quema-grasa");
+    const w = Number(weight), h = Number(height), a = Number(age);
+    if (w < 30 || w > 300 || h < 100 || h > 250 || a < 14 || a > 100) {
+      setError("Verifica que los datos de peso, altura y edad sean correctos.");
+      return;
+    }
+    // BMI sanity check: reject physically impossible combinations
+    const bmi = w / ((h / 100) ** 2);
+    if (bmi < 10 || bmi > 70) {
+      setError("La combinacion de peso y altura no parece correcta. Verifica los datos.");
+      return;
+    }
+    const macros = calculateMacros(sex, w, h, a, activityLevel, "quema-grasa");
 
-    await supabase.from("surveys").insert({
+    const { error: surveyError } = await supabase.from("surveys").insert({
       user_id: userId,
       age: Number(age), sex, weight: Number(weight), height: Number(height),
       activity_level: activityLevel, dietary_restrictions: restrictions,
@@ -113,6 +124,12 @@ function ClienteDirectoForm() {
       wake_hour: Number(wakeHour),
       sleep_hour: Number(sleepHour),
     });
+
+    if (surveyError) {
+      setError("Error al guardar la encuesta. Intenta de nuevo.");
+      setLoading(false);
+      return;
+    }
 
     // Create subscription so client appears in admin and has an active plan
     const endDate = new Date();

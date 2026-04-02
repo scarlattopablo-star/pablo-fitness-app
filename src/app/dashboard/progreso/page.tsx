@@ -40,6 +40,7 @@ export default function ProgresoPage() {
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [baseline, setBaseline] = useState<SurveyBaseline | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [weight, setWeight] = useState("");
   const [chest, setChest] = useState("");
@@ -62,43 +63,51 @@ export default function ProgresoPage() {
 
   const loadData = async () => {
     if (!user) return;
+    try {
+      setLoadError(false);
 
-    // Load survey baseline (initial weight)
-    const { data: surveyData } = await supabase
-      .from("surveys")
-      .select("weight, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+      // Load survey baseline (initial weight)
+      const { data: surveyData } = await supabase
+        .from("surveys")
+        .select("weight, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (surveyData) setBaseline(surveyData);
+      if (surveyData) setBaseline(surveyData);
 
-    // Load all progress entries
-    const { data: progressData } = await supabase
-      .from("progress_entries")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("date", { ascending: false });
+      // Load all progress entries
+      const { data: progressData, error } = await supabase
+        .from("progress_entries")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
 
-    if (progressData) {
-      setEntries(progressData);
-      // Load photo URLs for entries that have photos
-      const paths = progressData.flatMap((e: ProgressEntry) =>
-        [e.photo_front, e.photo_side, e.photo_back].filter(Boolean) as string[]
-      );
-      if (paths.length > 0) {
-        const urls: Record<string, string> = {};
-        await Promise.all(
-          paths.map(async (path) => {
-            const url = await getPhotoUrl(path);
-            if (url) urls[path] = url;
-          })
+      if (error) throw error;
+
+      if (progressData) {
+        setEntries(progressData);
+        // Load photo URLs for entries that have photos
+        const paths = progressData.flatMap((e: ProgressEntry) =>
+          [e.photo_front, e.photo_side, e.photo_back].filter(Boolean) as string[]
         );
-        setPhotoUrls(urls);
+        if (paths.length > 0) {
+          const urls: Record<string, string> = {};
+          await Promise.all(
+            paths.map(async (path) => {
+              const url = await getPhotoUrl(path);
+              if (url) urls[path] = url;
+            })
+          );
+          setPhotoUrls(urls);
+        }
       }
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const latest = entries.find(e => e.weight) || null;
@@ -178,8 +187,8 @@ export default function ProgresoPage() {
         setWeight(""); setChest(""); setWaist(""); setHips(""); setArms(""); setLegs(""); setNotes("");
         loadData();
       }, 1500);
-    } catch (err) {
-      console.error("Error saving progress:", err);
+    } catch {
+      setLoadError(true);
     } finally {
       setUploading(false);
     }
@@ -194,6 +203,16 @@ export default function ProgresoPage() {
   }
 
   if (isExpired) return <SubscriptionExpiredBanner />;
+
+  if (loadError) {
+    return (
+      <div className="glass-card rounded-2xl p-8 text-center mt-10">
+        <p className="text-danger font-bold mb-2">Error al cargar datos</p>
+        <p className="text-sm text-muted mb-4">Verifica tu conexion e intenta de nuevo.</p>
+        <button onClick={() => { setLoading(true); loadData(); }} className="gradient-primary text-black font-bold px-5 py-2 rounded-full text-sm">Reintentar</button>
+      </div>
+    );
+  }
 
   return (
     <div>

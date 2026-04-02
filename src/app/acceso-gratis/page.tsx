@@ -60,11 +60,17 @@ function AccesoGratisForm() {
       }
 
       if (authData.user) {
-        // Mark code as used
-        await supabase
-          .from("free_access_codes")
-          .update({ used: true, used_by: authData.user.id })
-          .eq("code", code);
+        // Atomically claim code (prevents race condition)
+        const claimRes = await fetch("/api/free-access", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, userId: authData.user.id }),
+        });
+        if (!claimRes.ok) {
+          setError("Este codigo ya fue utilizado.");
+          setLoading(false);
+          return;
+        }
 
         // Create subscription
         const endDate = new Date();
