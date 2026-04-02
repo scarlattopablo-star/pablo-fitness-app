@@ -146,6 +146,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               );
             })}
+            <div className="border-t border-card-border mt-2 pt-2">
+              <Link
+                href="/"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted"
+              >
+                <LogOut className="h-5 w-5" />
+                Ir al Sitio
+              </Link>
+              <button
+                onClick={() => { signOut(); setMenuOpen(false); }}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-danger w-full"
+              >
+                <LogOut className="h-5 w-5" />
+                Cerrar Sesión
+              </button>
+            </div>
           </nav>
         )}
       </div>
