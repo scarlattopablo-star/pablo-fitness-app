@@ -122,13 +122,13 @@ export default function DashboardPage() {
       {/* Background image - grayscale, blurred, faded */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.15]"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.35]"
           style={{
             backgroundImage: "url(/images/gym-bg.png)",
-            filter: "grayscale(100%) blur(2px)",
+            filter: "grayscale(100%) blur(1px) brightness(1.3)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/90 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background" />
       </div>
 
       <OfflineBanner />
