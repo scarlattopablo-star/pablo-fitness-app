@@ -47,6 +47,7 @@ export default function PlanEditorPage({
   const [tab, setTab] = useState<"entrenamiento" | "nutricion">("entrenamiento");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   // Training state
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([
@@ -153,27 +154,47 @@ export default function PlanEditorPage({
   // Save
   const handleSave = async () => {
     setSaving(true);
+    setSaveError("");
     try {
       if (tab === "entrenamiento") {
-        // Delete existing then insert
-        await supabase.from("training_plans").delete().eq("user_id", clientId);
-        await supabase.from("training_plans").insert({
+        const { error: delErr } = await supabase.from("training_plans").delete().eq("user_id", clientId);
+        if (delErr) {
+          setSaveError(`Error borrando plan anterior: ${delErr.message}`);
+          setSaving(false);
+          return;
+        }
+        const { error: insErr } = await supabase.from("training_plans").insert({
           user_id: clientId,
           week_number: 1,
           data: { days: trainingDays },
         });
+        if (insErr) {
+          setSaveError(`Error guardando entrenamiento: ${insErr.message}`);
+          setSaving(false);
+          return;
+        }
       } else {
-        await supabase.from("nutrition_plans").delete().eq("user_id", clientId);
-        await supabase.from("nutrition_plans").insert({
+        const { error: delErr } = await supabase.from("nutrition_plans").delete().eq("user_id", clientId);
+        if (delErr) {
+          setSaveError(`Error borrando plan anterior: ${delErr.message}`);
+          setSaving(false);
+          return;
+        }
+        const { error: insErr } = await supabase.from("nutrition_plans").insert({
           user_id: clientId,
           data: { meals },
           important_notes: nutritionNotes,
         });
+        if (insErr) {
+          setSaveError(`Error guardando nutricion: ${insErr.message}`);
+          setSaving(false);
+          return;
+        }
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      console.error("Error saving:", err);
+      setSaveError(`Error inesperado: ${err}`);
     } finally {
       setSaving(false);
     }
@@ -369,6 +390,11 @@ export default function PlanEditorPage({
 
       {/* Save Button */}
       <div className="sticky bottom-4 mt-8">
+        {saveError && (
+          <div className="bg-danger/10 border border-danger/30 rounded-xl p-3 mb-3">
+            <p className="text-sm text-danger font-mono">{saveError}</p>
+          </div>
+        )}
         <button
           onClick={handleSave}
           disabled={saving}
