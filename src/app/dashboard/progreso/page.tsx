@@ -3,12 +3,16 @@
 import { useState, useEffect } from "react";
 import {
   Camera, Plus, TrendingDown, Scale, Ruler,
-  Calendar, X, Check, Loader2,
+  Calendar, X, Check, Loader2, Image,
 } from "lucide-react";
-import { uploadProgressPhoto } from "@/lib/upload-photo";
+import { uploadProgressPhoto, getPhotoUrl } from "@/lib/upload-photo";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 import { calculateMacros } from "@/lib/harris-benedict";
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+} from "recharts";
 import type { Sex, ActivityLevel } from "@/types";
 
 interface ProgressEntry {
@@ -32,7 +36,7 @@ interface SurveyBaseline {
 }
 
 export default function ProgresoPage() {
-  const { user } = useAuth();
+  const { user, isExpired } = useAuth();
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [baseline, setBaseline] = useState<SurveyBaseline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +54,7 @@ export default function ProgresoPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [planUpdated, setPlanUpdated] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (user) loadData();
@@ -76,7 +81,23 @@ export default function ProgresoPage() {
       .eq("user_id", user.id)
       .order("date", { ascending: false });
 
-    if (progressData) setEntries(progressData);
+    if (progressData) {
+      setEntries(progressData);
+      // Load photo URLs for entries that have photos
+      const paths = progressData.flatMap((e: ProgressEntry) =>
+        [e.photo_front, e.photo_side, e.photo_back].filter(Boolean) as string[]
+      );
+      if (paths.length > 0) {
+        const urls: Record<string, string> = {};
+        await Promise.all(
+          paths.map(async (path) => {
+            const url = await getPhotoUrl(path);
+            if (url) urls[path] = url;
+          })
+        );
+        setPhotoUrls(urls);
+      }
+    }
     setLoading(false);
   };
 
@@ -172,6 +193,8 @@ export default function ProgresoPage() {
     );
   }
 
+  if (isExpired) return <SubscriptionExpiredBanner />;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -232,35 +255,130 @@ export default function ProgresoPage() {
       </div>
 
       {/* Weight Chart */}
-      {entries.filter(e => e.weight).length > 0 ? (
-        <div className="glass-card rounded-2xl p-6 mb-6">
-          <h2 className="font-bold mb-4">Evolucion de Peso</h2>
-          <div className="flex items-end gap-2 h-40">
-            {[...entries].filter(e => e.weight).reverse().slice(-8).map((entry, i) => {
-              const weights = entries.filter(e => e.weight).map(e => e.weight!);
-              const minW = Math.min(...weights);
-              const maxW = Math.max(...weights);
-              const range = maxW - minW || 1;
-              const height = ((entry.weight! - minW) / range) * 100 + 20;
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs font-bold">{entry.weight}</span>
-                  <div className="w-full rounded-t-lg gradient-primary" style={{ height: `${height}%` }} />
-                  <span className="text-[10px] text-muted">
-                    {new Date(entry.date).toLocaleDateString("es", { day: "2-digit", month: "short" })}
-                  </span>
-                </div>
-              );
-            })}
+      {entries.filter(e => e.weight).length > 0 ? (() => {
+        const weightData = [...entries].filter(e => e.weight).reverse().map(e => ({
+          date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
+          peso: e.weight,
+        }));
+        return (
+          <div className="glass-card rounded-2xl p-6 mb-6">
+            <h2 className="font-bold mb-4">Evolucion de Peso</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={weightData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} />
+                <YAxis domain={["dataMin - 1", "dataMax + 1"]} tick={{ fontSize: 10, fill: "#888" }} width={40} />
+                <Tooltip
+                  contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
+                  labelStyle={{ color: "#888" }}
+                  itemStyle={{ color: "#00f593" }}
+                  formatter={(value) => [`${value} kg`, "Peso"]}
+                />
+                <Line type="monotone" dataKey="peso" stroke="#00f593" strokeWidth={2} dot={{ fill: "#00f593", r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-      ) : (
+        );
+      })() : (
         <div className="glass-card rounded-2xl p-6 mb-6 text-center">
           <Scale className="h-8 w-8 text-muted mx-auto mb-2" />
           <p className="text-muted text-sm">Aun no hay registros de peso.</p>
           <p className="text-xs text-muted mt-1">Registra tu primer progreso para ver el grafico.</p>
         </div>
       )}
+
+      {/* Body Measurements Chart */}
+      {(() => {
+        const measurementData = [...entries].reverse()
+          .filter(e => e.waist || e.chest || e.hips || e.arms || e.legs)
+          .map(e => ({
+            date: new Date(e.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
+            cintura: e.waist,
+            pecho: e.chest,
+            cadera: e.hips,
+            brazos: e.arms,
+            piernas: e.legs,
+          }));
+        if (measurementData.length < 2) return null;
+        return (
+          <div className="glass-card rounded-2xl p-6 mb-6">
+            <h2 className="font-bold mb-4">Medidas Corporales</h2>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={measurementData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#888" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#888" }} width={40} />
+                <Tooltip
+                  contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px" }}
+                  labelStyle={{ color: "#888" }}
+                />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
+                <Line type="monotone" dataKey="cintura" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="pecho" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="cadera" stroke="#a855f7" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="brazos" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="piernas" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      })()}
+
+      {/* Progress Photos: Before / After */}
+      {(() => {
+        const entriesWithPhotos = entries.filter(e => e.photo_front || e.photo_side || e.photo_back);
+        if (entriesWithPhotos.length === 0) return null;
+        const first = entriesWithPhotos[entriesWithPhotos.length - 1];
+        const latest = entriesWithPhotos.length > 1 ? entriesWithPhotos[0] : null;
+        return (
+          <div className="glass-card rounded-2xl p-6 mb-6">
+            <h2 className="font-bold mb-4 flex items-center gap-2">
+              <Image className="h-5 w-5 text-primary" />
+              {latest ? "Antes / Despues" : "Fotos de Progreso"}
+            </h2>
+            <div className={`grid ${latest ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
+              <div>
+                <p className="text-xs text-muted mb-2 text-center">
+                  {latest ? "Inicio" : ""} — {new Date(first.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                </p>
+                <div className="grid grid-cols-3 gap-1">
+                  {[first.photo_front, first.photo_side, first.photo_back].map((path, i) => (
+                    <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
+                      {path && photoUrls[path] ? (
+                        <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Camera className="h-4 w-4 text-muted" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {latest && (
+                <div>
+                  <p className="text-xs text-muted mb-2 text-center">
+                    Actual — {new Date(latest.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                  </p>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[latest.photo_front, latest.photo_side, latest.photo_back].map((path, i) => (
+                      <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
+                        {path && photoUrls[path] ? (
+                          <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Camera className="h-4 w-4 text-muted" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* History */}
       <h2 className="font-bold text-lg mb-3">Historial</h2>

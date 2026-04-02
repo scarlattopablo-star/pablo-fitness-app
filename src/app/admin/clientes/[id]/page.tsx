@@ -6,6 +6,7 @@ import {
   ArrowLeft, User, ClipboardList, TrendingUp,
   Calendar, Target, Scale, Mail, Phone, Edit,
   Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -52,8 +53,8 @@ export default function ClienteDetailPage({
   const [client, setClient] = useState<ClientData | null>(null);
   const [survey, setSurvey] = useState<SurveyData | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
-  const [hasTrainingPlan, setHasTrainingPlan] = useState(false);
-  const [hasNutritionPlan, setHasNutritionPlan] = useState(false);
+  const [trainingPlan, setTrainingPlan] = useState<any>(null);
+  const [nutritionPlan, setNutritionPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -63,6 +64,8 @@ export default function ClienteDetailPage({
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [expandTraining, setExpandTraining] = useState(false);
+  const [expandNutrition, setExpandNutrition] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -72,7 +75,6 @@ export default function ClienteDetailPage({
 
   const loadClient = async () => {
     try {
-      // Perfil del cliente
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
@@ -80,7 +82,6 @@ export default function ClienteDetailPage({
         .single();
       if (profileData) setClient(profileData);
 
-      // Survey
       const { data: surveyData } = await supabase
         .from("surveys")
         .select("*")
@@ -88,10 +89,8 @@ export default function ClienteDetailPage({
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
-
       if (surveyData) setSurvey(surveyData);
 
-      // Subscription
       const { data: subData } = await supabase
         .from("subscriptions")
         .select("*")
@@ -101,18 +100,23 @@ export default function ClienteDetailPage({
         .single();
       if (subData) setSubscription(subData);
 
-      // Check if training/nutrition plans exist
-      const { count: trainingCount } = await supabase
+      const { data: tpData } = await supabase
         .from("training_plans")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", id);
-      setHasTrainingPlan((trainingCount || 0) > 0);
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (tpData) setTrainingPlan(tpData);
 
-      const { count: nutritionCount } = await supabase
+      const { data: npData } = await supabase
         .from("nutrition_plans")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", id);
-      setHasNutritionPlan((nutritionCount || 0) > 0);
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (npData) setNutritionPlan(npData);
     } catch {
       // silently fail
     } finally {
@@ -168,6 +172,10 @@ export default function ClienteDetailPage({
       </div>
     );
   }
+
+  const trainingDays = trainingPlan?.data?.days || [];
+  const nutritionMeals = nutritionPlan?.data?.meals || [];
+  const nutritionNotes = nutritionPlan?.important_notes || nutritionPlan?.data?.importantNotes || [];
 
   return (
     <div>
@@ -239,7 +247,7 @@ export default function ClienteDetailPage({
           {showDeleteConfirm && (
             <div className="mt-3 bg-danger/10 border border-danger/30 rounded-xl p-4">
               <p className="text-sm font-bold text-danger mb-2">¿Eliminar este cliente?</p>
-              <p className="text-xs text-muted mb-3">Se eliminara la cuenta, encuesta, suscripcion y todos los datos. Esta accion no se puede deshacer.</p>
+              <p className="text-xs text-muted mb-3">El cliente sera movido a la papelera y su acceso sera revocado. Podras restaurarlo desde la papelera.</p>
               {deleteError && (
                 <p className="text-xs text-danger bg-danger/20 p-2 rounded-lg mb-3">{deleteError}</p>
               )}
@@ -265,7 +273,6 @@ export default function ClienteDetailPage({
 
       {survey ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Survey Data */}
           <div className="glass-card rounded-2xl p-6">
             <h2 className="font-bold mb-4 flex items-center gap-2">
               <User className="h-5 w-5 text-primary" />
@@ -299,7 +306,6 @@ export default function ClienteDetailPage({
             </div>
           </div>
 
-          {/* Macros */}
           <div className="glass-card rounded-2xl p-6">
             <h2 className="font-bold mb-4 flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
@@ -307,12 +313,12 @@ export default function ClienteDetailPage({
             </h2>
             <div className="space-y-3">
               <div className="bg-card-bg rounded-lg p-3 text-center">
-                <p className="text-xs text-muted">Calorías/día</p>
+                <p className="text-xs text-muted">Calorias/dia</p>
                 <p className="text-2xl font-black text-primary">{survey.target_calories}</p>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-card-bg rounded-lg p-2 text-center">
-                  <p className="text-[10px] text-muted">Proteínas</p>
+                  <p className="text-[10px] text-muted">Proteinas</p>
                   <p className="font-black text-red-400">{survey.protein}g</p>
                 </div>
                 <div className="bg-card-bg rounded-lg p-2 text-center">
@@ -339,53 +345,158 @@ export default function ClienteDetailPage({
         </div>
       ) : (
         <div className="glass-card rounded-2xl p-6 mb-6 text-center">
-          <p className="text-muted">Este cliente aún no completó la encuesta.</p>
+          <p className="text-muted">Este cliente aun no completo la encuesta.</p>
         </div>
       )}
 
-      {/* Subscription & Plans Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="glass-card rounded-2xl p-5">
-          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            Suscripción
-          </h3>
-          {subscription ? (
-            <div className="space-y-1 text-sm">
-              <p>Estado: <span className={subscription.status === "active" ? "text-primary font-bold" : "text-danger font-bold"}>{subscription.status === "active" ? "Activa" : subscription.status}</span></p>
-              <p className="text-muted">Duración: {subscription.duration}</p>
-              <p className="text-muted">Inicio: {new Date(subscription.start_date).toLocaleDateString("es")}</p>
-              <p className="text-muted">Fin: {new Date(subscription.end_date).toLocaleDateString("es")}</p>
-              <p className="text-muted">Pagado: ${subscription.amount_paid}</p>
+      {/* Subscription */}
+      <div className="glass-card rounded-2xl p-5 mb-6">
+        <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-primary" />
+          Suscripcion
+        </h3>
+        {subscription ? (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted">Estado</p>
+              <p className={subscription.status === "active" ? "text-primary font-bold" : "text-danger font-bold"}>
+                {subscription.status === "active" ? "Activa" : subscription.status}
+              </p>
             </div>
-          ) : (
-            <p className="text-sm text-muted">Sin suscripción</p>
-          )}
-        </div>
+            <div>
+              <p className="text-xs text-muted">Duracion</p>
+              <p className="font-medium">{subscription.duration}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted">Inicio</p>
+              <p className="font-medium">{new Date(subscription.start_date).toLocaleDateString("es")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted">Fin</p>
+              <p className="font-medium">{new Date(subscription.end_date).toLocaleDateString("es")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted">Pagado</p>
+              <p className="font-medium">${subscription.amount_paid}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">Sin suscripcion</p>
+        )}
+      </div>
 
-        <div className="glass-card rounded-2xl p-5">
-          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+      {/* Training Plan Detail */}
+      <div className="glass-card rounded-2xl p-5 mb-4">
+        <button
+          onClick={() => setExpandTraining(!expandTraining)}
+          className="w-full flex items-center justify-between"
+        >
+          <h3 className="font-bold text-sm flex items-center gap-2">
             <Dumbbell className="h-4 w-4 text-primary" />
             Plan de Entrenamiento
+            {trainingDays.length > 0 && (
+              <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-2">
+                {trainingDays.length} dias
+              </span>
+            )}
           </h3>
-          {hasTrainingPlan ? (
-            <p className="text-sm text-primary font-medium">Plan asignado</p>
-          ) : (
-            <p className="text-sm text-muted">Sin plan asignado</p>
+          {trainingDays.length > 0 && (
+            expandTraining ? <ChevronUp className="h-4 w-4 text-muted" /> : <ChevronDown className="h-4 w-4 text-muted" />
           )}
-        </div>
+        </button>
 
-        <div className="glass-card rounded-2xl p-5">
-          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+        {trainingDays.length === 0 && (
+          <p className="text-sm text-muted mt-2">Sin plan asignado</p>
+        )}
+
+        {expandTraining && trainingDays.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {trainingDays.map((day: any, i: number) => (
+              <div key={i} className="bg-card-bg rounded-xl p-3">
+                <p className="font-bold text-sm text-primary mb-2">{day.day}</p>
+                {day.instructions && (
+                  <p className="text-xs text-muted mb-2 italic">{day.instructions}</p>
+                )}
+                <div className="space-y-1">
+                  {(day.exercises || []).map((ex: any, j: number) => (
+                    <div key={j} className="flex items-center justify-between text-sm">
+                      <span>{ex.name}</span>
+                      <span className="text-xs text-muted">
+                        {ex.sets}x{ex.reps} {ex.rest && `| ${ex.rest}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Nutrition Plan Detail */}
+      <div className="glass-card rounded-2xl p-5 mb-6">
+        <button
+          onClick={() => setExpandNutrition(!expandNutrition)}
+          className="w-full flex items-center justify-between"
+        >
+          <h3 className="font-bold text-sm flex items-center gap-2">
             <UtensilsCrossed className="h-4 w-4 text-primary" />
-            Plan de Nutrición
+            Plan de Nutricion
+            {nutritionMeals.length > 0 && (
+              <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full ml-2">
+                {nutritionMeals.length} comidas
+              </span>
+            )}
           </h3>
-          {hasNutritionPlan ? (
-            <p className="text-sm text-primary font-medium">Plan asignado</p>
-          ) : (
-            <p className="text-sm text-muted">Sin plan asignado</p>
+          {nutritionMeals.length > 0 && (
+            expandNutrition ? <ChevronUp className="h-4 w-4 text-muted" /> : <ChevronDown className="h-4 w-4 text-muted" />
           )}
-        </div>
+        </button>
+
+        {nutritionMeals.length === 0 && (
+          <p className="text-sm text-muted mt-2">Sin plan asignado</p>
+        )}
+
+        {expandNutrition && nutritionMeals.length > 0 && (
+          <div className="mt-4 space-y-3">
+            {nutritionNotes.length > 0 && (
+              <div className="bg-warning/5 border border-warning/20 rounded-xl p-3">
+                <p className="font-bold text-warning text-xs mb-1">IMPORTANTE</p>
+                <ul className="space-y-0.5">
+                  {nutritionNotes.map((note: string, i: number) => (
+                    <li key={i} className="text-xs text-muted">{note}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {nutritionMeals.map((meal: any, i: number) => (
+              <div key={i} className="bg-card-bg rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    {meal.time && <span className="text-xs text-primary font-bold">{meal.time} — </span>}
+                    <span className="font-bold text-sm">{meal.name}</span>
+                  </div>
+                  {(meal.approxCalories || meal.calories) && (
+                    <span className="text-xs text-primary font-semibold">
+                      {meal.approxCalories || meal.calories} kcal
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-0.5">
+                  {(meal.foodDetails || []).map((food: any, j: number) => (
+                    <div key={j} className="flex items-center justify-between text-xs">
+                      <span>{food.name} — {food.grams}g</span>
+                      <span className="text-muted">{food.calories}kcal | P:{food.protein}g C:{food.carbs}g G:{food.fat}g</span>
+                    </div>
+                  ))}
+                  {(!meal.foodDetails || meal.foodDetails.length === 0) && (meal.foods || []).map((food: string, j: number) => (
+                    <p key={j} className="text-xs text-muted">{food}</p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

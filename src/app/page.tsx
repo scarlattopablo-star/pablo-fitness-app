@@ -53,14 +53,26 @@ export default function HomePage() {
             </a>
             <LanguageSelector />
             <Link
+              href="/login"
+              className="text-sm text-muted hover:text-white transition-colors font-medium"
+            >
+              {t("nav.login")}
+            </Link>
+            <Link
               href="/planes"
               className="gradient-primary text-black font-semibold text-sm px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
             >
               {t("nav.startNow")}
             </Link>
           </div>
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex md:hidden items-center gap-3">
             <LanguageSelector />
+            <Link
+              href="/login"
+              className="text-sm text-muted hover:text-white transition-colors font-medium"
+            >
+              {t("nav.login")}
+            </Link>
             <Link
               href="/planes"
               className="gradient-primary text-black font-semibold text-sm px-4 py-2 rounded-full"

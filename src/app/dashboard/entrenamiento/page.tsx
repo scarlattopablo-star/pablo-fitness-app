@@ -7,7 +7,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 import { EXERCISES } from "@/lib/exercises-data";
+import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 interface SetData {
   set: number;
@@ -25,7 +27,7 @@ interface ExerciseLog {
 }
 
 export default function EntrenamientoPage() {
-  const { user } = useAuth();
+  const { user, isExpired } = useAuth();
   const [logs, setLogs] = useState<ExerciseLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -140,6 +142,8 @@ export default function EntrenamientoPage() {
     );
   }
 
+  if (isExpired) return <SubscriptionExpiredBanner />;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -194,21 +198,26 @@ export default function EntrenamientoPage() {
               {expandedExercise === exId && (
                 <div className="px-4 pb-4 border-t border-card-border/30">
                   {/* Weight evolution mini chart */}
-                  {data.logs.length > 1 && (
-                    <div className="flex items-end gap-1 h-16 mt-3 mb-3">
-                      {[...data.logs].reverse().slice(-10).map((log, i) => {
-                        const maxW = getMaxWeight(data.logs);
-                        const logMax = Math.max(...log.sets_data.map(s => s.weight));
-                        const pct = maxW > 0 ? (logMax / maxW) * 100 : 50;
-                        return (
-                          <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                            <span className="text-[8px] text-muted">{logMax}</span>
-                            <div className="w-full rounded-t gradient-primary" style={{ height: `${Math.max(10, pct)}%` }} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  {data.logs.length > 1 && (() => {
+                    const chartData = [...data.logs].reverse().slice(-10).map(log => ({
+                      date: new Date(log.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
+                      peso: Math.max(...log.sets_data.map((s: SetData) => s.weight)),
+                    }));
+                    return (
+                      <div className="mt-3 mb-3">
+                        <ResponsiveContainer width="100%" height={80}>
+                          <BarChart data={chartData}>
+                            <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#888" }} />
+                            <Tooltip
+                              contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", fontSize: "11px" }}
+                              formatter={(value) => [`${value} kg`, "Peso"]}
+                            />
+                            <Bar dataKey="peso" fill="#00f593" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    );
+                  })()}
 
                   {/* Session details */}
                   <div className="space-y-2">

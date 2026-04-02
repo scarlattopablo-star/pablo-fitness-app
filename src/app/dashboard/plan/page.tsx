@@ -7,6 +7,7 @@ import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 
 const OBJECTIVE_LABELS: Record<string, string> = {
   "quema-grasa": "Quema Grasa",
@@ -24,7 +25,7 @@ const OBJECTIVE_LABELS: Record<string, string> = {
 
 
 export default function PlanPage() {
-  const { user, subscription } = useAuth();
+  const { user, subscription, isExpired } = useAuth();
   const [tab, setTab] = useState<"entrenamiento" | "nutricion">("entrenamiento");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
@@ -115,6 +116,8 @@ export default function PlanPage() {
       </div>
     );
   }
+
+  if (isExpired) return <SubscriptionExpiredBanner />;
 
   const planName = subscription?.plan_name || OBJECTIVE_LABELS[objective] || "Plan Personalizado";
 

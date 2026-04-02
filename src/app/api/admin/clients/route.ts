@@ -37,12 +37,20 @@ export async function GET(request: NextRequest) {
   const limit = Number(request.nextUrl.searchParams.get("limit") || "100");
   const clientId = request.nextUrl.searchParams.get("id");
 
+  const deleted = request.nextUrl.searchParams.get("deleted") === "true";
+
   let query = adminClient
     .from("profiles")
     .select("*", { count: "exact" })
     .eq("is_admin", false)
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (deleted) {
+    query = query.not("deleted_at", "is", null);
+  } else {
+    query = query.is("deleted_at", null);
+  }
 
   if (clientId) {
     query = query.eq("id", clientId);

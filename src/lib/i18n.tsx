@@ -25,6 +25,7 @@ const t: Translations = {
   "nav.results": { es: "Resultados", en: "Results", pt: "Resultados" },
   "nav.startNow": { es: "Empezá Ahora", en: "Start Now", pt: "Comece Agora" },
   "nav.start": { es: "Empezá", en: "Start", pt: "Comece" },
+  "nav.login": { es: "Iniciar Sesión", en: "Log In", pt: "Entrar" },
 
   // Hero
   "hero.badge": { es: "Entrenamiento 100% Personalizado", en: "100% Personalized Training", pt: "Treino 100% Personalizado" },

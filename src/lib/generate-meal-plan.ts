@@ -209,9 +209,10 @@ export function generateMealPlan(
       selectedMeals.push(m);
     });
   } else {
-    // 6 meals: all
-    allMealOptions.forEach((opt, i) => {
-      const m = mealFromFoods(opt.name, opt.foods);
+    // 6 meals: all — Colación Nocturna before Cena so Cena is always last
+    const picks = [0, 1, 2, 3, 5, 4];
+    picks.forEach((idx, i) => {
+      const m = mealFromFoods(allMealOptions[idx].name, allMealOptions[idx].foods);
       m.time = mealTimes[i] || "";
       selectedMeals.push(m);
     });

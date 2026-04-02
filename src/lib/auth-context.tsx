@@ -10,6 +10,7 @@ interface UserProfile {
   email: string;
   phone?: string;
   is_admin: boolean;
+  deleted_at?: string | null;
 }
 
 interface Subscription {
@@ -28,6 +29,7 @@ interface AuthContextType {
   subscription: Subscription | null;
   loading: boolean;
   hasActiveSubscription: boolean;
+  isExpired: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -37,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   subscription: null,
   loading: true,
   hasActiveSubscription: false,
+  isExpired: false,
   signOut: async () => {},
 });
 
@@ -78,7 +81,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select("*")
       .eq("id", userId)
       .single();
-    if (data) setProfile(data);
+    if (data) {
+      // If account was soft-deleted, sign out immediately
+      if (data.deleted_at) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        setSubscription(null);
+        return;
+      }
+      setProfile(data);
+    }
   }
 
   async function fetchSubscription(userId: string) {
@@ -111,10 +124,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSubscription(null);
   };
 
-  const hasActiveSubscription = !!subscription && subscription.status === "active";
+  const hasActiveSubscription =
+    !!subscription &&
+    subscription.status === "active" &&
+    new Date(subscription.end_date) > new Date();
+
+  const isExpired =
+    !!subscription &&
+    subscription.status === "active" &&
+    new Date(subscription.end_date) <= new Date();
 
   return (
-    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, signOut }}>
+    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, signOut }}>
       {children}
     </AuthContext.Provider>
   );

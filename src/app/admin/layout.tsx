@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, Users, ClipboardList,
-  CreditCard, BookOpen, LogOut, Menu, X, Gift, Download, Smartphone, Share,
+  CreditCard, BookOpen, LogOut, Menu, X, Gift, Download, Smartphone, Share, Trash2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/admin/ejercicios", icon: BookOpen, label: "Ejercicios" },
   { href: "/admin/pagos", icon: CreditCard, label: "Pagos" },
   { href: "/admin/acceso-gratis", icon: Gift, label: "Acceso Gratis" },
+  { href: "/admin/papelera", icon: Trash2, label: "Papelera" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

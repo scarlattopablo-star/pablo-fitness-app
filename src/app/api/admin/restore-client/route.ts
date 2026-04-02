@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function DELETE(request: NextRequest) {
+export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
 
   const token = authHeader.slice(7);
-  const clientId = request.nextUrl.searchParams.get("id");
+  const { id: clientId } = await request.json();
   if (!clientId) {
     return NextResponse.json({ error: "ID requerido" }, { status: 400 });
   }
@@ -35,23 +35,23 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
-  // Soft-delete: set deleted_at timestamp
+  // Restore: clear deleted_at
   const { error: updateError } = await adminClient
     .from("profiles")
-    .update({ deleted_at: new Date().toISOString() })
+    .update({ deleted_at: null })
     .eq("id", clientId);
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  // Ban the user so they can't access the app
-  const { error: banError } = await adminClient.auth.admin.updateUserById(clientId, {
-    ban_duration: "876600h",
+  // Unban the user
+  const { error: unbanError } = await adminClient.auth.admin.updateUserById(clientId, {
+    ban_duration: "none",
   });
 
-  if (banError) {
-    return NextResponse.json({ error: banError.message }, { status: 500 });
+  if (unbanError) {
+    return NextResponse.json({ error: unbanError.message }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
