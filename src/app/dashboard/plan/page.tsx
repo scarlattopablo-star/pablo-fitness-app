@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, Edit3 } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
@@ -32,10 +32,55 @@ export default function PlanPage() {
   const [loading, setLoading] = useState(true);
   const [objective, setObjective] = useState("");
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
+  const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weight: number; reps: number }>>({});
+  const [editingExercise, setEditingExercise] = useState<string | null>(null);
+  const [editWeight, setEditWeight] = useState("");
+  const [editReps, setEditReps] = useState("");
+  const [savingLog, setSavingLog] = useState(false);
 
   useEffect(() => {
-    if (user) loadMacros();
+    if (user) {
+      loadMacros();
+      loadExerciseLogs();
+    }
   }, [user]);
+
+  const loadExerciseLogs = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("exercise_logs")
+      .select("exercise_id, sets_data, date")
+      .eq("user_id", user.id)
+      .order("date", { ascending: false });
+
+    if (data) {
+      const latest: Record<string, { weight: number; reps: number }> = {};
+      data.forEach(log => {
+        if (!latest[log.exercise_id] && log.sets_data?.length > 0) {
+          const maxSet = log.sets_data.reduce((best: { weight: number; reps: number }, s: { weight: number; reps: number }) =>
+            s.weight > best.weight ? s : best, log.sets_data[0]);
+          latest[log.exercise_id] = { weight: maxSet.weight, reps: maxSet.reps };
+        }
+      });
+      setExerciseLogs(latest);
+    }
+  };
+
+  const saveExerciseLog = async (exerciseId: string, exerciseName: string) => {
+    if (!user || !editWeight) return;
+    setSavingLog(true);
+    await supabase.from("exercise_logs").insert({
+      user_id: user.id,
+      exercise_id: exerciseId,
+      exercise_name: exerciseName,
+      sets_data: [{ set: 1, weight: Number(editWeight), reps: Number(editReps) || 10 }],
+    });
+    setExerciseLogs(prev => ({ ...prev, [exerciseId]: { weight: Number(editWeight), reps: Number(editReps) || 10 } }));
+    setEditingExercise(null);
+    setEditWeight("");
+    setEditReps("");
+    setSavingLog(false);
+  };
 
   const loadMacros = async () => {
     if (!user) return;
@@ -136,33 +181,57 @@ export default function PlanPage() {
                 <h3 className="font-bold">{day.day}</h3>
                 {day.instructions && <p className="text-xs text-muted mt-1">{day.instructions}</p>}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-muted text-xs border-b border-card-border">
-                      <th className="text-left p-3 font-medium">Ejercicio</th>
-                      <th className="text-center p-3 font-medium">Series</th>
-                      <th className="text-center p-3 font-medium">Reps</th>
-                      <th className="text-center p-3 font-medium">Descanso</th>
-                      <th className="text-center p-3 font-medium w-10"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {day.exercises.map((ex, i) => (
-                      <tr key={i} className="border-b border-card-border/50 last:border-0">
-                        <td className="p-3 font-medium">{ex.name}</td>
-                        <td className="p-3 text-center text-primary font-bold">{ex.sets}</td>
-                        <td className="p-3 text-center">{ex.reps}</td>
-                        <td className="p-3 text-center text-muted">{ex.rest}</td>
-                        <td className="p-3 text-center">
-                          <button onClick={() => setSelectedExercise(ex.id)} className="text-primary hover:text-primary-light">
+              <div className="divide-y divide-card-border/30">
+                {day.exercises.map((ex, i) => {
+                  const log = exerciseLogs[ex.id];
+                  const isEditing = editingExercise === `${day.day}-${ex.id}`;
+                  return (
+                    <div key={i} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{ex.name}</p>
+                          <p className="text-xs text-muted">{ex.sets} series x {ex.reps} | Descanso: {ex.rest}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {log && !isEditing ? (
+                            <button
+                              onClick={() => { setEditingExercise(`${day.day}-${ex.id}`); setEditWeight(String(log.weight)); setEditReps(String(log.reps)); }}
+                              className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-bold flex items-center gap-1"
+                            >
+                              {log.weight}kg <Edit3 className="h-3 w-3" />
+                            </button>
+                          ) : !isEditing ? (
+                            <button
+                              onClick={() => { setEditingExercise(`${day.day}-${ex.id}`); setEditWeight(""); setEditReps("10"); }}
+                              className="text-xs bg-card-border text-muted px-2 py-1 rounded-lg flex items-center gap-1 hover:text-primary"
+                            >
+                              + Peso
+                            </button>
+                          ) : null}
+                          <button onClick={() => setSelectedExercise(ex.id)} className="text-primary">
                             <Info className="h-4 w-4" />
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      {isEditing && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <input type="number" value={editWeight} onChange={e => setEditWeight(e.target.value)}
+                            placeholder="Peso (kg)" className="w-20 bg-card-bg border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                          <span className="text-xs text-muted">x</span>
+                          <input type="number" value={editReps} onChange={e => setEditReps(e.target.value)}
+                            placeholder="Reps" className="w-16 bg-card-bg border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+                          <button onClick={() => saveExerciseLog(ex.id, ex.name)} disabled={savingLog || !editWeight}
+                            className="gradient-primary text-black text-xs font-bold px-3 py-1.5 rounded-lg disabled:opacity-50">
+                            {savingLog ? "..." : "OK"}
+                          </button>
+                          <button onClick={() => setEditingExercise(null)} className="text-muted text-xs">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

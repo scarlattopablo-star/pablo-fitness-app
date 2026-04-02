@@ -13,7 +13,6 @@ import { useAuth } from "@/lib/auth-context";
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
   { href: "/dashboard/plan", icon: ClipboardList, label: "Mi Plan" },
-  { href: "/dashboard/entrenamiento", icon: Dumbbell, label: "Mis Pesos" },
   { href: "/dashboard/progreso", icon: TrendingUp, label: "Progreso" },
   { href: "/dashboard/ejercicios", icon: BookOpen, label: "Ejercicios" },
   { href: "/dashboard/perfil", icon: User, label: "Perfil" },
