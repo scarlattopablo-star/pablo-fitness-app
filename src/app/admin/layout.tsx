@@ -108,7 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Ir al Sitio
           </Link>
           <button
-            onClick={() => signOut()}
+            onClick={async () => { await signOut(); window.location.href = "/login"; }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-danger hover:bg-danger/5 w-full transition-all"
           >
             <LogOut className="h-5 w-5" />
@@ -156,7 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 Ir al Sitio
               </Link>
               <button
-                onClick={() => { signOut(); setMenuOpen(false); }}
+                onClick={async () => { await signOut(); window.location.href = "/login"; }}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-danger w-full"
               >
                 <LogOut className="h-5 w-5" />
