@@ -11,6 +11,75 @@ import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 import { OfflineBanner } from "@/components/offline-banner";
 import { cacheData, getCachedData } from "@/lib/offline-cache";
 import { FoodSwapModal } from "@/components/food-swap-modal";
+import { findFoodByName, calculateFoodMacros } from "@/lib/food-database";
+import { PLANS } from "@/lib/plans-data";
+import { ArrowLeft } from "lucide-react";
+
+// Build foodDetails from food strings when plan was created by admin without structured data
+function enrichMealWithFoodDetails(meal: MealPlanMeal): MealPlanMeal {
+  if (meal.foodDetails && meal.foodDetails.length > 0) return meal;
+
+  const foodDetails: MealPlanMeal["foodDetails"] = [];
+  for (const foodStr of meal.foods) {
+    // Try to parse patterns like "150g pollo", "2 Huevo entero", "100g arroz integral"
+    const gramsMatch = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+    const unitsMatch = foodStr.match(/^(\d+)\s+(.+)/i);
+
+    let name = foodStr;
+    let grams = 100;
+
+    if (gramsMatch) {
+      grams = parseInt(gramsMatch[1]);
+      name = gramsMatch[2];
+    } else if (unitsMatch) {
+      name = unitsMatch[2];
+    }
+
+    const dbFood = findFoodByName(name);
+    if (dbFood) {
+      const macros = calculateFoodMacros(dbFood, grams);
+      foodDetails.push({
+        name: dbFood.name,
+        grams,
+        unit: dbFood.unit,
+        calories: macros.calories,
+        protein: macros.protein,
+        carbs: macros.carbs,
+        fat: macros.fat,
+      });
+    } else {
+      // Can't resolve - keep as placeholder without swap capability
+      foodDetails.push({
+        name: foodStr,
+        grams: 0,
+        unit: "g",
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      });
+    }
+  }
+
+  const totals = foodDetails.reduce(
+    (acc, f) => ({
+      calories: acc.calories + f.calories,
+      protein: acc.protein + f.protein,
+      carbs: acc.carbs + f.carbs,
+      fat: acc.fat + f.fat,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+
+  return {
+    ...meal,
+    foodDetails,
+    approxCalories: meal.approxCalories || Math.round(totals.calories),
+    approxProtein: meal.approxProtein || Math.round(totals.protein * 10) / 10,
+    approxCarbs: meal.approxCarbs || Math.round(totals.carbs * 10) / 10,
+    approxFats: meal.approxFats || Math.round(totals.fat * 10) / 10,
+  };
+}
 
 const OBJECTIVE_LABELS: Record<string, string> = {
   "quema-grasa": "Quema Grasa",
@@ -29,7 +98,7 @@ const OBJECTIVE_LABELS: Record<string, string> = {
 
 export default function PlanPage() {
   const { user, subscription, isExpired } = useAuth();
-  const [tab, setTab] = useState<"entrenamiento" | "nutricion">("entrenamiento");
+  const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">("overview");
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
   const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
@@ -177,8 +246,9 @@ export default function PlanPage() {
       }
 
       if (dbNutrition && dbNutrition.data?.meals?.length > 0) {
+        const enrichedMeals = dbNutrition.data.meals.map((m: MealPlanMeal) => enrichMealWithFoodDetails(m));
         const mealData = {
-          meals: dbNutrition.data.meals,
+          meals: enrichedMeals,
           importantNotes: dbNutrition.important_notes || dbNutrition.data.importantNotes || [],
         };
         setMealPlan(mealData);
@@ -219,64 +289,96 @@ export default function PlanPage() {
   if (isExpired) return <SubscriptionExpiredBanner />;
 
   const planName = subscription?.plan_name || OBJECTIVE_LABELS[objective] || "Plan Personalizado";
+  const planData = PLANS.find(p => p.slug === objective);
+  const planDescription = planData?.description || "Tu plan personalizado diseñado para alcanzar tus objetivos de forma efectiva y sostenible.";
 
   return (
     <div>
       <OfflineBanner />
-      {/* Plan Header */}
-      <div className="glass-card rounded-2xl p-5 mb-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1 gradient-primary" />
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shrink-0">
-            <Target className="h-6 w-6 text-black" />
-          </div>
-          <div>
-            <p className="text-xs text-primary font-bold tracking-wider">MI PLAN</p>
-            <h1 className="text-xl font-black">{planName}</h1>
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          <div className="bg-card-bg rounded-lg p-2 text-center">
-            <p className="text-lg font-black text-primary">{macros.calories.toLocaleString()}</p>
-            <p className="text-[9px] text-muted">KCAL/DIA</p>
-          </div>
-          <div className="bg-card-bg rounded-lg p-2 text-center">
-            <p className="text-lg font-black text-red-400">{macros.protein}g</p>
-            <p className="text-[9px] text-muted">PROTEINAS</p>
-          </div>
-          <div className="bg-card-bg rounded-lg p-2 text-center">
-            <p className="text-lg font-black text-yellow-400">{macros.carbs}g</p>
-            <p className="text-[9px] text-muted">CARBOS</p>
-          </div>
-          <div className="bg-card-bg rounded-lg p-2 text-center">
-            <p className="text-lg font-black text-blue-400">{macros.fats}g</p>
-            <p className="text-[9px] text-muted">GRASAS</p>
-          </div>
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setTab("entrenamiento")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
-            tab === "entrenamiento" ? "gradient-primary text-black" : "glass-card text-muted hover:text-white"
-          }`}
-        >
-          <Dumbbell className="h-4 w-4" /> Entrenamiento
-        </button>
-        <button
-          onClick={() => setTab("nutricion")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-all ${
-            tab === "nutricion" ? "gradient-primary text-black" : "glass-card text-muted hover:text-white"
-          }`}
-        >
-          <UtensilsCrossed className="h-4 w-4" /> Nutrición
-        </button>
-      </div>
+      {/* OVERVIEW */}
+      {view === "overview" && (
+        <div>
+          {/* Plan Header */}
+          <div className="glass-card rounded-2xl p-5 mb-6 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 gradient-primary" />
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+                <Target className="h-6 w-6 text-black" />
+              </div>
+              <div>
+                <p className="text-xs text-primary font-bold tracking-wider">MI PLAN</p>
+                <h1 className="text-xl font-black">{planName}</h1>
+              </div>
+            </div>
+            <p className="text-sm text-muted mb-4">{planDescription}</p>
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-card-bg rounded-lg p-2 text-center">
+                <p className="text-lg font-black text-primary">{macros.calories.toLocaleString()}</p>
+                <p className="text-[9px] text-muted">KCAL/DIA</p>
+              </div>
+              <div className="bg-card-bg rounded-lg p-2 text-center">
+                <p className="text-lg font-black text-red-400">{macros.protein}g</p>
+                <p className="text-[9px] text-muted">PROTEINAS</p>
+              </div>
+              <div className="bg-card-bg rounded-lg p-2 text-center">
+                <p className="text-lg font-black text-yellow-400">{macros.carbs}g</p>
+                <p className="text-[9px] text-muted">CARBOS</p>
+              </div>
+              <div className="bg-card-bg rounded-lg p-2 text-center">
+                <p className="text-lg font-black text-blue-400">{macros.fats}g</p>
+                <p className="text-[9px] text-muted">GRASAS</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Plan Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => setView("entrenamiento")}
+              className="w-full glass-card rounded-2xl p-5 flex items-center gap-4 hover:border-primary/30 transition-colors text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Dumbbell className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold">Plan de Entrenamiento</p>
+                <p className="text-xs text-muted mt-0.5">{trainingPlan.length} dias de entrenamiento</p>
+              </div>
+              <ArrowLeft className="h-5 w-5 text-muted rotate-180" />
+            </button>
+
+            <button
+              onClick={() => setView("nutricion")}
+              className="w-full glass-card rounded-2xl p-5 flex items-center gap-4 hover:border-primary/30 transition-colors text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <UtensilsCrossed className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold">Plan de Nutricion</p>
+                <p className="text-xs text-muted mt-0.5">{mealPlan?.meals.length || 0} comidas diarias</p>
+              </div>
+              <ArrowLeft className="h-5 w-5 text-muted rotate-180" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TRAINING */}
-      {tab === "entrenamiento" && (
+      {view === "entrenamiento" && (
+        <div>
+          <button
+            onClick={() => setView("overview")}
+            className="flex items-center gap-2 text-muted hover:text-white mb-4 transition-colors text-sm"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a mi plan
+          </button>
+          <h2 className="text-xl font-black mb-4 flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-primary" />
+            Plan de Entrenamiento
+          </h2>
         <div className="space-y-4">
           {trainingPlan.map((day) => (
             <div key={day.day} className="glass-card rounded-2xl overflow-hidden">
@@ -338,12 +440,24 @@ export default function PlanPage() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
 
       {/* NUTRITION */}
-      {tab === "nutricion" && mealPlan && (
+      {view === "nutricion" && mealPlan && (
         <div>
+          <button
+            onClick={() => setView("overview")}
+            className="flex items-center gap-2 text-muted hover:text-white mb-4 transition-colors text-sm"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a mi plan
+          </button>
+          <h2 className="text-xl font-black mb-4 flex items-center gap-2">
+            <UtensilsCrossed className="h-5 w-5 text-primary" />
+            Plan de Nutricion
+          </h2>
           <div className="glass-card rounded-2xl p-4 mb-4 border-l-4 border-warning">
             <p className="font-bold text-warning text-sm mb-1">IMPORTANTE</p>
             <ul className="space-y-1">
@@ -368,22 +482,31 @@ export default function PlanPage() {
                     </div>
                     <ul className="space-y-1.5 mb-3">
                       {hasFoodDetails
-                        ? meal.foodDetails.map((fd: { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number }, i: number) => (
-                            <li key={i} className="text-sm flex items-center gap-2">
-                              <span className="text-primary shrink-0">&#8226;</span>
-                              <div className="flex-1 min-w-0">
-                                <span className="text-muted">{fd.grams}g {fd.name}</span>
-                                <span className="text-[10px] text-muted/60 ml-1">({fd.calories}kcal)</span>
-                              </div>
-                              <button
-                                onClick={() => setSwapTarget({ mealIndex: mealIdx, foodIndex: i, food: fd, mealName: meal.name })}
-                                className="shrink-0 p-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-colors"
-                                title="Cambiar alimento"
-                              >
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              </button>
-                            </li>
-                          ))
+                        ? meal.foodDetails.map((fd: { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number }, i: number) => {
+                            const canSwap = fd.grams > 0 && fd.calories > 0;
+                            return (
+                              <li key={i} className="text-sm flex items-center gap-2">
+                                <span className="text-primary shrink-0">&#8226;</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-muted">
+                                    {fd.grams > 0 ? `${fd.grams}g ` : ""}{fd.name}
+                                  </span>
+                                  {fd.calories > 0 && (
+                                    <span className="text-[10px] text-muted/60 ml-1">({fd.calories}kcal)</span>
+                                  )}
+                                </div>
+                                {canSwap && (
+                                  <button
+                                    onClick={() => setSwapTarget({ mealIndex: mealIdx, foodIndex: i, food: fd, mealName: meal.name })}
+                                    className="shrink-0 p-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                                    title="Cambiar alimento"
+                                  >
+                                    <RefreshCw className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </li>
+                            );
+                          })
                         : meal.foods.map((food: string, i: number) => (
                             <li key={i} className="text-sm flex items-start gap-2">
                               <span className="text-primary mt-0.5">&#8226;</span>

@@ -54,7 +54,23 @@ export async function POST(request: NextRequest) {
   }
 
   const meal = meals[mealIndex];
-  if (!meal.foodDetails || !meal.foodDetails[foodIndex]) {
+
+  // If plan has no foodDetails, try to build them from food strings
+  if (!meal.foodDetails || meal.foodDetails.length === 0) {
+    meal.foodDetails = (meal.foods || []).map((foodStr: string) => {
+      const gramsMatch = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+      const name = gramsMatch ? gramsMatch[2] : foodStr;
+      const grams = gramsMatch ? parseInt(gramsMatch[1]) : 100;
+      const dbFood = findFoodByName(name);
+      if (dbFood) {
+        const macros = calculateFoodMacros(dbFood, grams);
+        return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
+      }
+      return { name: foodStr, grams: 0, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+    });
+  }
+
+  if (!meal.foodDetails[foodIndex]) {
     return NextResponse.json({ error: "Alimento no encontrado" }, { status: 400 });
   }
 
