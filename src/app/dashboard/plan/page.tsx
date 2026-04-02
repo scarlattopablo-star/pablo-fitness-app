@@ -156,15 +156,16 @@ function PlanContent() {
     }
   };
 
-  const startSession = (dayName: string, exercises: { id: string; sets: number | string }[]) => {
+  const startSession = (dayName: string, exercises: { id: string; sets: number | string; reps: string | number }[]) => {
     const data: Record<string, { set: number; weight: number; reps: number }[]> = {};
     exercises.forEach(ex => {
       const numSets = parseInt(String(ex.sets)) || 4;
       const lastWeight = exerciseLogs[ex.id]?.weight || 0;
+      const lastReps = exerciseLogs[ex.id]?.reps || parseInt(String(ex.reps)) || 10;
       data[ex.id] = Array.from({ length: numSets }, (_, i) => ({
         set: i + 1,
         weight: lastWeight,
-        reps: 10,
+        reps: lastReps,
       }));
     });
     setSessionData(data);
