@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, Edit3 } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, Edit3, RefreshCw } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
+import { OfflineBanner } from "@/components/offline-banner";
+import { cacheData, getCachedData } from "@/lib/offline-cache";
+import { FoodSwapModal } from "@/components/food-swap-modal";
 
 const OBJECTIVE_LABELS: Record<string, string> = {
   "quema-grasa": "Quema Grasa",
@@ -38,6 +41,12 @@ export default function PlanPage() {
   const [editWeight, setEditWeight] = useState("");
   const [editReps, setEditReps] = useState("");
   const [savingLog, setSavingLog] = useState(false);
+  const [swapTarget, setSwapTarget] = useState<{
+    mealIndex: number;
+    foodIndex: number;
+    food: { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number };
+    mealName: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -83,63 +92,115 @@ export default function PlanPage() {
     setSavingLog(false);
   };
 
+  const handleSwap = async (newFoodId: string) => {
+    if (!swapTarget || !user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      if (!refreshed.session?.access_token) return;
+    }
+    const accessToken = token || (await supabase.auth.getSession()).data.session?.access_token;
+    if (!accessToken) return;
+
+    const res = await fetch("/api/swap-food", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        mealIndex: swapTarget.mealIndex,
+        foodIndex: swapTarget.foodIndex,
+        newFoodId,
+      }),
+    });
+
+    if (res.ok && mealPlan) {
+      const { meal: updatedMeal } = await res.json();
+      const updatedMeals = [...mealPlan.meals];
+      updatedMeals[swapTarget.mealIndex] = updatedMeal;
+      const updated = { ...mealPlan, meals: updatedMeals };
+      setMealPlan(updated);
+      cacheData("nutrition_plan", updated);
+    }
+    setSwapTarget(null);
+  };
+
   const loadMacros = async () => {
     if (!user) return;
 
-    // Load survey data for macros display
-    const { data } = await supabase
-      .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    try {
+      // Load survey data for macros display
+      const { data } = await supabase
+        .from("surveys")
+        .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
 
-    if (data && data.target_calories) {
-      setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
-      setObjective(data.objective || "");
-    } else {
-      setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
-    }
+      if (data && data.target_calories) {
+        setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
+        setObjective(data.objective || "");
+        cacheData("survey", data);
+      } else {
+        setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
+      }
 
-    // Try to load plans from DB first (admin-edited or auto-generated)
-    const { data: dbTraining } = await supabase
-      .from("training_plans")
-      .select("data")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      // Try to load plans from DB first (admin-edited or auto-generated)
+      const { data: dbTraining } = await supabase
+        .from("training_plans")
+        .select("data")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    const { data: dbNutrition } = await supabase
-      .from("nutrition_plans")
-      .select("data, important_notes")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      const { data: dbNutrition } = await supabase
+        .from("nutrition_plans")
+        .select("data, important_notes")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (dbTraining && dbTraining.data?.days?.length > 0) {
-      // Use DB plans (admin-customized or auto-generated)
-      setTrainingPlan(dbTraining.data.days);
-    } else if (data) {
-      // Fallback: generate on-the-fly from survey
-      setTrainingPlan(generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa"));
-    } else {
-      setTrainingPlan(generateTrainingPlan(5));
-    }
+      if (dbTraining && dbTraining.data?.days?.length > 0) {
+        setTrainingPlan(dbTraining.data.days);
+        cacheData("training_plan", dbTraining.data.days);
+      } else if (data) {
+        const generated = generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa");
+        setTrainingPlan(generated);
+        cacheData("training_plan", generated);
+      } else {
+        setTrainingPlan(generateTrainingPlan(5));
+      }
 
-    if (dbNutrition && dbNutrition.data?.meals?.length > 0) {
-      // Use DB nutrition plan
-      setMealPlan({
-        meals: dbNutrition.data.meals,
-        importantNotes: dbNutrition.important_notes || dbNutrition.data.importantNotes || [],
-      });
-    } else if (data) {
-      // Fallback: generate on-the-fly from survey
-      setMealPlan(generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, data.wake_hour || 7, data.sleep_hour || 23));
-    } else {
-      setMealPlan(generateMealPlan(2100, 150, 220, 70));
+      if (dbNutrition && dbNutrition.data?.meals?.length > 0) {
+        const mealData = {
+          meals: dbNutrition.data.meals,
+          importantNotes: dbNutrition.important_notes || dbNutrition.data.importantNotes || [],
+        };
+        setMealPlan(mealData);
+        cacheData("nutrition_plan", mealData);
+      } else if (data) {
+        const generated = generateMealPlan(data.target_calories, data.protein, data.carbs, data.fats, data.wake_hour || 7, data.sleep_hour || 23);
+        setMealPlan(generated);
+        cacheData("nutrition_plan", generated);
+      } else {
+        setMealPlan(generateMealPlan(2100, 150, 220, 70));
+      }
+    } catch {
+      // Offline fallback - load from cache
+      const cachedSurvey = getCachedData<{ target_calories: number; protein: number; carbs: number; fats: number; objective: string }>("survey");
+      if (cachedSurvey) {
+        setMacros({ calories: cachedSurvey.target_calories, protein: cachedSurvey.protein, carbs: cachedSurvey.carbs, fats: cachedSurvey.fats });
+        setObjective(cachedSurvey.objective || "");
+      }
+      const cachedTraining = getCachedData<TrainingDay[]>("training_plan");
+      if (cachedTraining) setTrainingPlan(cachedTraining);
+      const cachedNutrition = getCachedData<{ meals: MealPlanMeal[]; importantNotes: string[] }>("nutrition_plan");
+      if (cachedNutrition) setMealPlan(cachedNutrition);
     }
 
     setLoading(false);
@@ -161,6 +222,7 @@ export default function PlanPage() {
 
   return (
     <div>
+      <OfflineBanner />
       {/* Plan Header */}
       <div className="glass-card rounded-2xl p-5 mb-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 gradient-primary" />
@@ -292,34 +354,64 @@ export default function PlanPage() {
           </div>
 
           <div className="space-y-3">
-            {mealPlan.meals.map((meal) => (
-              <div key={meal.name} className="glass-card rounded-2xl overflow-hidden">
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      {meal.time && <span className="text-xs text-primary font-bold">{meal.time} — </span>}
-                      <span className="font-bold">{meal.name}</span>
+            {mealPlan.meals.map((meal, mealIdx) => {
+              const hasFoodDetails = meal.foodDetails && meal.foodDetails.length > 0;
+              return (
+                <div key={meal.name} className="glass-card rounded-2xl overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        {meal.time && <span className="text-xs text-primary font-bold">{meal.time} — </span>}
+                        <span className="font-bold">{meal.name}</span>
+                      </div>
+                      <span className="text-xs text-primary font-semibold">{meal.approxCalories} kcal</span>
                     </div>
-                    <span className="text-xs text-primary font-semibold">{meal.approxCalories} kcal</span>
-                  </div>
-                  <ul className="space-y-1.5 mb-3">
-                    {meal.foods.map((food, i) => (
-                      <li key={i} className="text-sm flex items-start gap-2">
-                        <span className="text-primary mt-0.5">&#8226;</span>
-                        <span className="text-muted">{food}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex gap-2 pt-2 border-t border-card-border/30">
-                    <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {meal.approxProtein}g</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {meal.approxCarbs}g</span>
-                    <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
+                    <ul className="space-y-1.5 mb-3">
+                      {hasFoodDetails
+                        ? meal.foodDetails.map((fd: { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number }, i: number) => (
+                            <li key={i} className="text-sm flex items-center gap-2">
+                              <span className="text-primary shrink-0">&#8226;</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-muted">{fd.grams}g {fd.name}</span>
+                                <span className="text-[10px] text-muted/60 ml-1">({fd.calories}kcal)</span>
+                              </div>
+                              <button
+                                onClick={() => setSwapTarget({ mealIndex: mealIdx, foodIndex: i, food: fd, mealName: meal.name })}
+                                className="shrink-0 p-1.5 rounded-lg text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                                title="Cambiar alimento"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              </button>
+                            </li>
+                          ))
+                        : meal.foods.map((food: string, i: number) => (
+                            <li key={i} className="text-sm flex items-start gap-2">
+                              <span className="text-primary mt-0.5">&#8226;</span>
+                              <span className="text-muted">{food}</span>
+                            </li>
+                          ))}
+                    </ul>
+                    <div className="flex gap-2 pt-2 border-t border-card-border/30">
+                      <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {meal.approxProtein}g</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {meal.approxCarbs}g</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+      )}
+
+      {/* Food Swap Modal */}
+      {swapTarget && (
+        <FoodSwapModal
+          mealName={swapTarget.mealName}
+          currentFood={swapTarget.food}
+          onSwap={handleSwap}
+          onClose={() => setSwapTarget(null)}
+        />
       )}
 
       {/* Exercise Detail Modal */}

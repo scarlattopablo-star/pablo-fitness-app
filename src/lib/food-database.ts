@@ -111,3 +111,78 @@ export function calculateFoodMacros(food: FoodItem, grams: number) {
     fat: Math.round(food.fat * factor * 10) / 10,
   };
 }
+
+// Find food by display name (fuzzy match for stored plan names)
+export function findFoodByName(name: string): FoodItem | undefined {
+  const n = name.toLowerCase().trim();
+  // Exact match first
+  const exact = FOOD_DATABASE.find(f => f.name.toLowerCase() === n);
+  if (exact) return exact;
+  // Partial match: check if the food name is contained in the search string
+  return FOOD_DATABASE.find(f => n.includes(f.name.toLowerCase().split(" (")[0].toLowerCase()));
+}
+
+// Map meal names to mealType keys used in food database
+function mealNameToType(mealName: string): string {
+  const name = mealName.toLowerCase();
+  if (name.includes("desayuno")) return "desayuno";
+  if (name.includes("almuerzo")) return "almuerzo";
+  if (name.includes("cena")) return "cena";
+  return "snack";
+}
+
+// Get swap alternatives: same category, suitable for the meal type
+export function getSwapAlternatives(currentFoodId: string, mealName: string): FoodItem[] {
+  const current = getFoodById(currentFoodId);
+  if (!current) return FOOD_DATABASE;
+  const mealType = mealNameToType(mealName);
+  return FOOD_DATABASE.filter(f =>
+    f.id !== currentFoodId &&
+    f.category === current.category &&
+    f.mealTypes.includes(mealType)
+  );
+}
+
+// Calculate grams of new food to match primary macro of original
+export function calculateSwapGrams(
+  originalFood: FoodItem,
+  originalGrams: number,
+  newFood: FoodItem
+): number {
+  const originalMacros = calculateFoodMacros(originalFood, originalGrams);
+  let grams: number;
+
+  switch (originalFood.category) {
+    case "protein":
+    case "dairy":
+      grams = newFood.protein > 0
+        ? Math.round(originalMacros.protein / newFood.protein * 100 / 10) * 10
+        : originalGrams;
+      break;
+    case "carb":
+    case "fruit":
+      grams = newFood.carbs > 0
+        ? Math.round(originalMacros.carbs / newFood.carbs * 100 / 10) * 10
+        : originalGrams;
+      break;
+    case "fat":
+      grams = newFood.fat > 0
+        ? Math.round(originalMacros.fat / newFood.fat * 100 / 10) * 10
+        : originalGrams;
+      break;
+    case "vegetable":
+      // Vegetables: match carbs but cap at 300g
+      grams = newFood.carbs > 0
+        ? Math.round(originalMacros.carbs / newFood.carbs * 100 / 10) * 10
+        : originalGrams;
+      grams = Math.min(grams, 300);
+      break;
+    default:
+      // Match calories
+      grams = newFood.calories > 0
+        ? Math.round(originalMacros.calories / newFood.calories * 100 / 10) * 10
+        : originalGrams;
+  }
+
+  return Math.max(10, Math.min(grams, 500));
+}
