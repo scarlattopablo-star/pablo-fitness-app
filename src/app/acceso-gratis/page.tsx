@@ -72,22 +72,18 @@ function AccesoGratisForm() {
           return;
         }
 
-        // Create subscription
-        const endDate = new Date();
-        if (duration === "1-mes") endDate.setMonth(endDate.getMonth() + 1);
-        else if (duration === "3-meses") endDate.setMonth(endDate.getMonth() + 3);
-        else if (duration === "6-meses") endDate.setMonth(endDate.getMonth() + 6);
-        else endDate.setFullYear(endDate.getFullYear() + 1);
-
-        await supabase.from("subscriptions").insert({
-          user_id: authData.user.id,
-          duration,
-          amount_paid: 0,
-          currency: "UYU",
-          start_date: new Date().toISOString().split("T")[0],
-          end_date: endDate.toISOString().split("T")[0],
-          status: "active",
+        // Create subscription via server-side API (bypasses RLS)
+        const subRes = await fetch("/api/create-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: authData.user.id, duration, amountPaid: 0, currency: "UYU" }),
         });
+        if (!subRes.ok) {
+          const subErr = await subRes.json();
+          setError(`Error creando suscripcion: ${subErr.error}`);
+          setLoading(false);
+          return;
+        }
 
         setSuccess(true);
       }

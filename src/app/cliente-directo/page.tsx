@@ -131,18 +131,16 @@ function ClienteDirectoForm() {
       return;
     }
 
-    // Create subscription so client appears in admin and has an active plan
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1);
-    await supabase.from("subscriptions").insert({
-      user_id: userId,
-      duration: "1-ano",
-      amount_paid: 0,
-      currency: "UYU",
-      start_date: new Date().toISOString().split("T")[0],
-      end_date: endDate.toISOString().split("T")[0],
-      status: "active",
+    // Create subscription via server-side API (bypasses RLS)
+    const subRes = await fetch("/api/create-subscription", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, duration: "1-ano", amountPaid: 0, currency: "UYU" }),
     });
+    if (!subRes.ok) {
+      const subErr = await subRes.json();
+      console.error("Error creating subscription:", subErr);
+    }
 
     // Create initial progress entry as baseline
     await supabase.from("progress_entries").insert({

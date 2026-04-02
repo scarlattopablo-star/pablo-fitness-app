@@ -66,7 +66,6 @@ export default function ClienteDetailPage({
   const [profileSaved, setProfileSaved] = useState(false);
   const [expandTraining, setExpandTraining] = useState(false);
   const [expandNutrition, setExpandNutrition] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -75,62 +74,49 @@ export default function ClienteDetailPage({
   }, [id, authLoading, user]);
 
   const loadClient = async () => {
-    const logs: string[] = [];
-
-    const { data: profileData, error: profileError } = await supabase
+    const { data: profileData } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", id)
       .single();
-    if (profileError) logs.push(`PROFILE ERROR: ${profileError.message} (${profileError.code})`);
-    else logs.push(`PROFILE: OK - ${profileData?.full_name}`);
     if (profileData) setClient(profileData);
 
-    const { data: surveyData, error: surveyError } = await supabase
+    const { data: surveyData } = await supabase
       .from("surveys")
       .select("*")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (surveyError) logs.push(`SURVEY ERROR: ${surveyError.message} (${surveyError.code})`);
-    else logs.push(`SURVEY: ${surveyData ? "OK" : "No data"}`);
     if (surveyData) setSurvey(surveyData);
 
-    const { data: subData, error: subError } = await supabase
+    const { data: subData } = await supabase
       .from("subscriptions")
       .select("*")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (subError) logs.push(`SUBSCRIPTION ERROR: ${subError.message} (${subError.code})`);
-    else logs.push(`SUBSCRIPTION: ${subData ? `OK - status: ${subData.status}` : "No data"}`);
     if (subData) setSubscription(subData);
 
-    const { data: tpData, error: tpError } = await supabase
+    const { data: tpData } = await supabase
       .from("training_plans")
       .select("*")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (tpError) logs.push(`TRAINING ERROR: ${tpError.message} (${tpError.code})`);
-    else logs.push(`TRAINING: ${tpData ? `OK - ${tpData.data?.days?.length || 0} days` : "No data"}`);
     if (tpData) setTrainingPlan(tpData);
 
-    const { data: npData, error: npError } = await supabase
+    const { data: npData } = await supabase
       .from("nutrition_plans")
       .select("*")
       .eq("user_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (npError) logs.push(`NUTRITION ERROR: ${npError.message} (${npError.code})`);
-    else logs.push(`NUTRITION: ${npData ? `OK - ${npData.data?.meals?.length || 0} meals` : "No data"}`);
     if (npData) setNutritionPlan(npData);
 
-    setDebugInfo(logs);
     setLoading(false);
   };
 
@@ -442,18 +428,6 @@ export default function ClienteDetailPage({
           </div>
         )}
       </div>
-
-      {/* Debug Info - TEMP */}
-      {debugInfo.length > 0 && (
-        <div className="glass-card rounded-2xl p-4 mb-4 border border-yellow-500/30">
-          <p className="text-xs font-bold text-yellow-400 mb-2">DEBUG - Resultado de consultas:</p>
-          {debugInfo.map((log, i) => (
-            <p key={i} className={`text-xs font-mono ${log.includes("ERROR") ? "text-red-400" : log.includes("No data") ? "text-yellow-400" : "text-green-400"}`}>
-              {log}
-            </p>
-          ))}
-        </div>
-      )}
 
       {/* Nutrition Plan Detail */}
       <div className="glass-card rounded-2xl p-5 mb-6">
