@@ -115,11 +115,47 @@ export function calculateFoodMacros(food: FoodItem, grams: number) {
 // Find food by display name (fuzzy match for stored plan names)
 export function findFoodByName(name: string): FoodItem | undefined {
   const n = name.toLowerCase().trim();
-  // Exact match first
+  // Exact match
   const exact = FOOD_DATABASE.find(f => f.name.toLowerCase() === n);
   if (exact) return exact;
-  // Partial match: check if the food name is contained in the search string
-  return FOOD_DATABASE.find(f => n.includes(f.name.toLowerCase().split(" (")[0].toLowerCase()));
+  // Match by ID (e.g., "pollo-pechuga")
+  const byId = FOOD_DATABASE.find(f => f.id === n || n.includes(f.id));
+  if (byId) return byId;
+  // Search term contains food base name (e.g., "pechuga de pollo cocida" contains "pechuga de pollo")
+  const containsName = FOOD_DATABASE.find(f => {
+    const baseName = f.name.toLowerCase().split(" (")[0];
+    return n.includes(baseName);
+  });
+  if (containsName) return containsName;
+  // Food base name contains search term (e.g., "Pechuga de pollo" contains "pollo")
+  // Only match if search term is 4+ chars to avoid false positives
+  if (n.length >= 4) {
+    const nameContains = FOOD_DATABASE.find(f => {
+      const baseName = f.name.toLowerCase().split(" (")[0];
+      return baseName.includes(n);
+    });
+    if (nameContains) return nameContains;
+  }
+  // Match common short names
+  const aliases: Record<string, string> = {
+    "pollo": "pollo-pechuga", "pechuga": "pollo-pechuga", "muslo": "pollo-muslo",
+    "carne": "carne-magra", "bife": "carne-magra", "salmon": "salmon", "atun": "atun",
+    "merluza": "merluza", "huevo": "huevo-entero", "huevos": "huevo-entero",
+    "clara": "clara-huevo", "claras": "clara-huevo", "whey": "whey-protein", "proteina": "whey-protein",
+    "arroz": "arroz-blanco", "arroz blanco": "arroz-blanco", "arroz integral": "arroz-integral",
+    "avena": "avena", "batata": "boniato", "boniato": "boniato", "papa": "papa",
+    "pan": "pan-integral", "fideos": "fideos", "pasta": "fideos", "quinoa": "quinoa",
+    "aceite": "aceite-oliva", "palta": "palta", "aguacate": "palta",
+    "almendras": "almendras", "nueces": "nueces", "mani": "mani",
+    "yogurt": "yogurt-descremado", "yogur": "yogurt-descremado", "leche": "leche-descremada",
+    "cottage": "queso-cottage", "banana": "banana", "manzana": "manzana",
+    "brocoli": "brocoli", "espinaca": "espinaca", "tomate": "tomate",
+    "galleta": "galleta-arroz", "galletas": "galleta-arroz",
+  };
+  for (const [alias, foodId] of Object.entries(aliases)) {
+    if (n.includes(alias)) return getFoodById(foodId);
+  }
+  return undefined;
 }
 
 // Map meal names to mealType keys used in food database
