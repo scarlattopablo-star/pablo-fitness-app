@@ -122,7 +122,7 @@ export default function DashboardPage() {
       {/* Background image - grayscale, blurred, faded */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.07]"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.15]"
           style={{
             backgroundImage: "url(/images/gym-bg.png)",
             filter: "grayscale(100%) blur(2px)",
