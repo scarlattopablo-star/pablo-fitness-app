@@ -89,10 +89,10 @@ export default function HomePage() {
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.20]"
           style={{
             backgroundImage: "url(/images/gym-bg.png)",
-            filter: "grayscale(100%) brightness(0.8)",
+            filter: "grayscale(100%) brightness(0.9)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/80 to-background" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background" />
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm mb-8 animate-fade-in-up">
