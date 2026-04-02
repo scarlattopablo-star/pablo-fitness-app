@@ -22,6 +22,7 @@ function AccesoGratisForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [mode, setMode] = useState<"register" | "login">("register");
 
   useEffect(() => {
     if (!code) {
@@ -47,6 +48,21 @@ function AccesoGratisForm() {
     setError("");
 
     try {
+      if (mode === "login") {
+        // Existing user: just log in and redirect
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        if (loginError) {
+          setError(loginError.message === "Invalid login credentials"
+            ? "Email o contraseña incorrectos"
+            : loginError.message);
+          setLoading(false);
+          return;
+        }
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      // New user: register
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -54,6 +70,13 @@ function AccesoGratisForm() {
       });
 
       if (authError) {
+        // If user already exists, switch to login mode
+        if (authError.message.toLowerCase().includes("already registered") || authError.message.toLowerCase().includes("already been registered")) {
+          setMode("login");
+          setError("Ya tenes cuenta con este email. Ingresa tu contraseña para acceder.");
+          setLoading(false);
+          return;
+        }
         setError(authError.message);
         setLoading(false);
         return;
@@ -88,7 +111,7 @@ function AccesoGratisForm() {
         setSuccess(true);
       }
     } catch {
-      setError("Error inesperado. Intentá de nuevo.");
+      setError("Error inesperado. Intenta de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -167,17 +190,19 @@ function AccesoGratisForm() {
 
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-4">
           {error && (
-            <div className="bg-danger/10 border border-danger/30 text-danger text-sm p-3 rounded-xl">{error}</div>
+            <div className={`${mode === "login" ? "bg-primary/10 border-primary/30 text-primary" : "bg-danger/10 border-danger/30 text-danger"} border text-sm p-3 rounded-xl`}>{error}</div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Nombre Completo</label>
-            <input
-              type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-              placeholder="Tu nombre completo" required
-              className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
-            />
-          </div>
+          {mode === "register" && (
+            <div>
+              <label className="block text-sm font-medium mb-2">Nombre Completo</label>
+              <input
+                type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                placeholder="Tu nombre completo" required
+                className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary"
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium mb-2">Email</label>
             <input
@@ -192,7 +217,7 @@ function AccesoGratisForm() {
               <input
                 type={showPassword ? "text" : "password"} value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres" required minLength={6}
+                placeholder={mode === "login" ? "Tu contraseña" : "Minimo 6 caracteres"} required minLength={6}
                 className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 pr-12 focus:outline-none focus:border-primary"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -203,8 +228,24 @@ function AccesoGratisForm() {
           </div>
           <button type="submit" disabled={loading}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50">
-            {loading ? "Activando..." : "Activar Acceso Gratis"}
+            {loading ? (mode === "login" ? "Ingresando..." : "Activando...") : (mode === "login" ? "Ingresar" : "Activar Acceso Gratis")}
           </button>
+          {mode === "register" && (
+            <p className="text-center text-sm text-muted">
+              ¿Ya tenes cuenta?{" "}
+              <button type="button" onClick={() => { setMode("login"); setError(""); }} className="text-primary hover:underline font-medium">
+                Ingresa aca
+              </button>
+            </p>
+          )}
+          {mode === "login" && (
+            <p className="text-center text-sm text-muted">
+              ¿No tenes cuenta?{" "}
+              <button type="button" onClick={() => { setMode("register"); setError(""); }} className="text-primary hover:underline font-medium">
+                Registrate
+              </button>
+            </p>
+          )}
         </form>
       </div>
     </main>
