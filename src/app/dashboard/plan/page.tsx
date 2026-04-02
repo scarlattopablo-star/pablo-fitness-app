@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, Edit3, RefreshCw } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
@@ -106,9 +106,10 @@ export default function PlanPage() {
   const [objective, setObjective] = useState("");
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weight: number; reps: number; date: string; prevWeight?: number }>>({});
-  const [editingExercise, setEditingExercise] = useState<string | null>(null);
-  const [editSets, setEditSets] = useState<{ set: number; weight: number; reps: number }[]>([]);
-  const [savingLog, setSavingLog] = useState(false);
+  const [activeSession, setActiveSession] = useState<string | null>(null); // day name
+  const [sessionData, setSessionData] = useState<Record<string, { set: number; weight: number; reps: number }[]>>({});
+  const [savingSession, setSavingSession] = useState(false);
+  const [sessionSaved, setSessionSaved] = useState(false);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
     foodIndex: number;
@@ -150,36 +151,61 @@ export default function PlanPage() {
     }
   };
 
-  const saveExerciseLog = async (exerciseId: string, exerciseName: string) => {
-    if (!user) return;
-    const validSets = editSets.filter(s => s.weight > 0);
-    if (validSets.length === 0) return;
-    setSavingLog(true);
-    await supabase.from("exercise_logs").insert({
-      user_id: user.id,
-      exercise_id: exerciseId,
-      exercise_name: exerciseName,
-      sets_data: validSets,
+  const startSession = (dayName: string, exercises: { id: string; sets: number | string }[]) => {
+    const data: Record<string, { set: number; weight: number; reps: number }[]> = {};
+    exercises.forEach(ex => {
+      const numSets = parseInt(String(ex.sets)) || 4;
+      const lastWeight = exerciseLogs[ex.id]?.weight || 0;
+      data[ex.id] = Array.from({ length: numSets }, (_, i) => ({
+        set: i + 1,
+        weight: lastWeight,
+        reps: 10,
+      }));
     });
-    const maxSet = validSets.reduce((best, s) => s.weight > best.weight ? s : best, validSets[0]);
-    const prevWeight = exerciseLogs[exerciseId]?.weight;
-    setExerciseLogs(prev => ({
-      ...prev,
-      [exerciseId]: { weight: maxSet.weight, reps: maxSet.reps, date: new Date().toISOString(), prevWeight },
-    }));
-    setEditingExercise(null);
-    setEditSets([]);
-    setSavingLog(false);
+    setSessionData(data);
+    setActiveSession(dayName);
+    setSessionSaved(false);
   };
 
-  const startEditing = (dayName: string, exId: string, numSets: number, lastWeight: number) => {
-    setEditingExercise(`${dayName}-${exId}`);
-    const sets = Array.from({ length: numSets }, (_, i) => ({
-      set: i + 1,
-      weight: lastWeight,
-      reps: 10,
+  const updateSessionSet = (exId: string, setIdx: number, field: "weight" | "reps", value: number) => {
+    setSessionData(prev => ({
+      ...prev,
+      [exId]: prev[exId].map((s, i) => i === setIdx ? { ...s, [field]: value } : s),
     }));
-    setEditSets(sets);
+  };
+
+  const saveSession = async (exercises: { id: string; name: string }[]) => {
+    if (!user) return;
+    setSavingSession(true);
+
+    for (const ex of exercises) {
+      const sets = sessionData[ex.id];
+      if (!sets) continue;
+      const validSets = sets.filter(s => s.weight > 0);
+      if (validSets.length === 0) continue;
+
+      await supabase.from("exercise_logs").insert({
+        user_id: user.id,
+        exercise_id: ex.id,
+        exercise_name: ex.name,
+        sets_data: validSets,
+      });
+
+      const maxSet = validSets.reduce((best, s) => s.weight > best.weight ? s : best, validSets[0]);
+      const prevWeight = exerciseLogs[ex.id]?.weight;
+      setExerciseLogs(prev => ({
+        ...prev,
+        [ex.id]: { weight: maxSet.weight, reps: maxSet.reps, date: new Date().toISOString(), prevWeight },
+      }));
+    }
+
+    setSavingSession(false);
+    setSessionSaved(true);
+    setTimeout(() => {
+      setActiveSession(null);
+      setSessionData({});
+      setSessionSaved(false);
+    }, 1500);
   };
 
   const handleSwap = async (newFoodId: string) => {
@@ -400,97 +426,144 @@ export default function PlanPage() {
             <Dumbbell className="h-5 w-5 text-primary" />
             Plan de Entrenamiento
           </h2>
-        <div className="space-y-4">
-          {trainingPlan.map((day) => (
-            <div key={day.day} className="glass-card rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-card-border">
-                <h3 className="font-bold">{day.day}</h3>
-                {day.instructions && <p className="text-xs text-muted mt-1">{day.instructions}</p>}
-              </div>
-              <div className="divide-y divide-card-border/30">
-                {day.exercises.map((ex, i) => {
-                  const log = exerciseLogs[ex.id];
-                  const isEditing = editingExercise === `${day.day}-${ex.id}`;
-                  const numSets = parseInt(String(ex.sets)) || 4;
-                  const weightDiff = log?.prevWeight != null ? log.weight - log.prevWeight : null;
-                  return (
-                    <div key={i} className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{ex.name}</p>
-                          <p className="text-xs text-muted">{ex.sets} series x {ex.reps} | Descanso: {ex.rest}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {log && !isEditing ? (
-                            <div className="flex items-center gap-1.5">
-                              {weightDiff !== null && weightDiff !== 0 && (
-                                <span className={`text-[10px] font-bold ${weightDiff > 0 ? "text-primary" : "text-danger"}`}>
-                                  {weightDiff > 0 ? "+" : ""}{weightDiff}kg
-                                </span>
+          <div className="space-y-4">
+            {trainingPlan.map((day) => {
+              const isSession = activeSession === day.day;
+              return (
+                <div key={day.day} className="glass-card rounded-2xl overflow-hidden">
+                  <div className="p-4 border-b border-card-border flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold">{day.day}</h3>
+                      {day.instructions && <p className="text-xs text-muted mt-1">{day.instructions}</p>}
+                    </div>
+                    {!isSession && (
+                      <button
+                        onClick={() => startSession(day.day, day.exercises)}
+                        className="gradient-primary text-black text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"
+                      >
+                        <Dumbbell className="h-3.5 w-3.5" /> Iniciar sesion
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Normal view: exercise list with last weight */}
+                  {!isSession && (
+                    <div className="divide-y divide-card-border/30">
+                      {day.exercises.map((ex, i) => {
+                        const log = exerciseLogs[ex.id];
+                        const weightDiff = log?.prevWeight != null ? log.weight - log.prevWeight : null;
+                        return (
+                          <div key={i} className="p-3 flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{ex.name}</p>
+                              <p className="text-xs text-muted">{ex.sets} series x {ex.reps} | Descanso: {ex.rest}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {log ? (
+                                <div className="flex items-center gap-1.5">
+                                  {weightDiff !== null && weightDiff !== 0 && (
+                                    <span className={`text-[10px] font-bold ${weightDiff > 0 ? "text-primary" : "text-danger"}`}>
+                                      {weightDiff > 0 ? "+" : ""}{weightDiff}kg
+                                    </span>
+                                  )}
+                                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-bold">
+                                    {log.weight}kg
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-muted">Sin registro</span>
                               )}
-                              <button
-                                onClick={() => startEditing(day.day, ex.id, numSets, log.weight)}
-                                className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-bold flex items-center gap-1"
-                              >
-                                {log.weight}kg <Edit3 className="h-3 w-3" />
+                              <button onClick={() => setSelectedExercise(ex.id)} className="text-primary">
+                                <Info className="h-4 w-4" />
                               </button>
                             </div>
-                          ) : !isEditing ? (
-                            <button
-                              onClick={() => startEditing(day.day, ex.id, numSets, 0)}
-                              className="text-xs bg-card-border text-muted px-2 py-1 rounded-lg flex items-center gap-1 hover:text-primary"
-                            >
-                              + Peso
-                            </button>
-                          ) : null}
-                          <button onClick={() => setSelectedExercise(ex.id)} className="text-primary">
-                            <Info className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                      {isEditing && (
-                        <div className="mt-3 bg-card-bg rounded-xl p-3 space-y-2">
-                          <p className="text-[10px] text-muted font-bold">REGISTRAR SESION</p>
-                          {editSets.map((s, si) => (
-                            <div key={si} className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted w-5">S{s.set}</span>
-                              <input
-                                type="number"
-                                value={s.weight || ""}
-                                onChange={e => setEditSets(prev => prev.map((ps, pi) => pi === si ? { ...ps, weight: Number(e.target.value) } : ps))}
-                                placeholder="kg"
-                                className="flex-1 bg-background border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
-                              />
-                              <span className="text-[10px] text-muted">x</span>
-                              <input
-                                type="number"
-                                value={s.reps || ""}
-                                onChange={e => setEditSets(prev => prev.map((ps, pi) => pi === si ? { ...ps, reps: Number(e.target.value) } : ps))}
-                                placeholder="reps"
-                                className="w-14 bg-background border border-card-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
-                              />
-                            </div>
-                          ))}
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              onClick={() => saveExerciseLog(ex.id, ex.name)}
-                              disabled={savingLog || editSets.every(s => s.weight === 0)}
-                              className="flex-1 gradient-primary text-black text-xs font-bold py-2 rounded-lg disabled:opacity-50"
-                            >
-                              {savingLog ? "Guardando..." : "Guardar sesion"}
-                            </button>
-                            <button onClick={() => setEditingExercise(null)} className="text-muted text-xs px-3 py-2">
-                              Cancelar
-                            </button>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+                  )}
+
+                  {/* Session mode: all exercises with weight inputs */}
+                  {isSession && (
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                        <p className="text-xs text-primary font-bold">SESION EN CURSO</p>
+                      </div>
+                      <div className="space-y-4">
+                        {day.exercises.map((ex, i) => {
+                          const log = exerciseLogs[ex.id];
+                          const sets = sessionData[ex.id] || [];
+                          return (
+                            <div key={i} className="bg-card-bg rounded-xl p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <p className="font-bold text-sm">{ex.name}</p>
+                                  <p className="text-[10px] text-muted">{ex.sets}x{ex.reps} | {ex.rest}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {log && (
+                                    <span className="text-[10px] text-muted">Anterior: {log.weight}kg</span>
+                                  )}
+                                  <button onClick={() => setSelectedExercise(ex.id)} className="text-primary">
+                                    <Info className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="space-y-1.5">
+                                {sets.map((s, si) => (
+                                  <div key={si} className="flex items-center gap-2">
+                                    <span className="text-[10px] text-muted w-5 shrink-0">S{s.set}</span>
+                                    <input
+                                      type="number"
+                                      inputMode="decimal"
+                                      value={s.weight || ""}
+                                      onChange={e => updateSessionSet(ex.id, si, "weight", Number(e.target.value))}
+                                      placeholder="kg"
+                                      className="flex-1 bg-background border border-card-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-primary"
+                                    />
+                                    <span className="text-[10px] text-muted">x</span>
+                                    <input
+                                      type="number"
+                                      inputMode="numeric"
+                                      value={s.reps || ""}
+                                      onChange={e => updateSessionSet(ex.id, si, "reps", Number(e.target.value))}
+                                      placeholder="reps"
+                                      className="w-14 bg-background border border-card-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-primary"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          onClick={() => saveSession(day.exercises.map(ex => ({ id: ex.id, name: ex.name })))}
+                          disabled={savingSession}
+                          className="flex-1 gradient-primary text-black font-bold py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          {sessionSaved ? (
+                            <><Check className="h-5 w-5" /> Sesion guardada!</>
+                          ) : savingSession ? (
+                            <><Loader2 className="h-5 w-5 animate-spin" /> Guardando...</>
+                          ) : (
+                            <><Save className="h-5 w-5" /> Guardar sesion</>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => { setActiveSession(null); setSessionData({}); }}
+                          className="px-4 py-3 text-muted text-sm rounded-xl hover:text-white"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
