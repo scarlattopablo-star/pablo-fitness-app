@@ -153,13 +153,20 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
               className="w-full bg-card-bg border border-card-border rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:border-primary"
             />
           </div>
-          <p className="text-[10px] text-muted mt-2">
-            {isSearching
-              ? `${filteredSearch.length} resultados para "${search}"`
-              : currentDbFood
-                ? `${sameCategoryFoods.length} alternativas en ${CATEGORY_LABELS[currentDbFood.category] || currentDbFood.category}`
-                : ""}
-          </p>
+          {isSearching ? (
+            <p className="text-[10px] text-muted mt-2">
+              {filteredSearch.length} resultados para &quot;{search}&quot;
+            </p>
+          ) : currentDbFood ? (
+            <div className="mt-2 bg-primary/5 border border-primary/15 rounded-lg px-3 py-2">
+              <p className="text-[11px] text-primary font-medium">
+                {CATEGORY_LABELS[currentDbFood.category] || currentDbFood.category} — {sameCategoryFoods.length} opciones
+              </p>
+              <p className="text-[10px] text-muted">
+                Estos alimentos mantienen tus macros. La cantidad se ajusta automaticamente.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {/* Food list */}
