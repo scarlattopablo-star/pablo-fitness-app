@@ -86,7 +86,7 @@ export default function HomePage() {
       {/* HERO */}
       <section className="relative pt-32 pb-20 px-4 overflow-hidden">
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.15]"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.20]"
           style={{
             backgroundImage: "url(/images/gym-bg.png)",
             filter: "grayscale(100%) brightness(0.8)",
