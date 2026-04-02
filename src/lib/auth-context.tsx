@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [hasPlans, setHasPlans] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
         fetchSubscription(session.user.id);
+        checkPlans(session.user.id);
       }
       setLoading(false);
     });
@@ -65,9 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session?.user) {
           fetchProfile(session.user.id);
           fetchSubscription(session.user.id);
+          checkPlans(session.user.id);
         } else {
           setProfile(null);
           setSubscription(null);
+          setHasPlans(false);
         }
       }
     );
@@ -92,6 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setProfile(data);
     }
+  }
+
+  async function checkPlans(userId: string) {
+    const { count } = await supabase
+      .from("training_plans")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if (count && count > 0) { setHasPlans(true); return; }
+    const { count: nCount } = await supabase
+      .from("nutrition_plans")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if (nCount && nCount > 0) { setHasPlans(true); return; }
   }
 
   async function fetchSubscription(userId: string) {
@@ -134,10 +151,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const endDate = subscription ? new Date(subscription.end_date + "T23:59:59") : null;
 
   const hasActiveSubscription =
-    !!subscription &&
+    hasPlans ||
+    (!!subscription &&
     subscription.status === "active" &&
     !!endDate &&
-    endDate >= today;
+    endDate >= today);
 
   const isExpired =
     !!subscription &&
