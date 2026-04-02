@@ -28,36 +28,24 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { setLoading(false); return; }
-
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.access_token) {
-          await fetchClients(session.access_token);
-          authSub.unsubscribe();
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        fetchClients(session.access_token).then(() => authSub.unsubscribe());
-      }
-    });
-
-    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 12000);
-    return () => { authSub.unsubscribe(); clearTimeout(timeout); };
+    if (!authLoading && user) {
+      loadClients();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
   }, [authLoading, user]);
 
-  const fetchClients = async (token: string) => {
+  const loadClients = async () => {
     try {
-      const res = await fetch("/api/admin/clients?limit=5", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.clients) setClients(data.clients);
-      if (data.total !== undefined) setTotalClients(data.total);
+      const { data, count } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact" })
+        .eq("is_admin", false)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      if (data) setClients(data);
+      if (count !== null) setTotalClients(count);
     } catch {}
     setLoading(false);
   };

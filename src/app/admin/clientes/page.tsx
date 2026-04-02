@@ -21,39 +21,22 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) { setLoading(false); return; }
-
-    // Listen for auth state to get a fresh token
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.access_token) {
-          await fetchClients(session.access_token);
-          authSub.unsubscribe();
-        }
-      }
-    );
-
-    // Also try immediately in case session is already available
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.access_token) {
-        fetchClients(session.access_token).then(() => authSub.unsubscribe());
-      }
-    });
-
-    // Safety timeout
-    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 12000);
-    return () => { authSub.unsubscribe(); clearTimeout(timeout); };
+    if (!authLoading && user) {
+      loadClients();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
   }, [authLoading, user]);
 
-  const fetchClients = async (token: string) => {
+  const loadClients = async () => {
     try {
-      const res = await fetch("/api/admin/clients", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) { setLoading(false); return; }
-      const data = await res.json();
-      if (data.clients) setClients(data.clients);
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("is_admin", false)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+      if (data) setClients(data);
     } catch {}
     setLoading(false);
   };
