@@ -21,21 +21,37 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    if (!authLoading && user) {
-      loadClients();
+    if (!authLoading) {
+      if (user) {
+        loadClients();
+      } else {
+        setLoading(false);
+      }
     }
   }, [authLoading, user]);
 
-  const loadClients = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        setLoading(false);
-        return;
-      }
+  // Safety timeout
+  useEffect(() => {
+    const timeout = setTimeout(() => { if (loading) setLoading(false); }, 10000);
+    return () => clearTimeout(timeout);
+  }, [loading]);
 
+  const loadClients = async () => {
+    // Retry getting session token (mobile can be slow)
+    let token = "";
+    for (let i = 0; i < 5; i++) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        token = session.access_token;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    if (!token) { setLoading(false); return; }
+
+    try {
       const res = await fetch("/api/admin/clients", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         setLoading(false);
@@ -44,7 +60,7 @@ export default function ClientesPage() {
       const data = await res.json();
       if (data.clients) setClients(data.clients);
     } catch {
-      // Network error - silently fail
+      // Network error
     } finally {
       setLoading(false);
     }
