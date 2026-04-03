@@ -116,6 +116,7 @@ function PlanContent() {
   const [sessionData, setSessionData] = useState<Record<string, { set: number; weight: number; reps: number }[]>>({});
   const [savingSession, setSavingSession] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
+  const [hasSurvey, setHasSurvey] = useState(true);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
     foodIndex: number;
@@ -257,7 +258,7 @@ function PlanContent() {
       // Load survey data for macros display
       const { data } = await supabase
         .from("surveys")
-        .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour")
+        .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -266,8 +267,10 @@ function PlanContent() {
       if (data && data.target_calories) {
         setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
         setObjective(data.objective || "");
+        setHasSurvey(true);
         cacheData("survey", data);
       } else {
+        setHasSurvey(false);
         setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
       }
 
@@ -292,10 +295,12 @@ function PlanContent() {
         setTrainingPlan(dbTraining.data.days);
         cacheData("training_plan", dbTraining.data.days);
       } else if (data) {
-        const generated = generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa");
+        const emphasis = data.emphasis || "ninguno";
+        const generated = generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa", emphasis);
         setTrainingPlan(generated);
         cacheData("training_plan", generated);
       } else {
+        setHasSurvey(false);
         setTrainingPlan(generateTrainingPlan(5));
       }
 
@@ -349,6 +354,18 @@ function PlanContent() {
   return (
     <div>
       <OfflineBanner />
+
+      {/* Survey warning */}
+      {!hasSurvey && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 mb-4 flex items-start gap-3">
+          <Info className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-yellow-500">Encuesta pendiente</p>
+            <p className="text-xs text-muted mt-1">Para poder generar tu plan personalizado de entrenamiento y nutricion necesitas completar la encuesta. Los planes que ves ahora son genericos.</p>
+            <a href="/encuesta-directa" className="text-xs text-primary font-bold mt-2 inline-block hover:underline">Completar encuesta →</a>
+          </div>
+        </div>
+      )}
 
       {/* OVERVIEW */}
       {view === "overview" && (
