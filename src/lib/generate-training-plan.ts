@@ -1,10 +1,23 @@
 // Training plan generator based on ACSM & NSCA guidelines
 // Sources:
+// - ACSM 2026 Resistance Training Guidelines Update (137 systematic reviews, >30k participants)
+//   Key: "Training all major muscle groups at least twice a week matters far more than any specific split"
+// - Schoenfeld BJ et al. (2016) "Effects of Resistance Training Frequency on Measures of Muscle
+//   Hypertrophy: A Systematic Review and Meta-Analysis" - PMID 27102172
+//   Key: Frequency of 2x/week per muscle group produces superior hypertrophy vs 1x/week
 // - ACSM Position Stand: Progression Models in Resistance Training (2009)
-// - NSCA: Using Intensity Based on Sets and Repetitions
 // - NSCA: Muscle Prioritization Principle (weak/emphasis group trained first when fresh)
-// - ACSM 2026 Resistance Training Guidelines Update
 // - Ainsworth BE et al. (2011) Compendium of Physical Activities (MET values for calorie estimation)
+//
+// PROGRAMMING PRINCIPLE (Schoenfeld 2016 + ACSM 2026):
+// - Every muscle trained 2x/week (frequency 2)
+// - Each session pairs 1 large muscle + 1 small muscle (agonist/antagonist or push/pull)
+// - Large: pecho, espalda, piernas | Small: hombros, biceps, triceps, abdomen
+// - Splits by days:
+//   3 days → Full Body A/B/C (each muscle hit 2x naturally)
+//   4 days → Upper/Lower x2 (freq 2 built-in)
+//   5 days → Push/Pull/Legs/Upper/Lower (freq 2 for all)
+//   6 days → Push/Pull/Legs x2 (perfect freq 2)
 //
 // HYPERTROPHY: 3-4 sets x 8-12 reps, 60-75% 1RM, 60-90s rest
 // STRENGTH: 3-5 sets x 4-6 reps, 80-90% 1RM, 2-3min rest
@@ -451,240 +464,226 @@ export function generateTrainingPlan(
 }
 
 // ============================================================
-// HOME PLAN (bodyweight only)
+// HOME PLAN — Frequency 2 (bodyweight only)
 // ============================================================
 function generateHomePlan(days: number, p: TrainingParams): TrainingDay[] {
   const pool = HOME_EXERCISES;
-  const cardioOptions = [
-    { id: "hiit-casa", name: "HIIT en Casa" },
-    { id: "burpees", name: "Burpees" },
-    { id: "jumping-jacks", name: "Jumping Jacks" },
-    { id: "high-knees", name: "Rodillas Altas" },
-    { id: "saltar-cuerda", name: "Saltar la Cuerda" },
-  ];
 
   if (days === 3) {
-    const cardio = pickRandom(cardioOptions, 1)[0];
     return [
-      { day: "Dia 1 - Tren Superior", instructions: p.instructions, exercises: [
+      { day: "Dia 1 - Full Body A (Pecho + Biceps)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.pecho, 2, 1, p),
-        ...pickExercises(pool.espalda, 1, 1, p),
+        ...pickExercises(pool.biceps, 1, 0, p),
+        ...pickExercises(pool.piernas, 1, 0, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
       ]},
-      { day: "Dia 2 - Tren Inferior + Core", instructions: p.instructions, exercises: [
+      { day: "Dia 2 - Full Body B (Espalda + Triceps)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.espalda, 2, 1, p),
+        ...pickExercises(pool.triceps, 1, 1, p),
+        ...pickExercises(pool.piernas, 1, 0, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
+      ]},
+      { day: "Dia 3 - Full Body C (Piernas + Hombros)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.piernas, 2, 2, p),
-        ...pickExercises(pool.abdomen, 0, 2, p),
-      ]},
-      { day: "Dia 3 - Full Body + Cardio", instructions: "Circuito con descanso minimo. " + p.instructions, exercises: [
-        ...pickExercises(pool.pecho, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.espalda, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.piernas, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.hombros, 1, 0, { ...p, sets: 3 }),
-        ex(cardio.id, cardio.name, p, false),
+        ...pickExercises(pool.hombros, 1, 1, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
       ]},
     ];
   }
 
   if (days === 4) {
-    const cardio = pickRandom(cardioOptions, 1)[0];
     return [
-      { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
+      { day: "Dia 1 - Tren Superior A (Pecho + Triceps)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.pecho, 2, 1, p),
         ...pickExercises(pool.triceps, 1, 1, p),
+        ...pickExercises(pool.hombros, 0, 1, p),
       ]},
-      { day: "Dia 2 - Piernas y Gluteos", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.piernas, 2, 3, p),
+      { day: "Dia 2 - Tren Inferior A (Piernas + Abdomen)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.abdomen, 1, 1, p),
       ]},
-      { day: "Dia 3 - Espalda y Biceps", instructions: p.instructions, exercises: [
+      { day: "Dia 3 - Tren Superior B (Espalda + Biceps)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.espalda, 2, 1, p),
         ...pickExercises(pool.biceps, 1, 0, p),
+        ...pickExercises(pool.hombros, 0, 1, p),
       ]},
-      { day: "Dia 4 - Hombros, Core + Cardio", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.hombros, 1, 1, p),
-        ...pickExercises(pool.abdomen, 1, 2, p),
-        ex(cardio.id, cardio.name, p, false),
+      { day: "Dia 4 - Tren Inferior B (Piernas + Abdomen)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.abdomen, 1, 1, p),
       ]},
     ];
   }
 
   if (days === 5) {
-    const cardio = pickRandom(cardioOptions, 1)[0];
     return [
-      { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
+      { day: "Dia 1 - Push (Pecho + Triceps + Hombros)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.pecho, 2, 1, p),
         ...pickExercises(pool.triceps, 1, 1, p),
+        ...pickExercises(pool.hombros, 0, 1, p),
       ]},
-      { day: "Dia 2 - Espalda y Biceps", instructions: p.instructions, exercises: [
+      { day: "Dia 2 - Pull (Espalda + Biceps)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.espalda, 2, 1, p),
         ...pickExercises(pool.biceps, 1, 0, p),
       ]},
-      { day: "Dia 3 - Piernas y Gluteos", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.piernas, 2, 3, p),
+      { day: "Dia 3 - Piernas + Abdomen", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.abdomen, 1, 1, p),
       ]},
-      { day: "Dia 4 - Hombros y Core", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.hombros, 1, 1, p),
-        ...pickExercises(pool.abdomen, 1, 2, p),
+      { day: "Dia 4 - Tren Superior (Pecho + Espalda + Hombros)", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 1, 1, p),
+        ...pickExercises(pool.espalda, 1, 1, p),
+        ...pickExercises(pool.hombros, 1, 0, p),
       ]},
-      { day: "Dia 5 - Full Body + Cardio", instructions: "Circuito con descanso minimo. " + p.instructions, exercises: [
-        ...pickExercises(pool.pecho, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.espalda, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.piernas, 1, 1, { ...p, sets: 3 }),
-        ex(cardio.id, cardio.name, p, false),
+      { day: "Dia 5 - Tren Inferior + Brazos", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 1, p),
+        ...pickExercises(pool.biceps, 1, 0, p),
+        ...pickExercises(pool.triceps, 1, 0, p),
       ]},
     ];
   }
 
-  // 6 days
-  const [cardio1, cardio2] = pickRandom(cardioOptions, 2);
+  // 6 days: PPL x2
   return [
-    { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.pecho, 2, 2, p),
+    { day: "Dia 1 - Push A (Pecho + Triceps)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.pecho, 2, 1, p),
       ...pickExercises(pool.triceps, 1, 1, p),
+      ...pickExercises(pool.hombros, 0, 1, p),
     ]},
-    { day: "Dia 2 - Espalda y Biceps", instructions: p.instructions, exercises: [
+    { day: "Dia 2 - Pull A (Espalda + Biceps)", instructions: p.instructions, exercises: [
       ...pickExercises(pool.espalda, 2, 1, p),
-      ...pickExercises(pool.biceps, 1, 1, p),
+      ...pickExercises(pool.biceps, 1, 0, p),
     ]},
-    { day: "Dia 3 - Piernas y Gluteos", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.piernas, 2, 3, p),
-    ]},
-    { day: "Dia 4 - Hombros y Core", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.hombros, 2, 1, p),
-      ...pickExercises(pool.abdomen, 1, 2, p),
-    ]},
-    { day: "Dia 5 - Piernas (Volumen)", instructions: p.instructions, exercises: [
+    { day: "Dia 3 - Piernas A + Abdomen", instructions: p.instructions, exercises: [
       ...pickExercises(pool.piernas, 2, 2, p),
-      ...pickExercises(pool.abdomen, 0, 1, p),
+      ...pickExercises(pool.abdomen, 1, 1, p),
     ]},
-    { day: "Dia 6 - Full Body + Cardio", instructions: "Circuito intenso. " + p.instructions, exercises: [
-      ...pickExercises(pool.pecho, 1, 0, { ...p, sets: 3 }),
-      ...pickExercises(pool.espalda, 1, 0, { ...p, sets: 3 }),
-      ...pickExercises(pool.piernas, 1, 0, { ...p, sets: 3 }),
-      ex(cardio1.id, cardio1.name, p, false),
-      ex(cardio2.id, cardio2.name, p, false),
+    { day: "Dia 4 - Push B (Hombros + Triceps + Pecho)", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.hombros, 1, 1, p),
+      ...pickExercises(pool.pecho, 1, 1, p),
+      ...pickExercises(pool.triceps, 1, 0, p),
+    ]},
+    { day: "Dia 5 - Pull B (Espalda + Biceps)", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.espalda, 2, 1, p),
+      ...pickExercises(pool.biceps, 1, 0, p),
+    ]},
+    { day: "Dia 6 - Piernas B + Abdomen", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 2, 2, p),
+      ...pickExercises(pool.abdomen, 1, 1, p),
     ]},
   ];
 }
 
 // ============================================================
-// GYM balanced plan (randomized)
+// GYM balanced plan — Frequency 2 (Schoenfeld 2016 + ACSM 2026)
+// Each session: 1 large muscle + 1 small muscle
+// Every muscle trained 2x/week
 // ============================================================
 function generateBalancedPlan(days: number, p: TrainingParams): TrainingDay[] {
   const pool = GYM_EXERCISES;
-  const cardioOptions = [
-    { id: "hiit-cinta", name: "HIIT en Cinta" },
-    { id: "saltar-cuerda", name: "Saltar la Cuerda" },
-    { id: "burpees", name: "Burpees" },
-  ];
 
+  // 3 days: Full Body A/B/C — each muscle hit 2-3x/week (ACSM 2026 novice/intermediate)
   if (days === 3) {
-    const cardio = pickRandom(cardioOptions, 1)[0];
     return [
-      { day: "Dia 1 - Full Body A", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.pecho, 1, 0, p),
-        ...pickExercises(pool.espalda, 1, 0, p),
+      { day: "Dia 1 - Full Body A (Pecho + Biceps)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 2, 1, p),
+        ...pickExercises(pool.biceps, 1, 1, p),
         ...pickExercises(pool.piernas, 1, 0, p),
-        ...pickExercises(pool.hombros, 1, 0, p),
         ...pickExercises(pool.abdomen, 0, 1, p),
       ]},
-      { day: "Dia 2 - Full Body B", instructions: p.instructions, exercises: [
+      { day: "Dia 2 - Full Body B (Espalda + Triceps)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.espalda, 2, 1, p),
+        ...pickExercises(pool.triceps, 1, 1, p),
         ...pickExercises(pool.piernas, 1, 0, p),
-        ...pickExercises(pool.pecho, 1, 0, p),
-        ...pickExercises(pool.espalda, 1, 0, p),
-        ...pickExercises(pool.piernas, 0, 1, p),
         ...pickExercises(pool.abdomen, 0, 1, p),
       ]},
-      { day: "Dia 3 - Full Body C + Cardio", instructions: "Circuito: 2 min descanso entre rondas. " + p.instructions, exercises: [
-        ...pickExercises(pool.piernas, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.pecho, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.espalda, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.hombros, 0, 1, { ...p, sets: 3 }),
-        ex(cardio.id, cardio.name, p, false),
+      { day: "Dia 3 - Full Body C (Piernas + Hombros)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.hombros, 1, 1, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
       ]},
     ];
   }
 
+  // 4 days: Upper/Lower x2 — freq 2 built-in (ACSM 2026 intermediate)
   if (days === 4) {
     return [
-      { day: "Dia 1 - Tren Superior (Fuerza)", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.pecho, 1, 0, p),
-        ...pickExercises(pool.espalda, 1, 0, p),
-        ...pickExercises(pool.hombros, 1, 0, p),
-        ...pickExercises(pool.biceps, 0, 1, p),
-        ...pickExercises(pool.triceps, 0, 1, p),
-      ]},
-      { day: "Dia 2 - Tren Inferior (Fuerza)", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.piernas, 2, 1, p),
-        ...pickExercises(pool.abdomen, 0, 1, p),
-      ]},
-      { day: "Dia 3 - Tren Superior (Volumen)", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.pecho, 1, 1, p),
-        ...pickExercises(pool.espalda, 1, 0, p),
-        ...pickExercises(pool.hombros, 0, 1, p),
-        ...pickExercises(pool.biceps, 0, 1, p),
-        ...pickExercises(pool.triceps, 0, 1, p),
-      ]},
-      { day: "Dia 4 - Tren Inferior (Volumen)", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.piernas, 1, 2, p),
-        ...pickExercises(pool.abdomen, 0, 2, p),
-      ]},
-    ];
-  }
-
-  if (days === 5) {
-    const cardio = pickRandom(cardioOptions, 1)[0];
-    return [
-      { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
+      { day: "Dia 1 - Tren Superior A (Pecho + Triceps)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.pecho, 2, 1, p),
-        ...pickExercises(pool.triceps, 0, 2, p),
+        ...pickExercises(pool.triceps, 1, 1, p),
+        ...pickExercises(pool.hombros, 0, 1, p),
       ]},
-      { day: "Dia 2 - Espalda y Biceps", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.espalda, 2, 1, p),
-        ...pickExercises(pool.biceps, 0, 2, p),
-      ]},
-      { day: "Dia 3 - Piernas", instructions: p.instructions, exercises: [
+      { day: "Dia 2 - Tren Inferior A (Piernas + Abdomen)", instructions: p.instructions, exercises: [
         ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.abdomen, 1, 1, p),
       ]},
-      { day: "Dia 4 - Hombros y Abdomen", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.hombros, 1, 2, p),
-        ...pickExercises(pool.abdomen, 0, 2, p),
+      { day: "Dia 3 - Tren Superior B (Espalda + Biceps)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.espalda, 2, 1, p),
+        ...pickExercises(pool.biceps, 1, 1, p),
+        ...pickExercises(pool.hombros, 0, 1, p),
       ]},
-      { day: "Dia 5 - Full Body + Cardio", instructions: "Circuito con descanso minimo. " + p.instructions, exercises: [
-        ...pickExercises(pool.piernas, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.pecho, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.espalda, 1, 0, { ...p, sets: 3 }),
-        ...pickExercises(pool.hombros, 1, 0, { ...p, sets: 3 }),
-        ex(cardio.id, cardio.name, p, false),
+      { day: "Dia 4 - Tren Inferior B (Piernas + Abdomen)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.abdomen, 1, 1, p),
       ]},
     ];
   }
 
-  // 6 days
-  const cardio = pickRandom(cardioOptions, 1)[0];
+  // 5 days: Push/Pull/Legs/Upper/Lower — freq 2 for all (ACSM 2026 advanced)
+  if (days === 5) {
+    return [
+      { day: "Dia 1 - Push (Pecho + Triceps + Hombros)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 2, 1, p),
+        ...pickExercises(pool.triceps, 0, 1, p),
+        ...pickExercises(pool.hombros, 0, 1, p),
+      ]},
+      { day: "Dia 2 - Pull (Espalda + Biceps)", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.espalda, 2, 1, p),
+        ...pickExercises(pool.biceps, 1, 1, p),
+      ]},
+      { day: "Dia 3 - Piernas + Abdomen", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 2, p),
+        ...pickExercises(pool.abdomen, 1, 1, p),
+      ]},
+      { day: "Dia 4 - Tren Superior (Pecho + Espalda + Hombros)", instructions: "Frecuencia 2: segunda pasada de tren superior. " + p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 1, 1, p),
+        ...pickExercises(pool.espalda, 1, 1, p),
+        ...pickExercises(pool.hombros, 1, 0, p),
+      ]},
+      { day: "Dia 5 - Tren Inferior + Brazos", instructions: "Frecuencia 2: segunda pasada de piernas y brazos. " + p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 2, 1, p),
+        ...pickExercises(pool.biceps, 0, 1, p),
+        ...pickExercises(pool.triceps, 0, 1, p),
+      ]},
+    ];
+  }
+
+  // 6 days: Push/Pull/Legs x2 — perfect freq 2 (Schoenfeld 2016 optimal)
   return [
-    { day: "Dia 1 - Pecho y Triceps", instructions: p.instructions, exercises: [
+    { day: "Dia 1 - Push A (Pecho + Triceps)", instructions: p.instructions, exercises: [
       ...pickExercises(pool.pecho, 2, 1, p),
-      ...pickExercises(pool.triceps, 0, 2, p),
-    ]},
-    { day: "Dia 2 - Espalda y Biceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.espalda, 2, 1, p),
-      ...pickExercises(pool.biceps, 0, 2, p),
-    ]},
-    { day: "Dia 3 - Piernas y Abdomen", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.piernas, 2, 1, p),
-      ...pickExercises(pool.abdomen, 0, 1, p),
-    ]},
-    { day: "Dia 4 - Hombros y Triceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.hombros, 1, 2, p),
       ...pickExercises(pool.triceps, 1, 1, p),
+      ...pickExercises(pool.hombros, 0, 1, p),
     ]},
-    { day: "Dia 5 - Espalda y Biceps (Volumen)", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.espalda, 1, 2, p),
-      ...pickExercises(pool.biceps, 0, 2, p),
+    { day: "Dia 2 - Pull A (Espalda + Biceps)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.espalda, 2, 1, p),
+      ...pickExercises(pool.biceps, 1, 1, p),
     ]},
-    { day: "Dia 6 - Piernas (Volumen) + Cardio", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.piernas, 1, 2, p),
-      ...pickExercises(pool.piernas, 0, 1, p),
-      ex(cardio.id, cardio.name, p, false),
+    { day: "Dia 3 - Piernas A + Abdomen", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 2, 2, p),
+      ...pickExercises(pool.abdomen, 1, 1, p),
+    ]},
+    { day: "Dia 4 - Push B (Hombros + Triceps + Pecho)", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.hombros, 1, 1, p),
+      ...pickExercises(pool.pecho, 1, 1, p),
+      ...pickExercises(pool.triceps, 0, 1, p),
+    ]},
+    { day: "Dia 5 - Pull B (Espalda + Biceps)", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.espalda, 2, 1, p),
+      ...pickExercises(pool.biceps, 1, 1, p),
+    ]},
+    { day: "Dia 6 - Piernas B + Abdomen", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 2, 2, p),
+      ...pickExercises(pool.abdomen, 1, 1, p),
     ]},
   ];
 }
