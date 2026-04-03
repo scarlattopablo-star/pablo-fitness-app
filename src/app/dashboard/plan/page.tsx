@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
-import { getExerciseImage } from "@/lib/exercise-images";
+// Exercise images removed for visual consistency
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
 import { useAuth } from "@/lib/auth-context";
@@ -483,21 +483,8 @@ function PlanContent() {
                       {day.exercises.map((ex, i) => {
                         const log = exerciseLogs[ex.id];
                         const weightDiff = log?.prevWeight != null ? log.weight - log.prevWeight : null;
-                        const exImg = getExerciseImage(ex.id);
                         return (
-                          <div key={i} className="p-3 flex items-center gap-3">
-                            {exImg && (
-                              <div className="flex gap-0.5 flex-shrink-0">
-                                <div className={`w-9 h-11 overflow-hidden bg-white/5 ${exImg.img2 ? "rounded-l-lg" : "rounded-lg"}`}>
-                                  <img src={exImg.img1} alt={`${ex.name} - fase 1`} className="w-full h-full object-contain p-0.5" style={{ filter: 'invert(1) brightness(0.85) contrast(1.2)' }} loading="lazy" />
-                                </div>
-                                {exImg.img2 && (
-                                  <div className="w-9 h-11 rounded-r-lg overflow-hidden bg-white/5">
-                                    <img src={exImg.img2} alt={`${ex.name} - fase 2`} className="w-full h-full object-contain p-0.5" style={{ filter: 'invert(1) brightness(0.85) contrast(1.2)' }} loading="lazy" />
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                          <div key={i} className="p-3 flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{ex.name}</p>
                               <p className="text-xs text-muted">{ex.sets} series x {ex.reps} | Descanso: {ex.rest}</p>
