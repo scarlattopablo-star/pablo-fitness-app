@@ -228,8 +228,8 @@ export default function EncuestaPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-3">Zona a enfatizar</label>
-                <p className="text-xs text-muted mb-3">Si queres trabajar mas alguna zona, tu plan se adapta automaticamente.</p>
+                <label className="block text-sm font-medium mb-3">¿Que parte de tu cuerpo queres mejorar mas?</label>
+                <p className="text-xs text-muted mb-3">Tu rutina se adapta para darle mas foco a esa zona. Si no tenes preferencia, elegí Equilibrado.</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: "ninguno", label: "Equilibrado", desc: "Todas las zonas por igual" },
