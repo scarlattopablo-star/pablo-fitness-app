@@ -471,12 +471,12 @@ function PlanContent() {
                           <div key={i} className="p-3 flex items-center gap-3">
                             {exImg && (
                               <div className="flex gap-0.5 flex-shrink-0">
-                                <div className={`w-9 h-11 overflow-hidden bg-white ${exImg.img2 ? "rounded-l-lg" : "rounded-lg"}`}>
-                                  <img src={exImg.img1} alt={`${ex.name} - fase 1`} className="w-full h-full object-contain p-0.5" loading="lazy" />
+                                <div className={`w-9 h-11 overflow-hidden bg-white/5 ${exImg.img2 ? "rounded-l-lg" : "rounded-lg"}`}>
+                                  <img src={exImg.img1} alt={`${ex.name} - fase 1`} className="w-full h-full object-contain p-0.5" style={{ filter: 'invert(1) brightness(0.85) contrast(1.2)' }} loading="lazy" />
                                 </div>
                                 {exImg.img2 && (
-                                  <div className="w-9 h-11 rounded-r-lg overflow-hidden bg-white">
-                                    <img src={exImg.img2} alt={`${ex.name} - fase 2`} className="w-full h-full object-contain p-0.5" loading="lazy" />
+                                  <div className="w-9 h-11 rounded-r-lg overflow-hidden bg-white/5">
+                                    <img src={exImg.img2} alt={`${ex.name} - fase 2`} className="w-full h-full object-contain p-0.5" style={{ filter: 'invert(1) brightness(0.85) contrast(1.2)' }} loading="lazy" />
                                   </div>
                                 )}
                               </div>
