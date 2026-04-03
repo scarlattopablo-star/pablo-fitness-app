@@ -38,6 +38,7 @@ export default function EncuestaDirectaPage() {
   const [trainingDays, setTrainingDays] = useState("5");
   const [wakeHour, setWakeHour] = useState("7");
   const [sleepHour, setSleepHour] = useState("23");
+  const [emphasis, setEmphasis] = useState("ninguno");
 
   // Body measurements (optional)
   const [chest, setChest] = useState("");
@@ -96,6 +97,7 @@ export default function EncuestaDirectaPage() {
       training_days: Number(trainingDays),
       wake_hour: Number(wakeHour),
       sleep_hour: Number(sleepHour),
+      emphasis,
     });
 
     // Create initial progress entry as baseline
@@ -293,6 +295,26 @@ export default function EncuestaDirectaPage() {
                     <button key={d} onClick={() => setTrainingDays(d)}
                       className={`p-3 rounded-xl border text-center font-bold transition-all ${trainingDays === d ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"}`}>
                       {d} dias
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-3">Zona a enfatizar</label>
+                <p className="text-xs text-muted mb-3">Si queres trabajar mas alguna zona especifica. Tu plan se adapta automaticamente.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "ninguno", label: "Equilibrado", desc: "Todas las zonas por igual" },
+                    { value: "pecho", label: "Pecho", desc: "Pecho y brazos" },
+                    { value: "espalda", label: "Espalda", desc: "Espalda y hombros" },
+                    { value: "piernas", label: "Piernas", desc: "Piernas y gluteos" },
+                    { value: "abdomen", label: "Abdomen", desc: "Core y abdominales" },
+                    { value: "tren-superior", label: "Tren Superior", desc: "Pecho, espalda, brazos" },
+                  ].map((opt) => (
+                    <button key={opt.value} onClick={() => setEmphasis(opt.value)}
+                      className={`text-left p-3 rounded-xl border transition-all ${emphasis === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"}`}>
+                      <p className="font-medium text-sm">{opt.label}</p>
+                      <p className="text-[10px] text-muted">{opt.desc}</p>
                     </button>
                   ))}
                 </div>

@@ -33,6 +33,7 @@ export default function EncuestaPage() {
   const [height, setHeight] = useState("");
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [restrictions, setRestrictions] = useState<string[]>([]);
+  const [emphasis, setEmphasis] = useState("ninguno");
   const [macros, setMacros] = useState<MacroCalculation | null>(null);
   const [skipPhotos, setSkipPhotos] = useState(false);
   const [photoFront, setPhotoFront] = useState<File | null>(null);
@@ -227,6 +228,27 @@ export default function EncuestaPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium mb-3">Zona a enfatizar</label>
+                <p className="text-xs text-muted mb-3">Si queres trabajar mas alguna zona, tu plan se adapta automaticamente.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "ninguno", label: "Equilibrado", desc: "Todas las zonas por igual" },
+                    { value: "pecho", label: "Pecho", desc: "Pecho y brazos" },
+                    { value: "espalda", label: "Espalda", desc: "Espalda y hombros" },
+                    { value: "piernas", label: "Piernas", desc: "Piernas y gluteos" },
+                    { value: "abdomen", label: "Abdomen", desc: "Core y abdominales" },
+                    { value: "tren-superior", label: "Tren Superior", desc: "Pecho, espalda, brazos" },
+                  ].map((opt) => (
+                    <button key={opt.value} onClick={() => setEmphasis(opt.value)}
+                      className={`text-left p-3 rounded-xl border transition-all ${emphasis === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"}`}>
+                      <p className="font-medium text-sm">{opt.label}</p>
+                      <p className="text-[10px] text-muted">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium mb-3">Restricciones Alimentarias</label>
                 <div className="flex flex-wrap gap-2">
                   {RESTRICTIONS.map((r) => (
@@ -391,7 +413,7 @@ export default function EncuestaPage() {
                 // Guardar encuesta en localStorage para no perder los datos al ir al registro/pago
                 localStorage.setItem("pendingSurvey", JSON.stringify({
                   sex, age: Number(age), weight: Number(weight), height: Number(height),
-                  activityLevel, restrictions, planSlug,
+                  activityLevel, restrictions, emphasis, planSlug,
                   macros: {
                     tmb: macros.tmb, tdee: macros.tdee,
                     targetCalories: macros.targetCalories,

@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Get latest survey for this user
     const { data: survey, error: surveyError } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour")
+      .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
     const sleepHour = survey.sleep_hour || 23;
 
     // Generate plans using existing functions
-    const training = generateTrainingPlan(trainingDays, objective);
+    const emphasis = survey.emphasis || "ninguno";
+    const training = generateTrainingPlan(trainingDays, objective, emphasis);
     const nutrition = generateMealPlan(
       survey.target_calories,
       survey.protein,
