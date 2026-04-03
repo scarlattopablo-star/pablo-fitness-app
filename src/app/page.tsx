@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Users,
   Medal,
+  Home,
   ArrowRight,
   CheckCircle,
   Star,
@@ -24,7 +25,7 @@ import { useI18n } from "@/lib/i18n";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
-  Heart, Shield, RefreshCw, Users, Medal,
+  Heart, Shield, RefreshCw, Users, Medal, Home,
 };
 
 export default function HomePage() {

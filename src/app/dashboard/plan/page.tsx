@@ -440,7 +440,14 @@ function PlanContent() {
                   <div className="p-4 border-b border-card-border flex items-center justify-between">
                     <div>
                       <h3 className="font-bold">{day.day}</h3>
-                      {day.instructions && <p className="text-xs text-muted mt-1">{day.instructions}</p>}
+                      <div className="flex items-center gap-3 mt-1">
+                        {day.instructions && <p className="text-xs text-muted">{day.instructions}</p>}
+                        {day.estimatedCalories && (
+                          <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            ~{day.estimatedCalories} kcal
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {!isSession && (
                       <button

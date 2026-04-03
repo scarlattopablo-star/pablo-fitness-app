@@ -3,12 +3,12 @@
 import { PLANS, DURATION_LABELS } from "@/lib/plans-data";
 import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
-  Heart, Shield, RefreshCw, Users, Medal, Edit,
+  Heart, Shield, RefreshCw, Users, Medal, Home, Edit,
 } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
-  Heart, Shield, RefreshCw, Users, Medal,
+  Heart, Shield, RefreshCw, Users, Medal, Home,
 };
 
 export default function AdminPlanesPage() {

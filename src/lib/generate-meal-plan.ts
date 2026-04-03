@@ -1,3 +1,20 @@
+// Generador de plan nutricional personalizado
+// Fuentes nutricionales:
+// - USDA FoodData Central (valores nutricionales)
+// - Academy of Nutrition and Dietetics (AND): Position Papers on Vegetarian/Vegan Diets (2016, updated 2021)
+// - ADA (American Diabetes Association): Standards of Medical Care in Diabetes (2024)
+// - Celiac Disease Foundation: Gluten-Free Diet Guidelines
+// - NIH/NIDDK: Lactose Intolerance Management
+// - ACSM: Nutrition and Athletic Performance Joint Position Statement (2016)
+//
+// Sustituciones basadas en equivalencia macro por grupo alimentario:
+// - Vegetariano: reemplazar carnes por tofu, legumbres, huevos, lácteos (AND Position Paper)
+// - Vegano: reemplazar todo animal por tofu, legumbres, semillas, leche vegetal (AND Position Paper)
+// - Sin gluten: reemplazar avena/pan/pasta por arroz, quinoa, boniato (Celiac Disease Foundation)
+// - Sin lactosa: reemplazar lácteos por alternativas vegetales o sin lactosa (NIH/NIDDK)
+// - Sin frutos secos: reemplazar frutos secos por semillas (no tree nuts) (FARE Guidelines)
+// - Diabetes: priorizar carbohidratos complejos, bajo IG, más fibra (ADA Standards of Care)
+
 import { FOOD_DATABASE, calculateFoodMacros, type FoodItem } from "./food-database";
 
 export interface MealFood {
@@ -43,7 +60,6 @@ function buildFoodByUnit(foodId: string, units: number, gramsPerUnit: number): M
   return { name: `${Math.max(1, units)} ${food.name}`, grams: totalGrams, unit: food.unit, ...macros };
 }
 
-// Calculate grams of a food to hit a target macro, using its per-100g value
 function gramsFor(food: FoodItem, target: number, macro: "protein" | "carbs" | "fat"): number {
   const per100 = food[macro];
   if (per100 <= 0 || target <= 0) return 0;
@@ -72,7 +88,6 @@ function mealFromFoods(name: string, foodDetails: MealFood[]): MealPlanMeal {
   };
 }
 
-// Remaining macro budget after placed foods
 function remaining(target: { p: number; c: number; f: number }, placed: MealFood[]) {
   const totals = sumMacros(placed);
   return {
@@ -82,14 +97,105 @@ function remaining(target: { p: number; c: number; f: number }, placed: MealFood
   };
 }
 
+// ============================================================
+// Restriction-aware food selection
+// Based on AND Position Papers, ADA Standards, Celiac Foundation, NIH/NIDDK
+// ============================================================
+
+interface RestrictionFlags {
+  vegetarian: boolean;
+  vegan: boolean;
+  glutenFree: boolean;
+  lactoseFree: boolean;
+  nutFree: boolean;
+  diabetes: boolean;
+}
+
+function parseRestrictions(restrictions: string[]): RestrictionFlags {
+  const r = restrictions.map(s => s.toLowerCase());
+  return {
+    vegetarian: r.some(s => s.includes("vegetariano")),
+    vegan: r.some(s => s.includes("vegano")),
+    glutenFree: r.some(s => s.includes("gluten") || s.includes("celiaco") || s.includes("celíaco")),
+    lactoseFree: r.some(s => s.includes("lactosa")),
+    nutFree: r.some(s => s.includes("frutos secos")),
+    diabetes: r.some(s => s.includes("diabetes")),
+  };
+}
+
+// Protein sources by restriction
+// AND Position Paper: legumes + tofu provide complete amino acid profiles when combined
+function getProteinMain(flags: RestrictionFlags): string {
+  if (flags.vegan) return "tofu";            // Tofu firme: 17g protein/100g
+  if (flags.vegetarian) return "huevo-entero"; // Eggs: complete protein
+  return "pollo-pechuga";                      // Default: chicken breast
+}
+
+function getProteinAlt(flags: RestrictionFlags): string {
+  if (flags.vegan) return "lentejas";          // Lentejas: 9g protein/100g + iron
+  if (flags.vegetarian) return "tofu";
+  return "merluza";
+}
+
+// Carb sources - diabetes uses low-GI (ADA: prefer whole grains, IG < 55)
+function getCarbMain(flags: RestrictionFlags): string {
+  if (flags.glutenFree && flags.diabetes) return "quinoa";     // GF + low GI
+  if (flags.glutenFree) return "arroz-integral";                // GF
+  if (flags.diabetes) return "quinoa";                          // Low GI (53)
+  return "arroz-integral";
+}
+
+function getCarbAlt(flags: RestrictionFlags): string {
+  if (flags.glutenFree) return "boniato";  // GF carb source
+  if (flags.diabetes) return "lentejas";   // Very low GI (32), high fiber
+  return "boniato";
+}
+
+// Breakfast carb - avena contiene gluten por contaminación cruzada (Celiac Foundation)
+function getBreakfastCarb(flags: RestrictionFlags): string {
+  if (flags.glutenFree) return "galleta-arroz"; // GF safe
+  if (flags.diabetes) return "avena";            // Oats: low GI, high fiber (ADA approved)
+  return "avena";
+}
+
+// Dairy alternatives (NIH/NIDDK: lactose-free or plant-based fortified alternatives)
+function getDairy(flags: RestrictionFlags): string {
+  if (flags.vegan || flags.lactoseFree) return "tofu"; // Calcium-set tofu (AND)
+  return "yogurt-descremado";
+}
+
+function getCottage(flags: RestrictionFlags): string {
+  if (flags.vegan || flags.lactoseFree) return "tofu";
+  return "queso-cottage";
+}
+
+// Fat sources (FARE: tree nut allergy → use seeds instead)
+function getFatSource(flags: RestrictionFlags): string {
+  if (flags.nutFree) return "semillas-girasol";  // No tree nuts
+  return "almendras";
+}
+
+function getButterFat(flags: RestrictionFlags): string {
+  if (flags.nutFree) return "semillas-chia";  // Seed-based fat
+  return "mani";                                // Peanut butter (legume, not tree nut - FARE)
+}
+
+// Whey protein (dairy-derived)
+function getProteinShake(flags: RestrictionFlags): string {
+  if (flags.vegan || flags.lactoseFree) return "tofu"; // Plant protein
+  return "whey-protein";
+}
+
 export function generateMealPlan(
   targetCalories: number,
   protein: number,
   carbs: number,
   fats: number,
   wakeHour: number = 7,
-  sleepHour: number = 23
+  sleepHour: number = 23,
+  dietaryRestrictions: string[] = []
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
+  const flags = parseRestrictions(dietaryRestrictions);
   const awakeHours = (sleepHour > wakeHour ? sleepHour : sleepHour + 24) - wakeHour;
   const numMeals = Math.min(6, Math.max(4, Math.floor(awakeHours / 3) + 1));
 
@@ -105,7 +211,6 @@ export function generateMealPlan(
     }
   }
 
-  // Distribution per meal count (6 slots: DESAYUNO, COMIDA2, ALMUERZO, MERIENDA, CENA, COLACION)
   const distTemplates: Record<number, number[]> = {
     4: [0.25, 0.00, 0.30, 0.15, 0.30, 0.00],
     5: [0.22, 0.12, 0.26, 0.12, 0.28, 0.00],
@@ -120,84 +225,127 @@ export function generateMealPlan(
   }));
 
   // === MEAL 1: DESAYUNO ===
-  // Strategy: eggs (protein+fat) → subtract → oats for remaining carbs. No blind banana.
   const t0 = targets[0];
-  const m1Eggs = Math.max(1, Math.min(3, Math.round(t0.p / 6.5))); // cap at 3 eggs
-  const m1Egg = buildFoodByUnit("huevo-entero", m1Eggs, 50);
-  const r0 = remaining(t0, [m1Egg]);
-  const m1OatGrams = gramsFor(getFood("avena"), r0.c, "carbs");
-  const m1Oat = buildFood("avena", m1OatGrams);
-  const desayunoFoods: MealFood[] = [m1Egg, m1Oat];
-  const r0b = remaining(t0, desayunoFoods);
-  // Only add banana if there's carb budget left (>10g)
-  if (r0b.c > 10) {
-    desayunoFoods.push(buildFoodByUnit("banana", 1, 120));
+  const breakfastProteinId = flags.vegan ? "tofu" : "huevo-entero";
+  const desayunoFoods: MealFood[] = [];
+
+  if (breakfastProteinId === "huevo-entero") {
+    const numEggs = Math.max(1, Math.min(3, Math.round(t0.p / 6.5)));
+    desayunoFoods.push(buildFoodByUnit("huevo-entero", numEggs, 50));
+  } else {
+    // Vegan: tofu scramble (AND Position Paper: tofu breakfast)
+    desayunoFoods.push(buildFood("tofu", gramsFor(getFood("tofu"), t0.p, "protein")));
   }
-  // Add fat source only if under fat budget
+
+  const breakfastCarbId = getBreakfastCarb(flags);
+  const r0 = remaining(t0, desayunoFoods);
+  if (breakfastCarbId === "galleta-arroz") {
+    const numCakes = Math.max(2, Math.min(5, Math.round(r0.c / 7.4)));
+    desayunoFoods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
+  } else {
+    desayunoFoods.push(buildFood(breakfastCarbId, gramsFor(getFood(breakfastCarbId), r0.c, "carbs")));
+  }
+
+  const r0b = remaining(t0, desayunoFoods);
+  if (r0b.c > 10 && !flags.diabetes) {
+    desayunoFoods.push(buildFoodByUnit("banana", 1, 120));
+  } else if (r0b.c > 10 && flags.diabetes) {
+    // ADA: berries have lower GI than banana
+    desayunoFoods.push(buildFood("arandanos", gramsFor(getFood("arandanos"), r0b.c, "carbs")));
+  }
+
   const r0c = remaining(t0, desayunoFoods);
   if (r0c.f > 5) {
-    desayunoFoods.push(buildFood("mani", round5(r0c.f / 0.50 * 100 / 100)));
+    const fatId = getButterFat(flags);
+    desayunoFoods.push(buildFood(fatId, round5(r0c.f / (getFood(fatId).fat / 100))));
   }
 
   // === MEAL 2: COMIDA 2 - Snack ===
   const t1 = targets[1];
-  const m2Yogurt = buildFood("yogurt-descremado", 200);
-  const r1 = remaining(t1, [m2Yogurt]);
-  const snack1Foods: MealFood[] = [m2Yogurt];
+  const dairyId = getDairy(flags);
+  const snack1Foods: MealFood[] = [buildFood(dairyId, dairyId === "tofu" ? gramsFor(getFood("tofu"), t1.p, "protein") : 200)];
+  const r1 = remaining(t1, snack1Foods);
   if (r1.c > 5) {
-    snack1Foods.push(buildFood("avena", gramsFor(getFood("avena"), r1.c, "carbs")));
+    const carbId = flags.glutenFree ? "galleta-arroz" : "avena";
+    if (carbId === "galleta-arroz") {
+      const n = Math.max(1, Math.min(3, Math.round(r1.c / 7.4)));
+      snack1Foods.push(buildFoodByUnit("galleta-arroz", n, 9));
+    } else {
+      snack1Foods.push(buildFood(carbId, gramsFor(getFood(carbId), r1.c, "carbs")));
+    }
   }
   const r1b = remaining(t1, snack1Foods);
   if (r1b.f > 3) {
-    snack1Foods.push(buildFood("almendras", gramsFor(getFood("almendras"), r1b.f, "fat")));
+    const fatId = getFatSource(flags);
+    snack1Foods.push(buildFood(fatId, gramsFor(getFood(fatId), r1b.f, "fat")));
   }
 
   // === MEAL 3: ALMUERZO ===
   const t2 = targets[2];
-  // Vegetables first (fixed, low macro impact)
   const m3Veg = buildFood("brocoli", 150);
   const r2 = remaining(t2, [m3Veg]);
-  // Protein source: chicken. Size by remaining protein after veg
-  const m3Chicken = buildFood("pollo-pechuga", gramsFor(getFood("pollo-pechuga"), r2.p, "protein"));
-  const r2b = remaining(t2, [m3Veg, m3Chicken]);
-  // Carb source: brown rice. Size by remaining carbs
-  const m3Rice = buildFood("arroz-integral", gramsFor(getFood("arroz-integral"), r2b.c, "carbs"));
-  const almuerzoFoods: MealFood[] = [m3Chicken, m3Rice, m3Veg];
-  // Olive oil only if fat budget allows
+  const mainProteinId = getProteinMain(flags);
+  const m3Protein = buildFood(mainProteinId, gramsFor(getFood(mainProteinId), r2.p, "protein"));
+  const r2b = remaining(t2, [m3Veg, m3Protein]);
+  const mainCarbId = getCarbMain(flags);
+  const m3Carb = buildFood(mainCarbId, gramsFor(getFood(mainCarbId), r2b.c, "carbs"));
+  const almuerzoFoods: MealFood[] = [m3Protein, m3Carb, m3Veg];
+
+  // Vegan/vegetarian: add legumes for complete amino acids (AND: complementary proteins)
+  if (flags.vegan && mainProteinId === "tofu") {
+    const r2extra = remaining(t2, almuerzoFoods);
+    if (r2extra.p > 5) {
+      almuerzoFoods.push(buildFood("garbanzos", gramsFor(getFood("garbanzos"), r2extra.p, "protein")));
+    }
+  }
+
   const r2c = remaining(t2, almuerzoFoods);
   if (r2c.f > 5) {
-    const oilGrams = Math.min(14, round5(r2c.f / 1.0 * 100 / 100)); // 1g fat per 1g oil
+    const oilGrams = Math.min(14, round5(r2c.f / 1.0 * 100 / 100));
     almuerzoFoods.push(buildFood("aceite-oliva", oilGrams));
   }
 
   // === MEAL 4: MERIENDA ===
   const t3 = targets[3];
-  // Whey protein as protein source (low fat, low carb)
-  const m4Whey = buildFood("whey-protein", gramsFor(getFood("whey-protein"), t3.p, "protein"));
-  const r3 = remaining(t3, [m4Whey]);
-  const snack2Foods: MealFood[] = [m4Whey];
-  // Rice cakes for carbs
+  const shakeId = getProteinShake(flags);
+  const m4Protein = buildFood(shakeId, gramsFor(getFood(shakeId), t3.p, "protein"));
+  const snack2Foods: MealFood[] = [m4Protein];
+  const r3 = remaining(t3, snack2Foods);
   if (r3.c > 5) {
-    const numCakes = Math.max(1, Math.min(4, Math.round(r3.c / 7.4)));
-    snack2Foods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
+    if (flags.glutenFree) {
+      const n = Math.max(1, Math.min(4, Math.round(r3.c / 7.4)));
+      snack2Foods.push(buildFoodByUnit("galleta-arroz", n, 9));
+    } else {
+      const numCakes = Math.max(1, Math.min(4, Math.round(r3.c / 7.4)));
+      snack2Foods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
+    }
   }
-  // Banana only if carb budget still has room
   const r3b = remaining(t3, snack2Foods);
-  if (r3b.c > 15) {
+  if (r3b.c > 15 && !flags.diabetes) {
     snack2Foods.push(buildFoodByUnit("banana", 1, 120));
+  } else if (r3b.c > 15 && flags.diabetes) {
+    snack2Foods.push(buildFood("manzana", 180)); // Low GI fruit
   }
 
   // === MEAL 5: CENA ===
   const t4 = targets[4];
   const m5Veg = buildFood("espinaca", 100);
   const r4 = remaining(t4, [m5Veg]);
-  // Use merluza (low fat) instead of salmon to avoid fat overshoot
-  const m5Fish = buildFood("merluza", gramsFor(getFood("merluza"), r4.p, "protein"));
-  const r4b = remaining(t4, [m5Veg, m5Fish]);
-  // Sweet potato for carbs
-  const m5Boniato = buildFood("boniato", gramsFor(getFood("boniato"), r4b.c, "carbs"));
-  const cenaFoods: MealFood[] = [m5Fish, m5Boniato, m5Veg];
-  // Olive oil if fat budget remains
+  const altProteinId = getProteinAlt(flags);
+  const m5Protein = buildFood(altProteinId, gramsFor(getFood(altProteinId), r4.p, "protein"));
+  const r4b = remaining(t4, [m5Veg, m5Protein]);
+  const altCarbId = getCarbAlt(flags);
+  const m5Carb = buildFood(altCarbId, gramsFor(getFood(altCarbId), r4b.c, "carbs"));
+  const cenaFoods: MealFood[] = [m5Protein, m5Carb, m5Veg];
+
+  // Vegan complementary protein
+  if (flags.vegan && altProteinId === "lentejas") {
+    const r4extra = remaining(t4, cenaFoods);
+    if (r4extra.p > 5) {
+      cenaFoods.push(buildFood("tofu", gramsFor(getFood("tofu"), r4extra.p, "protein")));
+    }
+  }
+
   const r4c = remaining(t4, cenaFoods);
   if (r4c.f > 3) {
     const oilGrams = Math.min(14, round5(r4c.f / 1.0 * 100 / 100));
@@ -206,8 +354,9 @@ export function generateMealPlan(
 
   // === MEAL 6: COLACION NOCTURNA ===
   const t5 = targets[5];
-  const m6Cottage = buildFood("queso-cottage", gramsFor(getFood("queso-cottage"), t5.p, "protein"));
-  const snack3Foods: MealFood[] = [m6Cottage];
+  const cottageId = getCottage(flags);
+  const m6Protein = buildFood(cottageId, gramsFor(getFood(cottageId), t5.p, "protein"));
+  const snack3Foods: MealFood[] = [m6Protein];
   const r5 = remaining(t5, snack3Foods);
   if (r5.c > 5) {
     const numCakes = Math.max(1, Math.min(3, Math.round(r5.c / 7.4)));
@@ -224,11 +373,10 @@ export function generateMealPlan(
     { name: "COLACION NOCTURNA", foods: snack3Foods },
   ];
 
-  // Select meals based on count, cena always last
   const picksByCount: Record<number, number[]> = {
     4: [0, 2, 3, 4],
     5: [0, 1, 2, 3, 4],
-    6: [0, 1, 2, 3, 5, 4], // Colacion before Cena so Cena is last
+    6: [0, 1, 2, 3, 5, 4],
   };
   const picks = picksByCount[numMeals] || picksByCount[6];
 
@@ -238,14 +386,37 @@ export function generateMealPlan(
     return m;
   });
 
+  // Build restriction-specific notes
+  const notes = [
+    "COMER CADA 3 HORAS",
+    `OBJETIVO DIARIO: ${targetCalories} kcal | ${protein}g proteina | ${carbs}g carbos | ${fats}g grasas`,
+    "TOMAR 3 LITROS DE AGUA AL DIA",
+    "NO AZUCAR, ENDULZAR CON EDULCORANTE",
+    "NO ALCOHOL",
+  ];
+
+  // Add restriction-specific medical notes
+  if (flags.vegan) {
+    notes.push("VEGANO: Suplementar vitamina B12 (2.4mcg/dia - AND). Combinar legumbres + cereales para aminoacidos completos.");
+  }
+  if (flags.vegetarian && !flags.vegan) {
+    notes.push("VEGETARIANO: Asegurar variedad de fuentes proteicas (huevos, lacteos, legumbres, tofu).");
+  }
+  if (flags.glutenFree) {
+    notes.push("SIN GLUTEN: Verificar etiquetas de todos los productos. Evitar contaminacion cruzada. La avena comun NO es apta.");
+  }
+  if (flags.lactoseFree) {
+    notes.push("SIN LACTOSA: Asegurar ingesta de calcio (1000mg/dia) via vegetales verdes, tofu, o suplemento.");
+  }
+  if (flags.nutFree) {
+    notes.push("SIN FRUTOS SECOS: Las semillas (girasol, chia, lino) son alternativas seguras. Verificar etiquetas.");
+  }
+  if (flags.diabetes) {
+    notes.push("DIABETES: Priorizar carbohidratos de bajo indice glucemico. Distribuir carbos uniformemente. Monitorear glucemia (ADA).");
+  }
+
   return {
     meals: selectedMeals,
-    importantNotes: [
-      "COMER CADA 3 HORAS",
-      `OBJETIVO DIARIO: ${targetCalories} kcal | ${protein}g proteina | ${carbs}g carbos | ${fats}g grasas`,
-      "TOMAR 3 LITROS DE AGUA AL DIA",
-      "NO AZUCAR, ENDULZAR CON EDULCORANTE",
-      "NO ALCOHOL",
-    ],
+    importantNotes: notes,
   };
 }

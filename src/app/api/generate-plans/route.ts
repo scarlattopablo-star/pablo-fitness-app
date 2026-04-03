@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Get latest survey for this user
     const { data: survey, error: surveyError } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis")
+      .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -42,14 +42,17 @@ export async function POST(request: NextRequest) {
 
     // Generate plans using existing functions
     const emphasis = survey.emphasis || "ninguno";
-    const training = generateTrainingPlan(trainingDays, objective, emphasis);
+    const dietaryRestrictions: string[] = survey.dietary_restrictions || [];
+    const userWeight = survey.weight || 70;
+    const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight);
     const nutrition = generateMealPlan(
       survey.target_calories,
       survey.protein,
       survey.carbs,
       survey.fats,
       wakeHour,
-      sleepHour
+      sleepHour,
+      dietaryRestrictions
     );
 
     // Delete existing plans for this user (same pattern as plan-editor)

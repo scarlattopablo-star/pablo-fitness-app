@@ -8,7 +8,8 @@ export type PlanSlug =
   | 'fuerza-funcional'
   | 'recomposicion-corporal'
   | 'plan-pareja'
-  | 'competicion';
+  | 'competicion'
+  | 'entrenamiento-casa';
 
 export type Duration = '1-mes' | '3-meses' | '6-meses' | '1-ano';
 
