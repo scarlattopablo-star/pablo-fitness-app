@@ -117,6 +117,7 @@ function PlanContent() {
   const [savingSession, setSavingSession] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
   const [hasSurvey, setHasSurvey] = useState(true);
+  const [expandedGif, setExpandedGif] = useState<{ src: string; name: string } | null>(null);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
     foodIndex: number;
@@ -489,9 +490,9 @@ function PlanContent() {
                         return (
                           <div key={i} className="p-3 flex items-center gap-3">
                             {exGif && (
-                              <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10">
+                              <button onClick={() => setExpandedGif({ src: exGif, name: ex.name })} className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10 hover:ring-2 hover:ring-primary/50 transition-all">
                                 <img src={exGif} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
-                              </div>
+                              </button>
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{ex.name}</p>
@@ -698,6 +699,21 @@ function PlanContent() {
           onSwap={handleSwap}
           onClose={() => setSwapTarget(null)}
         />
+      )}
+
+      {/* Expanded GIF Modal */}
+      {expandedGif && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90" onClick={() => setExpandedGif(null)}>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setExpandedGif(null)} className="absolute -top-10 right-0 text-white/70 hover:text-white">
+              <X className="h-6 w-6" />
+            </button>
+            <div className="bg-white/10 rounded-2xl overflow-hidden">
+              <img src={expandedGif.src} alt={expandedGif.name} className="w-72 h-72 sm:w-80 sm:h-80 object-contain" />
+            </div>
+            <p className="text-center text-sm font-bold mt-3">{expandedGif.name}</p>
+          </div>
+        </div>
       )}
 
       {/* Exercise Detail Modal */}

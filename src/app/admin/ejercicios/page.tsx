@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { EXERCISES, MUSCLE_GROUP_LABELS, getVideoUrl } from "@/lib/exercises-data";
 import { getExerciseGif } from "@/lib/exercise-images";
-import { Search, Plus, Edit, Play, Video } from "lucide-react";
+import { Search, Plus, Edit, Play, Video, X } from "lucide-react";
 
 export default function AdminEjerciciosPage() {
   const [search, setSearch] = useState("");
   const [selectedGroup, setSelectedGroup] = useState("todos");
+  const [expandedGif, setExpandedGif] = useState<{ src: string; name: string } | null>(null);
 
   const filtered = EXERCISES.filter((ex) => {
     const matchesGroup = selectedGroup === "todos" || ex.muscleGroup === selectedGroup;
@@ -84,9 +85,9 @@ export default function AdminEjerciciosPage() {
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       {getExerciseGif(exercise.id) && (
-                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+                        <button onClick={() => setExpandedGif({ src: getExerciseGif(exercise.id)!, name: exercise.name })} className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10 hover:ring-2 hover:ring-primary/50 transition-all">
                           <img src={getExerciseGif(exercise.id)} alt={exercise.name} className="w-full h-full object-cover" loading="lazy" />
-                        </div>
+                        </button>
                       )}
                       <div>
                         <p className="font-medium">{exercise.name}</p>
@@ -121,6 +122,20 @@ export default function AdminEjerciciosPage() {
           </table>
         </div>
       </div>
+
+      {expandedGif && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90" onClick={() => setExpandedGif(null)}>
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setExpandedGif(null)} className="absolute -top-10 right-0 text-white/70 hover:text-white">
+              <X className="h-6 w-6" />
+            </button>
+            <div className="bg-white/10 rounded-2xl overflow-hidden">
+              <img src={expandedGif.src} alt={expandedGif.name} className="w-72 h-72 sm:w-80 sm:h-80 object-contain" />
+            </div>
+            <p className="text-center text-sm font-bold mt-3">{expandedGif.name}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
