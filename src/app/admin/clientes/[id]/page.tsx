@@ -95,6 +95,9 @@ export default function ClienteDetailPage({
   const [editingTraining, setEditingTraining] = useState(false);
   const [editTrainingData, setEditTrainingData] = useState<any[]>([]);
   const [savingTraining, setSavingTraining] = useState(false);
+  const [editingNutrition, setEditingNutrition] = useState(false);
+  const [editNutritionData, setEditNutritionData] = useState<any[]>([]);
+  const [savingNutrition, setSavingNutrition] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -663,7 +666,7 @@ export default function ClienteDetailPage({
           <p className="text-sm text-muted mt-2">Sin plan asignado</p>
         )}
 
-        {expandNutrition && nutritionMeals.length > 0 && (
+        {expandNutrition && nutritionMeals.length > 0 && !editingNutrition && (
           <div className="mt-4 space-y-3">
             {nutritionNotes.length > 0 && (
               <div className="bg-warning/5 border border-warning/20 rounded-xl p-3">
@@ -701,6 +704,123 @@ export default function ClienteDetailPage({
                 </div>
               </div>
             ))}
+            <button
+              onClick={() => {
+                setEditNutritionData(JSON.parse(JSON.stringify(nutritionMeals)));
+                setEditingNutrition(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 text-sm text-primary font-bold py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+            >
+              <Edit className="h-4 w-4" /> Editar Nutricion
+            </button>
+          </div>
+        )}
+
+        {/* Inline nutrition editing */}
+        {expandNutrition && editingNutrition && (
+          <div className="mt-4 space-y-4">
+            {editNutritionData.map((meal: any, mealIdx: number) => (
+              <div key={mealIdx} className="bg-card-bg rounded-xl p-3">
+                <div className="flex gap-2 mb-2">
+                  <input
+                    value={meal.time || ""}
+                    onChange={(e) => {
+                      const updated = [...editNutritionData];
+                      updated[mealIdx] = { ...meal, time: e.target.value };
+                      setEditNutritionData(updated);
+                    }}
+                    className="w-16 bg-card-border/20 rounded px-2 py-1 text-xs font-bold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="Hora"
+                  />
+                  <input
+                    value={meal.name}
+                    onChange={(e) => {
+                      const updated = [...editNutritionData];
+                      updated[mealIdx] = { ...meal, name: e.target.value };
+                      setEditNutritionData(updated);
+                    }}
+                    className="flex-1 bg-transparent font-bold text-sm border-b border-card-border/50 pb-1 focus:outline-none focus:border-primary"
+                    placeholder="Nombre comida"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  {(meal.foods || []).map((food: string, foodIdx: number) => (
+                    <div key={foodIdx} className="flex items-center gap-2">
+                      <input
+                        value={food}
+                        onChange={(e) => {
+                          const updated = [...editNutritionData];
+                          const foods = [...(updated[mealIdx].foods || [])];
+                          foods[foodIdx] = e.target.value;
+                          updated[mealIdx] = { ...meal, foods };
+                          setEditNutritionData(updated);
+                        }}
+                        className="flex-1 bg-card-border/20 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Alimento (ej: 200g pollo)"
+                      />
+                      <button
+                        onClick={() => {
+                          const updated = [...editNutritionData];
+                          const foods = [...(updated[mealIdx].foods || [])];
+                          foods.splice(foodIdx, 1);
+                          updated[mealIdx] = { ...meal, foods };
+                          setEditNutritionData(updated);
+                        }}
+                        className="text-danger/60 hover:text-danger"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const updated = [...editNutritionData];
+                      const foods = [...(updated[mealIdx].foods || []), ""];
+                      updated[mealIdx] = { ...meal, foods };
+                      setEditNutritionData(updated);
+                    }}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <Plus className="h-3 w-3" /> Agregar alimento
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <button
+              onClick={() => {
+                setEditNutritionData([...editNutritionData, { name: "", time: "", foods: [""] }]);
+              }}
+              className="w-full flex items-center justify-center gap-1 text-xs text-primary font-bold py-2 border border-dashed border-primary/30 rounded-xl hover:bg-primary/5"
+            >
+              <Plus className="h-3 w-3" /> Agregar comida
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  setSavingNutrition(true);
+                  await supabase
+                    .from("nutrition_plans")
+                    .update({ data: { meals: editNutritionData } })
+                    .eq("user_id", id);
+                  setNutritionPlan({ ...nutritionPlan, data: { meals: editNutritionData } });
+                  setEditingNutrition(false);
+                  setSavingNutrition(false);
+                }}
+                disabled={savingNutrition}
+                className="flex-1 flex items-center justify-center gap-2 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl hover:opacity-90 disabled:opacity-50"
+              >
+                {savingNutrition ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Guardar Cambios
+              </button>
+              <button
+                onClick={() => setEditingNutrition(false)}
+                className="px-4 py-2.5 text-sm text-muted border border-card-border rounded-xl hover:bg-card-border/20"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         )}
       </div>
