@@ -9,6 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@remotion/cli": "^4.0.445",
+    "@remotion/google-fonts": "^4.0.445",
+    "@remotion/media": "^4.0.445",
+    "@remotion/player": "^4.0.445",
+    "@remotion/transitions": "^4.0.445",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.0",
     "framer-motion": "^12.38.0",
@@ -18,7 +23,8 @@
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "remotion": "^4.0.445"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
