@@ -258,7 +258,7 @@ function PlanContent() {
       // Load survey data for macros display
       const { data } = await supabase
         .from("surveys")
-        .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, sex")
+        .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -297,7 +297,8 @@ function PlanContent() {
       } else if (data) {
         const emphasis = data.emphasis || "ninguno";
         const userSex = data.sex || "hombre";
-        const generated = generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa", emphasis, 70, userSex);
+        const actLevel = data.activity_level || "moderado";
+        const generated = generateTrainingPlan(data.training_days || 5, data.objective || "quema-grasa", emphasis, 70, userSex, actLevel);
         setTrainingPlan(generated);
         cacheData("training_plan", generated);
       } else {

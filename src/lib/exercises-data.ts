@@ -682,7 +682,7 @@ export const EXERCISES: Exercise[] = [
   },
   {
     id: 'chin-up',
-    name: 'Chin-Up (Dominada Supina)',
+    name: 'Dominadas Supino',
     muscleGroup: 'biceps',
     description: 'Dominada con agarre supino para mayor enfasis en biceps.',
     steps: [

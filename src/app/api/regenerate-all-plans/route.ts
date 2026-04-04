@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Get all users who have surveys (meaning they have plan data)
     const { data: surveys, error: surveyError } = await supabase
       .from("surveys")
-      .select("user_id, target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, sex")
+      .select("user_id, target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, sex, activity_level")
       .order("created_at", { ascending: false });
 
     if (surveyError || !surveys) {
@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
 
         // Generate new plans with frequency-2 programming
         const userSex = survey.sex || "hombre";
-        const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex);
+        const activityLevel = survey.activity_level || "moderado";
+        const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
         const nutrition = generateMealPlan(
           survey.target_calories,
           survey.protein,
