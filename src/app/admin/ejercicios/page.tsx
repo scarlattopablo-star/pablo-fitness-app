@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EXERCISES, MUSCLE_GROUP_LABELS, getVideoUrl } from "@/lib/exercises-data";
+import { getExerciseGif } from "@/lib/exercise-images";
 import { Search, Plus, Edit, Play, Video } from "lucide-react";
 
 export default function AdminEjerciciosPage() {
@@ -81,8 +82,17 @@ export default function AdminEjerciciosPage() {
               {filtered.map((exercise) => (
                 <tr key={exercise.id} className="border-b border-card-border/50 last:border-0 hover:bg-white/[0.02]">
                   <td className="p-4">
-                    <p className="font-medium">{exercise.name}</p>
-                    <p className="text-xs text-muted line-clamp-1 sm:hidden capitalize">{exercise.muscleGroup}</p>
+                    <div className="flex items-center gap-3">
+                      {getExerciseGif(exercise.id) && (
+                        <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+                          <img src={getExerciseGif(exercise.id)} alt={exercise.name} className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium">{exercise.name}</p>
+                        <p className="text-xs text-muted line-clamp-1 sm:hidden capitalize">{exercise.muscleGroup}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="p-4 hidden sm:table-cell">
                     <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full capitalize">

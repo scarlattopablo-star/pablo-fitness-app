@@ -92,6 +92,31 @@ const EXERCISE_GIFS: Record<string, string> = {
   'v-up': gif('v-up'),
   'elevacion-piernas': gif('elevacion-piernas'),
 
+  'rueda-abdominal': gif('rueda-abdominal'),
+
+  // NUEVOS EJERCICIOS
+  'press-mancuernas-plano': gif('press-mancuernas-plano'),
+  'press-mancuernas-inclinado': gif('press-mancuernas-inclinado'),
+  'apertura-mancuerna-plano': gif('apertura-mancuerna-plano'),
+  'remo-t': gif('remo-t'),
+  'pullover-mancuerna': gif('pullover-mancuerna'),
+  'remo-posterior-cable': gif('remo-posterior-cable'),
+  'elevacion-posterior': gif('elevacion-posterior'),
+  'elevacion-posterior-mancuerna': gif('elevacion-posterior-mancuerna'),
+  'elevacion-lateral-cable': gif('elevacion-lateral-cable'),
+  'encogimientos-trapecio': gif('encogimientos-trapecio'),
+  'curl-cable': gif('curl-cable'),
+  'curl-inclinado-martillo': gif('curl-inclinado-martillo'),
+  'curl-reverso': gif('curl-reverso'),
+  'extension-triceps-overhead': gif('extension-triceps-overhead'),
+  'fondos-paralelas': gif('fondos-paralelas'),
+  'hack-squat': gif('hack-squat'),
+  'peso-muerto-rumano': gif('peso-muerto-rumano'),
+  'sentadilla-goblet': gif('sentadilla-goblet'),
+  'buenos-dias': gif('buenos-dias'),
+  'pantorrilla-sentado': gif('pantorrilla-sentado'),
+  'zancadas-mancuerna': gif('zancadas-mancuerna'),
+
   // CARDIO
   'hiit-cinta': gif('hiit-cinta'),
   'saltar-cuerda': gif('saltar-cuerda'),
