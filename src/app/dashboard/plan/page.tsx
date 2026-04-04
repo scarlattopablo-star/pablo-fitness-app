@@ -117,6 +117,7 @@ function PlanContent() {
   const [savingSession, setSavingSession] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
   const [hasSurvey, setHasSurvey] = useState(true);
+  const [planPending, setPlanPending] = useState(false);
   const [expandedGif, setExpandedGif] = useState<{ src: string; name: string } | null>(null);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
@@ -278,7 +279,7 @@ function PlanContent() {
       // Try to load plans from DB first (admin-edited or auto-generated)
       const { data: dbTraining } = await supabase
         .from("training_plans")
-        .select("data")
+        .select("data, plan_approved")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -286,11 +287,18 @@ function PlanContent() {
 
       const { data: dbNutrition } = await supabase
         .from("nutrition_plans")
-        .select("data, important_notes")
+        .select("data, important_notes, plan_approved")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      // Check if plan exists but is pending admin approval
+      if (dbTraining && dbTraining.data?.days?.length > 0 && dbTraining.plan_approved === false) {
+        setPlanPending(true);
+        setLoading(false);
+        return;
+      }
 
       if (dbTraining && dbTraining.data?.days?.length > 0) {
         setTrainingPlan(dbTraining.data.days);
@@ -307,7 +315,7 @@ function PlanContent() {
         setTrainingPlan(generateTrainingPlan(5));
       }
 
-      if (dbNutrition && dbNutrition.data?.meals?.length > 0) {
+      if (dbNutrition && dbNutrition.data?.meals?.length > 0 && dbNutrition.plan_approved !== false) {
         const enrichedMeals = dbNutrition.data.meals.map((m: MealPlanMeal) => enrichMealWithFoodDetails(m));
         const mealData = {
           meals: enrichedMeals,
@@ -349,6 +357,19 @@ function PlanContent() {
   }
 
   if (!hasActiveSubscription) return <SubscriptionExpiredBanner />;
+
+  if (planPending) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mb-6">
+          <Dumbbell className="h-8 w-8 text-black" />
+        </div>
+        <Loader2 className="h-10 w-10 text-primary animate-spin mb-6" />
+        <h2 className="text-xl font-black mb-2">Pablo Scarlatto tu entrenador esta creando tu rutina</h2>
+        <p className="text-muted text-sm max-w-sm">Pronto tendras tu plan personalizado de entrenamiento y nutricion. Te notificaremos cuando este listo.</p>
+      </div>
+    );
+  }
 
   const planName = subscription?.plan_name || OBJECTIVE_LABELS[objective] || "Plan Personalizado";
   const planData = PLANS.find(p => p.slug === objective);

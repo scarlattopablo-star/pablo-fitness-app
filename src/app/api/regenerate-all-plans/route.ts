@@ -84,12 +84,14 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           week_number: 1,
           data: { days: training },
+          plan_approved: true,
         });
 
         const { error: npError } = await supabase.from("nutrition_plans").insert({
           user_id: userId,
           data: { meals: nutrition.meals },
           important_notes: nutrition.importantNotes,
+          plan_approved: true,
         });
 
         if (tpError || npError) {

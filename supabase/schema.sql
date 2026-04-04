@@ -101,6 +101,7 @@ CREATE TABLE public.training_plans (
   subscription_id UUID REFERENCES public.subscriptions(id),
   week_number INTEGER DEFAULT 1,
   data JSONB NOT NULL, -- stores full training plan structure
+  plan_approved BOOLEAN DEFAULT false, -- admin must approve before client sees it
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -111,6 +112,7 @@ CREATE TABLE public.nutrition_plans (
   subscription_id UUID REFERENCES public.subscriptions(id),
   data JSONB NOT NULL, -- stores full meal plan structure
   important_notes TEXT[] DEFAULT '{}',
+  plan_approved BOOLEAN DEFAULT false, -- admin must approve before client sees it
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

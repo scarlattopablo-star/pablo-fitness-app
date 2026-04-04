@@ -91,6 +91,7 @@ export default function ClienteDetailPage({
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [approvingPlan, setApprovingPlan] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -282,6 +283,34 @@ export default function ClienteDetailPage({
           <p className="text-xs text-muted mt-1">
             Registrado: {new Date(client.created_at).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" })}
           </p>
+          {/* Plan approval status */}
+          {trainingPlan && (
+            <div className="flex items-center gap-2 mt-3">
+              {trainingPlan.plan_approved ? (
+                <span className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-bold">Plan Aprobado</span>
+              ) : (
+                <>
+                  <span className="text-xs bg-yellow-500/10 text-yellow-500 px-3 py-1 rounded-full font-bold">Pendiente de Aprobacion</span>
+                  <button
+                    onClick={async () => {
+                      setApprovingPlan(true);
+                      await supabase.from("training_plans").update({ plan_approved: true }).eq("user_id", id);
+                      await supabase.from("nutrition_plans").update({ plan_approved: true }).eq("user_id", id);
+                      setTrainingPlan({ ...trainingPlan, plan_approved: true });
+                      if (nutritionPlan) setNutritionPlan({ ...nutritionPlan, plan_approved: true });
+                      setApprovingPlan(false);
+                    }}
+                    disabled={approvingPlan}
+                    className="inline-flex items-center gap-1 bg-primary text-black font-semibold text-xs px-3 py-1.5 rounded-xl hover:opacity-90 disabled:opacity-50"
+                  >
+                    {approvingPlan ? <Loader2 className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
+                    Aprobar Plan
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2 mt-3">
             <Link
               href={`/admin/clientes/${id}/plan-editor`}

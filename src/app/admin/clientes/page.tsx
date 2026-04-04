@@ -12,6 +12,7 @@ interface Client {
   email: string;
   phone: string;
   created_at: string;
+  isDirectClient?: boolean;
 }
 
 export default function ClientesPage() {
@@ -36,7 +37,22 @@ export default function ClientesPage() {
         .eq("is_admin", false)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
-      if (data) setClients(data);
+
+      // Get QR direct client IDs
+      const { data: qrCodes } = await supabase
+        .from("free_access_codes")
+        .select("used_by")
+        .eq("used", true)
+        .not("used_by", "is", null);
+
+      const directClientIds = new Set(qrCodes?.map(c => c.used_by) || []);
+
+      if (data) {
+        setClients(data.map(c => ({
+          ...c,
+          isDirectClient: directClientIds.has(c.id),
+        })));
+      }
     } catch {}
     setLoading(false);
   };
@@ -93,7 +109,12 @@ export default function ClientesPage() {
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium">{client.full_name || "Sin nombre"}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{client.full_name || "Sin nombre"}</p>
+                            {client.isDirectClient && (
+                              <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-bold">QR</span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted">{client.email}</p>
                         </div>
                       </div>
