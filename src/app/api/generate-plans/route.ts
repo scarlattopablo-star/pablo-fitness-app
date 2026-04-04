@@ -30,11 +30,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine objective: use planSlug if provided, otherwise survey objective
+    // Direct clients get maintenance plan (0% adjustment) - admin can customize before approving
     const objective = (planSlug && planSlug !== "direct-client")
       ? planSlug
       : (survey.objective && survey.objective !== "direct-client")
         ? survey.objective
-        : "quema-grasa";
+        : "direct-client";
 
     const trainingDays = survey.training_days || 5;
     const wakeHour = survey.wake_hour || 7;

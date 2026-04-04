@@ -18,6 +18,7 @@ const OBJECTIVE_ADJUSTMENTS: Record<string, number> = {
   'recomposicion-corporal': -0.10,
   'plan-pareja': 0,
   'competicion': -0.15,
+  'direct-client': 0,
 };
 
 export function calculateTMB(sex: Sex, weight: number, height: number, age: number): number {
