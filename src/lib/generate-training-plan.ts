@@ -129,14 +129,14 @@ function getParams(objective: string): TrainingParams {
       return { sets: 4, reps: "4-6", restCompound: "3min", restIsolation: "90s", instructions: "Peso alto (80-90% 1RM). Tecnica perfecta. Descanso completo." };
     case "quema-grasa":
     case "recomposicion-corporal":
-      return { sets: 3, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Ritmo alto, descansos cortos. Mantener frecuencia cardiaca elevada." };
+      return { sets: 4, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Ritmo alto, descansos cortos. Mantener frecuencia cardiaca elevada." };
     case "tonificacion":
     case "post-parto":
-      return { sets: 3, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Peso moderado. Movimientos controlados. Enfocarse en la contraccion." };
+      return { sets: 4, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Peso moderado. Movimientos controlados. Enfocarse en la contraccion." };
     case "principiante-total":
       return { sets: 3, reps: "10-15", restCompound: "90s", restIsolation: "60s", instructions: "Aprender tecnica. Peso liviano, aumentar gradualmente semana a semana." };
     case "entrenamiento-casa":
-      return { sets: 3, reps: "12-20", restCompound: "60s", restIsolation: "45s", instructions: "Sin equipamiento. Controlar el movimiento. Aumentar repeticiones progresivamente." };
+      return { sets: 4, reps: "12-20", restCompound: "60s", restIsolation: "45s", instructions: "Sin equipamiento. Controlar el movimiento. Aumentar repeticiones progresivamente." };
     default:
       return { sets: 4, reps: "10-12", restCompound: "90s", restIsolation: "60s", instructions: "Peso moderado. Buena tecnica. Aumentar carga progresivamente." };
   }
@@ -431,17 +431,29 @@ export function generateTrainingPlan(
   days: number = 5,
   objective: string = "quema-grasa",
   emphasis: string = "ninguno",
-  weightKg: number = 70
+  weightKg: number = 70,
+  sex: string = "hombre"
 ): TrainingDay[] {
   const p = getParams(objective);
   const isHome = objective === "entrenamiento-casa";
+  const isBeginner = objective === "principiante-total";
+
+  // For women: default emphasis on glutes/legs if no specific emphasis chosen
+  const effectiveEmphasis = (sex === "mujer" && emphasis === "ninguno")
+    ? "tren-inferior"
+    : emphasis;
 
   let plan: TrainingDay[];
 
-  if (isHome) {
+  if (isBeginner) {
+    // Beginners: simpler splits, lower volume, 3 sets
+    plan = isHome
+      ? generateBeginnerHomePlan(days, p)
+      : generateBeginnerPlan(days, p);
+  } else if (isHome) {
     plan = generateHomePlan(days, p);
   } else {
-    const emphasisGroups = getEmphasisGroups(emphasis);
+    const emphasisGroups = getEmphasisGroups(effectiveEmphasis);
     const hasEmphasis = emphasisGroups.length > 0;
     const primaryGroup = emphasisGroups[0] || "";
 
@@ -571,6 +583,113 @@ function generateHomePlan(days: number, p: TrainingParams): TrainingDay[] {
       ...pickExercises(pool.abdomen, 1, 1, p),
     ]},
   ];
+}
+
+// ============================================================
+// BEGINNER GYM PLAN — Lower volume, Full Body, 3 sets (ACSM 2026 novice)
+// ============================================================
+function generateBeginnerPlan(days: number, p: TrainingParams): TrainingDay[] {
+  const pool = GYM_EXERCISES;
+
+  if (days <= 3) {
+    return [
+      { day: "Dia 1 - Full Body A", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 1, 0, p),
+        ...pickExercises(pool.espalda, 1, 0, p),
+        ...pickExercises(pool.piernas, 1, 1, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
+      ]},
+      { day: "Dia 2 - Full Body B", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 1, 0, p),
+        ...pickExercises(pool.hombros, 1, 0, p),
+        ...pickExercises(pool.espalda, 1, 0, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
+      ]},
+      { day: "Dia 3 - Full Body C", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 1, 0, p),
+        ...pickExercises(pool.piernas, 1, 0, p),
+        ...pickExercises(pool.espalda, 0, 1, p),
+        ...pickExercises(pool.biceps, 0, 1, p),
+        ...pickExercises(pool.triceps, 0, 1, p),
+      ]},
+    ].slice(0, days);
+  }
+
+  // 4+ days: still full body but with slightly more focus
+  return [
+    { day: "Dia 1 - Full Body (Pecho + Espalda)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.pecho, 1, 1, p),
+      ...pickExercises(pool.espalda, 1, 1, p),
+      ...pickExercises(pool.abdomen, 0, 1, p),
+    ]},
+    { day: "Dia 2 - Full Body (Piernas + Hombros)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 1, 2, p),
+      ...pickExercises(pool.hombros, 1, 0, p),
+      ...pickExercises(pool.abdomen, 0, 1, p),
+    ]},
+    { day: "Dia 3 - Full Body (Espalda + Brazos)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.espalda, 1, 0, p),
+      ...pickExercises(pool.pecho, 1, 0, p),
+      ...pickExercises(pool.biceps, 0, 1, p),
+      ...pickExercises(pool.triceps, 0, 1, p),
+    ]},
+    { day: "Dia 4 - Full Body (Piernas + Core)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 1, 1, p),
+      ...pickExercises(pool.hombros, 0, 1, p),
+      ...pickExercises(pool.abdomen, 1, 1, p),
+    ]},
+  ].slice(0, days);
+}
+
+function generateBeginnerHomePlan(days: number, p: TrainingParams): TrainingDay[] {
+  const pool = HOME_EXERCISES;
+
+  if (days <= 3) {
+    return [
+      { day: "Dia 1 - Full Body A", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 1, 0, p),
+        ...pickExercises(pool.espalda, 1, 0, p),
+        ...pickExercises(pool.piernas, 1, 1, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
+      ]},
+      { day: "Dia 2 - Full Body B", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.piernas, 1, 0, p),
+        ...pickExercises(pool.hombros, 1, 0, p),
+        ...pickExercises(pool.espalda, 1, 0, p),
+        ...pickExercises(pool.abdomen, 0, 1, p),
+      ]},
+      { day: "Dia 3 - Full Body C", instructions: p.instructions, exercises: [
+        ...pickExercises(pool.pecho, 1, 0, p),
+        ...pickExercises(pool.piernas, 1, 0, p),
+        ...pickExercises(pool.biceps, 1, 0, p),
+        ...pickExercises(pool.triceps, 1, 0, p),
+      ]},
+    ].slice(0, days);
+  }
+
+  return [
+    { day: "Dia 1 - Full Body (Pecho + Espalda)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.pecho, 1, 1, p),
+      ...pickExercises(pool.espalda, 1, 1, p),
+      ...pickExercises(pool.abdomen, 0, 1, p),
+    ]},
+    { day: "Dia 2 - Full Body (Piernas + Hombros)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 1, 2, p),
+      ...pickExercises(pool.hombros, 1, 0, p),
+      ...pickExercises(pool.abdomen, 0, 1, p),
+    ]},
+    { day: "Dia 3 - Full Body (Espalda + Brazos)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.espalda, 1, 0, p),
+      ...pickExercises(pool.pecho, 1, 0, p),
+      ...pickExercises(pool.biceps, 1, 0, p),
+      ...pickExercises(pool.triceps, 1, 0, p),
+    ]},
+    { day: "Dia 4 - Full Body (Piernas + Core)", instructions: p.instructions, exercises: [
+      ...pickExercises(pool.piernas, 1, 1, p),
+      ...pickExercises(pool.hombros, 0, 1, p),
+      ...pickExercises(pool.abdomen, 1, 1, p),
+    ]},
+  ].slice(0, days);
 }
 
 // ============================================================
