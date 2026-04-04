@@ -104,10 +104,12 @@ export default function TerminosPage() {
               <li><strong className="text-white">ACSM (American College of Sports Medicine)</strong> — Position Stand: Progression Models in Resistance Training for Healthy Adults (2009). Guías actualizadas 2026 para entrenamiento de resistencia.</li>
               <li><strong className="text-white">NSCA (National Strength and Conditioning Association)</strong> — Essentials of Strength Training and Conditioning. Principios de periodización, priorización muscular e intensidad basada en series y repeticiones.</li>
               <li><strong className="text-white">Ainsworth BE et al. (2011)</strong> — Compendium of Physical Activities: A Second Update of Codes and MET Values. <em>Medicine & Science in Sports & Exercise</em>, 43(8), 1575-1581. Utilizado para la estimación de calorías quemadas por sesión.</li>
+              <li><strong className="text-white">Schoenfeld BJ et al. (2016)</strong> — Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy: A Systematic Review and Meta-Analysis. <em>Sports Medicine</em>, 46(11), 1689-1697. Base para la frecuencia de entrenamiento de 2x/semana por grupo muscular.</li>
             </ul>
 
-            <h3 className="text-white font-semibold mt-4 mb-2">Nutrición</h3>
+            <h3 className="text-white font-semibold mt-4 mb-2">Nutrición y Metabolismo</h3>
             <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li><strong className="text-white">Harris JA, Benedict FG (1918)</strong> — A Biometric Study of Human Basal Metabolism. <em>Proceedings of the National Academy of Sciences</em>, 4(12), 370-373. Ecuación utilizada para el cálculo de la Tasa Metabólica Basal (TMB) y el Gasto Energético Diario Total (TDEE).</li>
               <li><strong className="text-white">USDA FoodData Central</strong> — Base de datos de composición de alimentos del Departamento de Agricultura de los Estados Unidos. Todos los valores nutricionales (calorías, proteínas, carbohidratos, grasas, fibra) provienen de esta fuente.</li>
               <li><strong className="text-white">ACSM/AND/DC Joint Position Statement</strong> — Nutrition and Athletic Performance (2016). Guías de timing nutricional y distribución de macronutrientes para deportistas.</li>
             </ul>

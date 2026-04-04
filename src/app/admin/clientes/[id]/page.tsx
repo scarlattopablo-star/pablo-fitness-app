@@ -11,6 +11,9 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
+import { EXERCISES, MUSCLE_GROUP_LABELS } from "@/lib/exercises-data";
+import { getExerciseGif } from "@/lib/exercise-images";
+import { FOOD_DATABASE, findFoodByName, calculateSwapGrams, calculateFoodMacros } from "@/lib/food-database";
 import {
   WeightChart, MeasurementsLineChart, MeasurementsBarChart,
   MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
@@ -98,6 +101,8 @@ export default function ClienteDetailPage({
   const [editingNutrition, setEditingNutrition] = useState(false);
   const [editNutritionData, setEditNutritionData] = useState<any[]>([]);
   const [savingNutrition, setSavingNutrition] = useState(false);
+  const [exerciseSearch, setExerciseSearch] = useState<{ dayIdx: number; exIdx: number; query: string } | null>(null);
+  const [foodSearch, setFoodSearch] = useState<{ mealIdx: number; foodIdx: number; query: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -300,10 +305,13 @@ export default function ClienteDetailPage({
                   <button
                     onClick={async () => {
                       setApprovingPlan(true);
-                      await supabase.from("training_plans").update({ plan_approved: true }).eq("user_id", id);
-                      await supabase.from("nutrition_plans").update({ plan_approved: true }).eq("user_id", id);
-                      setTrainingPlan({ ...trainingPlan, plan_approved: true });
-                      if (nutritionPlan) setNutritionPlan({ ...nutritionPlan, plan_approved: true });
+                      const approvedAt = new Date().toISOString();
+                      const tpData = trainingPlan.data ? { ...trainingPlan.data, admin_updated_at: approvedAt } : trainingPlan.data;
+                      const npData = nutritionPlan?.data ? { ...nutritionPlan.data, admin_updated_at: approvedAt } : nutritionPlan?.data;
+                      await supabase.from("training_plans").update({ plan_approved: true, ...(tpData ? { data: tpData } : {}) }).eq("user_id", id);
+                      await supabase.from("nutrition_plans").update({ plan_approved: true, ...(npData ? { data: npData } : {}) }).eq("user_id", id);
+                      setTrainingPlan({ ...trainingPlan, plan_approved: true, data: tpData || trainingPlan.data });
+                      if (nutritionPlan) setNutritionPlan({ ...nutritionPlan, plan_approved: true, data: npData || nutritionPlan.data });
                       setApprovingPlan(false);
                     }}
                     disabled={approvingPlan}
@@ -544,18 +552,98 @@ export default function ClienteDetailPage({
                   className="w-full bg-transparent font-bold text-sm text-primary mb-2 border-b border-card-border/50 pb-1 focus:outline-none focus:border-primary"
                 />
                 <div className="space-y-2">
-                  {(day.exercises || []).map((ex: any, exIdx: number) => (
-                    <div key={exIdx} className="flex items-center gap-2 text-sm">
-                      <input
-                        value={ex.name}
-                        onChange={(e) => {
-                          const updated = [...editTrainingData];
-                          updated[dayIdx].exercises[exIdx] = { ...ex, name: e.target.value };
-                          setEditTrainingData(updated);
-                        }}
-                        className="flex-1 bg-card-border/20 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Nombre ejercicio"
-                      />
+                  {(day.exercises || []).map((ex: any, exIdx: number) => {
+                    const isActive = exerciseSearch?.dayIdx === dayIdx && exerciseSearch?.exIdx === exIdx;
+                    const currentExercise = ex.id ? EXERCISES.find(e => e.id === ex.id) : EXERCISES.find(e => e.name === ex.name);
+                    const currentMuscleGroup = currentExercise?.muscleGroup;
+
+                    return (
+                    <div key={exIdx} className="text-sm">
+                      <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <button
+                          onClick={() => setExerciseSearch(isActive ? null : { dayIdx, exIdx, query: "" })}
+                          className="w-full flex items-center gap-2 bg-card-border/20 rounded px-2 py-1.5 text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary hover:bg-card-border/30 transition-colors"
+                        >
+                          {currentExercise && getExerciseGif(currentExercise.id) && (
+                            <img src={getExerciseGif(currentExercise.id)!} className="w-5 h-5 rounded object-cover bg-white/10 flex-shrink-0" />
+                          )}
+                          <span className="flex-1 truncate">{ex.name || <span className="text-muted">Seleccionar ejercicio...</span>}</span>
+                          {currentMuscleGroup && (
+                            <span className="text-[10px] text-muted capitalize flex-shrink-0">{MUSCLE_GROUP_LABELS[currentMuscleGroup]}</span>
+                          )}
+                        </button>
+                        {isActive && (
+                          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card-bg border border-card-border rounded-xl max-h-64 overflow-y-auto shadow-xl">
+                            <div className="sticky top-0 bg-card-bg p-2 border-b border-card-border/50">
+                              <input
+                                autoFocus
+                                value={exerciseSearch.query}
+                                onChange={(e) => setExerciseSearch({ dayIdx, exIdx, query: e.target.value })}
+                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="Buscar ejercicio..."
+                              />
+                            </div>
+                            {(() => {
+                              const searchTerm = exerciseSearch.query.toLowerCase();
+                              const filtered = EXERCISES.filter(e =>
+                                !searchTerm || e.name.toLowerCase().includes(searchTerm)
+                              );
+                              const sameGroup = currentMuscleGroup
+                                ? filtered.filter(e => e.muscleGroup === currentMuscleGroup && e.id !== currentExercise?.id)
+                                : [];
+                              const otherGroup = currentMuscleGroup
+                                ? filtered.filter(e => e.muscleGroup !== currentMuscleGroup)
+                                : filtered;
+
+                              const renderExOption = (e: typeof EXERCISES[0]) => (
+                                <button
+                                  key={e.id}
+                                  onClick={() => {
+                                    const updated = [...editTrainingData];
+                                    updated[dayIdx].exercises[exIdx] = { ...ex, id: e.id, name: e.name };
+                                    setEditTrainingData(updated);
+                                    setExerciseSearch(null);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-primary/10 text-xs"
+                                >
+                                  {getExerciseGif(e.id) && (
+                                    <img src={getExerciseGif(e.id)!} className="w-6 h-6 rounded object-cover bg-white/10 flex-shrink-0" />
+                                  )}
+                                  <span className="flex-1">{e.name}</span>
+                                  <span className="text-[10px] text-muted capitalize">{MUSCLE_GROUP_LABELS[e.muscleGroup]}</span>
+                                </button>
+                              );
+
+                              return (
+                                <>
+                                  {sameGroup.length > 0 && (
+                                    <>
+                                      <div className="px-3 py-1.5 text-[10px] font-bold text-primary/70 uppercase tracking-wider bg-primary/5">
+                                        {MUSCLE_GROUP_LABELS[currentMuscleGroup!]} ({sameGroup.length})
+                                      </div>
+                                      {sameGroup.map(renderExOption)}
+                                    </>
+                                  )}
+                                  {otherGroup.length > 0 && (
+                                    <>
+                                      {sameGroup.length > 0 && (
+                                        <div className="px-3 py-1.5 text-[10px] font-bold text-muted/70 uppercase tracking-wider bg-card-border/10">
+                                          Otros grupos musculares
+                                        </div>
+                                      )}
+                                      {otherGroup.slice(0, 15).map(renderExOption)}
+                                    </>
+                                  )}
+                                  {sameGroup.length === 0 && otherGroup.length === 0 && (
+                                    <p className="px-3 py-2 text-xs text-muted">Sin resultados</p>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
                       <input
                         value={ex.sets}
                         onChange={(e) => {
@@ -597,8 +685,10 @@ export default function ClienteDetailPage({
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
+                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   <button
                     onClick={() => {
                       const updated = [...editTrainingData];
@@ -617,11 +707,12 @@ export default function ClienteDetailPage({
               <button
                 onClick={async () => {
                   setSavingTraining(true);
+                  const trainingData = { days: editTrainingData, admin_updated_at: new Date().toISOString() };
                   await supabase
                     .from("training_plans")
-                    .update({ data: { days: editTrainingData } })
+                    .update({ data: trainingData })
                     .eq("user_id", id);
-                  setTrainingPlan({ ...trainingPlan, data: { days: editTrainingData } });
+                  setTrainingPlan({ ...trainingPlan, data: trainingData });
                   setEditingTraining(false);
                   setSavingTraining(false);
                 }}
@@ -744,20 +835,116 @@ export default function ClienteDetailPage({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  {(meal.foods || []).map((food: string, foodIdx: number) => (
+                  {(meal.foods || []).map((food: string, foodIdx: number) => {
+                    // Parse existing food string to extract grams and name
+                    const gramsMatch = food.match(/^(\d+)\s*g\s+(.+)/i);
+                    const originalGrams = gramsMatch ? parseInt(gramsMatch[1]) : 100;
+                    const originalName = gramsMatch ? gramsMatch[2] : food;
+                    const originalDbFood = originalName ? findFoodByName(originalName) : undefined;
+                    const isActive = foodSearch?.mealIdx === mealIdx && foodSearch?.foodIdx === foodIdx;
+                    const query = isActive ? foodSearch.query : "";
+
+                    // Build smart food list: same category first with calculated grams
+                    const getSortedFoods = () => {
+                      const searchTerm = query.toLowerCase();
+                      const filtered = FOOD_DATABASE.filter(f =>
+                        !searchTerm || f.name.toLowerCase().includes(searchTerm)
+                      );
+                      if (originalDbFood) {
+                        const sameCategory = filtered.filter(f => f.category === originalDbFood.category && f.id !== originalDbFood.id);
+                        const otherCategory = filtered.filter(f => f.category !== originalDbFood.category);
+                        return { sameCategory, otherCategory };
+                      }
+                      return { sameCategory: [], otherCategory: filtered };
+                    };
+
+                    return (
                     <div key={foodIdx} className="flex items-center gap-2">
-                      <input
-                        value={food}
-                        onChange={(e) => {
-                          const updated = [...editNutritionData];
-                          const foods = [...(updated[mealIdx].foods || [])];
-                          foods[foodIdx] = e.target.value;
-                          updated[mealIdx] = { ...meal, foods };
-                          setEditNutritionData(updated);
-                        }}
-                        className="flex-1 bg-card-border/20 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Alimento (ej: 200g pollo)"
-                      />
+                      <div className="flex-1 relative">
+                        <button
+                          onClick={() => setFoodSearch(isActive ? null : { mealIdx, foodIdx, query: "" })}
+                          className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary hover:bg-card-border/30 transition-colors"
+                        >
+                          {food || <span className="text-muted">Seleccionar alimento...</span>}
+                        </button>
+                        {isActive && (
+                          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card-bg border border-card-border rounded-xl max-h-64 overflow-y-auto shadow-xl">
+                            <div className="sticky top-0 bg-card-bg p-2 border-b border-card-border/50">
+                              <input
+                                autoFocus
+                                value={query}
+                                onChange={(e) => setFoodSearch({ mealIdx, foodIdx, query: e.target.value })}
+                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="Buscar alimento..."
+                              />
+                            </div>
+                            {(() => {
+                              const { sameCategory, otherCategory } = getSortedFoods();
+                              const renderFoodOption = (f: typeof FOOD_DATABASE[0]) => {
+                                const newGrams = originalDbFood
+                                  ? calculateSwapGrams(originalDbFood, originalGrams, f)
+                                  : 100;
+                                const macros = calculateFoodMacros(f, newGrams);
+                                return (
+                                  <button
+                                    key={f.id}
+                                    onClick={() => {
+                                      const updated = [...editNutritionData];
+                                      const foods = [...(updated[mealIdx].foods || [])];
+                                      foods[foodIdx] = `${newGrams}g ${f.name}`;
+                                      updated[mealIdx] = { ...meal, foods };
+                                      setEditNutritionData(updated);
+                                      setFoodSearch(null);
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-primary/10 text-xs text-left gap-2"
+                                  >
+                                    <span className="flex-1 font-medium">{f.name}</span>
+                                    <span className="text-[10px] text-primary font-bold whitespace-nowrap">{newGrams}g</span>
+                                    <span className="text-[10px] text-muted whitespace-nowrap">{macros.calories}kcal</span>
+                                  </button>
+                                );
+                              };
+                              return (
+                                <>
+                                  {sameCategory.length > 0 && (
+                                    <>
+                                      <div className="px-3 py-1.5 text-[10px] font-bold text-primary/70 uppercase tracking-wider bg-primary/5">
+                                        Mismo tipo ({originalDbFood?.category})
+                                      </div>
+                                      {sameCategory.slice(0, 15).map(renderFoodOption)}
+                                    </>
+                                  )}
+                                  {otherCategory.length > 0 && (
+                                    <>
+                                      {sameCategory.length > 0 && (
+                                        <div className="px-3 py-1.5 text-[10px] font-bold text-muted/70 uppercase tracking-wider bg-card-border/10">
+                                          Otros alimentos
+                                        </div>
+                                      )}
+                                      {otherCategory.slice(0, 10).map(renderFoodOption)}
+                                    </>
+                                  )}
+                                  {sameCategory.length === 0 && otherCategory.length === 0 && (
+                                    <button
+                                      onClick={() => {
+                                        const updated = [...editNutritionData];
+                                        const foods = [...(updated[mealIdx].foods || [])];
+                                        foods[foodIdx] = query;
+                                        updated[mealIdx] = { ...meal, foods };
+                                        setEditNutritionData(updated);
+                                        setFoodSearch(null);
+                                      }}
+                                      className="w-full px-3 py-2 text-xs text-left text-primary hover:bg-primary/10"
+                                    >
+                                      Usar: &quot;{query}&quot;
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => {
                           const updated = [...editNutritionData];
@@ -771,7 +958,8 @@ export default function ClienteDetailPage({
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                   <button
                     onClick={() => {
                       const updated = [...editNutritionData];
@@ -800,11 +988,12 @@ export default function ClienteDetailPage({
               <button
                 onClick={async () => {
                   setSavingNutrition(true);
+                  const nutritionData = { meals: editNutritionData, admin_updated_at: new Date().toISOString() };
                   await supabase
                     .from("nutrition_plans")
-                    .update({ data: { meals: editNutritionData } })
+                    .update({ data: nutritionData })
                     .eq("user_id", id);
-                  setNutritionPlan({ ...nutritionPlan, data: { meals: editNutritionData } });
+                  setNutritionPlan({ ...nutritionPlan, data: nutritionData });
                   setEditingNutrition(false);
                   setSavingNutrition(false);
                 }}

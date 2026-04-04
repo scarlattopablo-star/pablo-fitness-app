@@ -125,6 +125,7 @@ function PlanContent() {
     food: { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number };
     mealName: string;
   } | null>(null);
+  const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -300,6 +301,20 @@ function PlanContent() {
         return;
       }
 
+      // Check if admin updated the plan since last client visit
+      const trainingUpdated = dbTraining?.data?.admin_updated_at;
+      const nutritionUpdated = dbNutrition?.data?.admin_updated_at;
+      const latestUpdate = trainingUpdated && nutritionUpdated
+        ? (trainingUpdated > nutritionUpdated ? trainingUpdated : nutritionUpdated)
+        : trainingUpdated || nutritionUpdated;
+      if (latestUpdate) {
+        const lastSeen = localStorage.getItem(`plan_seen_${user.id}`);
+        if (!lastSeen || lastSeen < latestUpdate) {
+          setPlanUpdatedBanner(true);
+        }
+        localStorage.setItem(`plan_seen_${user.id}`, new Date().toISOString());
+      }
+
       if (dbTraining && dbTraining.data?.days?.length > 0) {
         setTrainingPlan(dbTraining.data.days);
         cacheData("training_plan", dbTraining.data.days);
@@ -378,6 +393,23 @@ function PlanContent() {
   return (
     <div>
       <OfflineBanner />
+
+      {/* Plan updated banner */}
+      {planUpdatedBanner && (
+        <div className="bg-primary/10 border border-primary/30 rounded-2xl p-4 mb-4 flex items-start gap-3 relative">
+          <RefreshCw className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-primary">Tu plan fue actualizado</p>
+            <p className="text-xs text-muted mt-1">Tu entrenador realizo cambios en tu plan. Revisa las novedades en entrenamiento y nutricion.</p>
+          </div>
+          <button
+            onClick={() => setPlanUpdatedBanner(false)}
+            className="absolute top-3 right-3 text-muted hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Survey warning */}
       {!hasSurvey && (
