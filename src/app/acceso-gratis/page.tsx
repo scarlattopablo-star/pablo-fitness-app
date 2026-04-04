@@ -23,6 +23,7 @@ function AccesoGratisForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [mode, setMode] = useState<"register" | "login">("register");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     if (!code) {
@@ -226,7 +227,16 @@ function AccesoGratisForm() {
               </button>
             </div>
           </div>
-          <button type="submit" disabled={loading}
+          {mode === "register" && (
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-card-border accent-primary" />
+              <span className="text-xs text-muted">
+                Acepto los <a href="/terminos" target="_blank" className="text-primary underline">Terminos y Condiciones</a> y la <a href="/privacidad" target="_blank" className="text-primary underline">Politica de Privacidad</a>
+              </span>
+            </label>
+          )}
+          <button type="submit" disabled={loading || (mode === "register" && !acceptedTerms)}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50">
             {loading ? (mode === "login" ? "Ingresando..." : "Activando...") : (mode === "login" ? "Ingresar" : "Activar Acceso Gratis")}
           </button>

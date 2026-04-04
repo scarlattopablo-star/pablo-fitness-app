@@ -23,6 +23,7 @@ function RegistroForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const searchParams = useSearchParams();
   const planSlug = searchParams.get("plan") || "";
@@ -218,9 +219,28 @@ function RegistroForm() {
             </div>
           </div>
 
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-card-border accent-primary"
+            />
+            <span className="text-xs text-muted">
+              Acepto los{" "}
+              <a href="/terminos" target="_blank" className="text-primary underline hover:opacity-80">
+                Terminos y Condiciones
+              </a>{" "}
+              y la{" "}
+              <a href="/privacidad" target="_blank" className="text-primary underline hover:opacity-80">
+                Politica de Privacidad
+              </a>
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedTerms}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "Procesando..." : plan ? `Crear Cuenta y Pagar $${formatPrice(price)}` : "Crear Cuenta"}

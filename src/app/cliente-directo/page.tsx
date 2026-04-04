@@ -36,6 +36,7 @@ function ClienteDirectoForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [userId, setUserId] = useState("");
 
   // Survey
@@ -288,7 +289,14 @@ function ClienteDirectoForm() {
                   </button>
                 </div>
               </div>
-              <button type="submit" disabled={loading}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-card-border accent-primary" />
+                <span className="text-xs text-muted">
+                  Acepto los <a href="/terminos" target="_blank" className="text-primary underline">Terminos y Condiciones</a> y la <a href="/privacidad" target="_blank" className="text-primary underline">Politica de Privacidad</a>
+                </span>
+              </label>
+              <button type="submit" disabled={loading || !acceptedTerms}
                 className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 disabled:opacity-50">
                 {loading ? "Creando cuenta..." : "Crear Cuenta"}
               </button>
