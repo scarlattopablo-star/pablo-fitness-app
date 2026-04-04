@@ -1097,6 +1097,28 @@ export const EXERCISES: Exercise[] = [
   { id: 'rueda-abdominal', name: 'Rueda Abdominal', muscleGroup: 'abdomen',
     description: 'Ejercicio avanzado con rueda ab para core completo.',
     steps: ['Arrodillarse con la rueda frente a vos', 'Rodar la rueda hacia adelante extendiendo el cuerpo', 'Mantener el core activado sin arquear la espalda', 'Volver a la posicion inicial controladamente'], videoUrl: 'SEARCH' },
+  // ============ EJERCICIOS UNILATERALES ============
+  { id: 'remo-cable-unilateral', name: 'Remo Unilateral en Cable', muscleGroup: 'espalda',
+    description: 'Remo con un brazo en cable para corregir desbalances de espalda.',
+    steps: ['De pie frente a polea baja con una mano', 'Tirar hacia la cadera manteniendo el codo cerca del cuerpo', 'Apretar el dorsal en la contraccion', 'Bajar controladamente y repetir'], videoUrl: 'SEARCH' },
+  { id: 'remo-barra-unilateral', name: 'Remo Unilateral con Barra', muscleGroup: 'espalda',
+    description: 'Remo con un extremo de la barra para trabajo unilateral de espalda.',
+    steps: ['Agarrar un extremo de la barra con una mano', 'Inclinar torso a 45 grados', 'Tirar la barra hacia la cadera', 'Bajar controladamente'], videoUrl: 'SEARCH' },
+  { id: 'press-suelo-unilateral', name: 'Press de Suelo Unilateral', muscleGroup: 'pecho',
+    description: 'Press con un brazo acostado en el suelo. Trabaja estabilidad y pecho unilateral.',
+    steps: ['Acostarse en el suelo con una mancuerna en una mano', 'Empujar la mancuerna hacia arriba', 'Bajar hasta que el codo toque el suelo', 'Repetir y cambiar de lado'], videoUrl: 'SEARCH' },
+  { id: 'peso-muerto-unilateral', name: 'Peso Muerto a Una Pierna', muscleGroup: 'piernas',
+    description: 'Peso muerto unilateral para gluteos, isquiotibiales y equilibrio.',
+    steps: ['De pie sobre una pierna con mancuerna en la mano opuesta', 'Inclinar torso hacia adelante extendiendo la pierna libre atras', 'Mantener la espalda recta', 'Volver a la posicion inicial'], videoUrl: 'SEARCH' },
+  { id: 'split-squat-mancuerna', name: 'Split Squat con Mancuerna', muscleGroup: 'piernas',
+    description: 'Sentadilla dividida con mancuernas para trabajo unilateral de piernas.',
+    steps: ['De pie con un pie adelante y otro atras, mancuernas a los lados', 'Bajar la rodilla trasera hacia el suelo', 'La rodilla delantera no pasa la punta del pie', 'Subir empujando con el pie delantero'], videoUrl: 'SEARCH' },
+  { id: 'sentadilla-unilateral', name: 'Sentadilla a Una Pierna con Mancuerna', muscleGroup: 'piernas',
+    description: 'Sentadilla unilateral con mancuerna para fuerza y equilibrio.',
+    steps: ['De pie sobre una pierna con mancuerna en el pecho', 'Bajar controladamente en una pierna', 'Mantener la otra pierna extendida al frente', 'Subir empujando con el talon'], videoUrl: 'SEARCH' },
+  { id: 'pantorrilla-unilateral', name: 'Pantorrilla a Una Pierna', muscleGroup: 'piernas',
+    description: 'Elevacion de pantorrilla unilateral para corregir desbalances.',
+    steps: ['De pie sobre un escalon con un pie', 'Subir en punta de pie apretando la pantorrilla', 'Mantener arriba 2 segundos', 'Bajar estirando la pantorrilla'], videoUrl: 'SEARCH' },
 ];
 
 export function getVideoUrl(exercise: Exercise): string {

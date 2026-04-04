@@ -172,6 +172,7 @@ const GYM_EXERCISES: Record<string, { compound: { id: string; name: string }[]; 
       { id: "cruces-polea", name: "Cruces en Polea" },
       { id: "flexiones-diamante", name: "Flexiones Diamante" },
       { id: "flexiones-abiertas", name: "Flexiones Abiertas" },
+      { id: "press-suelo-unilateral", name: "Press Suelo Unilateral" },
     ],
   },
   espalda: {
@@ -187,6 +188,8 @@ const GYM_EXERCISES: Record<string, { compound: { id: string; name: string }[]; 
       { id: "pullover-mancuerna", name: "Pullover con Mancuerna" },
       { id: "face-pull", name: "Face Pull" },
       { id: "remo-posterior-cable", name: "Remo Posterior Cable" },
+      { id: "remo-cable-unilateral", name: "Remo Unilateral Cable" },
+      { id: "remo-barra-unilateral", name: "Remo Unilateral Barra" },
     ],
   },
   piernas: {
@@ -203,6 +206,10 @@ const GYM_EXERCISES: Record<string, { compound: { id: string; name: string }[]; 
       { id: "zancadas", name: "Zancadas" },
       { id: "zancadas-mancuerna", name: "Zancadas con Mancuerna" },
       { id: "sentadilla-bulgara", name: "Sentadilla Bulgara" },
+      { id: "split-squat-mancuerna", name: "Split Squat Mancuerna" },
+      { id: "peso-muerto-unilateral", name: "Peso Muerto a Una Pierna" },
+      { id: "sentadilla-unilateral", name: "Sentadilla a Una Pierna" },
+      { id: "pantorrilla-unilateral", name: "Pantorrilla a Una Pierna" },
       { id: "extension-cuadriceps", name: "Extension Cuadriceps" },
       { id: "curl-femoral", name: "Curl Femoral" },
       { id: "zancadas-atras", name: "Zancadas Inversas" },
