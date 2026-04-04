@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
       dietaryRestrictions
     );
 
+    // Direct clients require admin approval before client sees the plan
+    // All other QR plans (free access with specific plan_slug) auto-approve
+    const needsApproval = objective === "direct-client";
+
     // Delete existing plans for this user (same pattern as plan-editor)
     await supabase.from("training_plans").delete().eq("user_id", userId);
     await supabase.from("nutrition_plans").delete().eq("user_id", userId);
@@ -67,6 +71,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       week_number: 1,
       data: { days: training },
+      plan_approved: !needsApproval,
     });
 
     if (tpError) {
@@ -78,6 +83,7 @@ export async function POST(request: NextRequest) {
       user_id: userId,
       data: { meals: nutrition.meals },
       important_notes: nutrition.importantNotes,
+      plan_approved: !needsApproval,
     });
 
     if (npError) {

@@ -82,8 +82,7 @@ export default function EncuestaDirectaPage() {
       .eq("used_by", userId)
       .limit(1)
       .maybeSingle();
-    const planSlug = (codeData?.plan_slug && codeData.plan_slug !== "direct-client")
-      ? codeData.plan_slug : "quema-grasa";
+    const planSlug = codeData?.plan_slug || "direct-client";
 
     const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug);
 

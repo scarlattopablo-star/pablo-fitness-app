@@ -152,7 +152,7 @@ function ClienteDirectoForm() {
     }
 
     // Auto-generate training + nutrition plans based on survey data
-    const planSlug = codePlanSlug === "direct-client" ? "quema-grasa" : codePlanSlug;
+    const planSlug = codePlanSlug || "direct-client";
     await fetch("/api/generate-plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
