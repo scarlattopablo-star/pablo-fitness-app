@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
-// Exercise images removed for visual consistency
+import { getExerciseGif } from "@/lib/exercise-images";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
 import { generateTrainingPlan, type TrainingDay } from "@/lib/generate-training-plan";
 import { useAuth } from "@/lib/auth-context";
@@ -483,8 +483,14 @@ function PlanContent() {
                       {day.exercises.map((ex, i) => {
                         const log = exerciseLogs[ex.id];
                         const weightDiff = log?.prevWeight != null ? log.weight - log.prevWeight : null;
+                        const exGif = getExerciseGif(ex.id);
                         return (
-                          <div key={i} className="p-3 flex items-center justify-between">
+                          <div key={i} className="p-3 flex items-center gap-3">
+                            {exGif && (
+                              <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10">
+                                <img src={exGif} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                              </div>
+                            )}
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{ex.name}</p>
                               <p className="text-xs text-muted">{ex.sets} series x {ex.reps} | Descanso: {ex.rest}</p>
