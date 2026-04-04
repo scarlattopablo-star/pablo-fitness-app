@@ -6,7 +6,7 @@ import {
   ArrowLeft, User, ClipboardList, TrendingUp,
   Calendar, Target, Scale, Mail, Phone, Edit,
   Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
-  ChevronDown, ChevronUp, Ruler, Image,
+  ChevronDown, ChevronUp, Ruler, Image, Save, Plus, X, Check,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
@@ -92,6 +92,9 @@ export default function ClienteDetailPage({
   const [exerciseLogs, setExerciseLogs] = useState<any[]>([]);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [approvingPlan, setApprovingPlan] = useState(false);
+  const [editingTraining, setEditingTraining] = useState(false);
+  const [editTrainingData, setEditTrainingData] = useState<any[]>([]);
+  const [savingTraining, setSavingTraining] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -491,7 +494,7 @@ export default function ClienteDetailPage({
           <p className="text-sm text-muted mt-2">Sin plan asignado</p>
         )}
 
-        {expandTraining && trainingDays.length > 0 && (
+        {expandTraining && trainingDays.length > 0 && !editingTraining && (
           <div className="mt-4 space-y-3">
             {trainingDays.map((day: any, i: number) => (
               <div key={i} className="bg-card-bg rounded-xl p-3">
@@ -511,6 +514,127 @@ export default function ClienteDetailPage({
                 </div>
               </div>
             ))}
+            <button
+              onClick={() => {
+                setEditTrainingData(JSON.parse(JSON.stringify(trainingDays)));
+                setEditingTraining(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 text-sm text-primary font-bold py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+            >
+              <Edit className="h-4 w-4" /> Editar Rutina
+            </button>
+          </div>
+        )}
+
+        {/* Inline editing mode */}
+        {expandTraining && editingTraining && (
+          <div className="mt-4 space-y-4">
+            {editTrainingData.map((day: any, dayIdx: number) => (
+              <div key={dayIdx} className="bg-card-bg rounded-xl p-3">
+                <input
+                  value={day.day}
+                  onChange={(e) => {
+                    const updated = [...editTrainingData];
+                    updated[dayIdx] = { ...day, day: e.target.value };
+                    setEditTrainingData(updated);
+                  }}
+                  className="w-full bg-transparent font-bold text-sm text-primary mb-2 border-b border-card-border/50 pb-1 focus:outline-none focus:border-primary"
+                />
+                <div className="space-y-2">
+                  {(day.exercises || []).map((ex: any, exIdx: number) => (
+                    <div key={exIdx} className="flex items-center gap-2 text-sm">
+                      <input
+                        value={ex.name}
+                        onChange={(e) => {
+                          const updated = [...editTrainingData];
+                          updated[dayIdx].exercises[exIdx] = { ...ex, name: e.target.value };
+                          setEditTrainingData(updated);
+                        }}
+                        className="flex-1 bg-card-border/20 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Nombre ejercicio"
+                      />
+                      <input
+                        value={ex.sets}
+                        onChange={(e) => {
+                          const updated = [...editTrainingData];
+                          updated[dayIdx].exercises[exIdx] = { ...ex, sets: Number(e.target.value) || 0 };
+                          setEditTrainingData(updated);
+                        }}
+                        className="w-10 bg-card-border/20 rounded px-1 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="S"
+                      />
+                      <span className="text-xs text-muted">x</span>
+                      <input
+                        value={ex.reps}
+                        onChange={(e) => {
+                          const updated = [...editTrainingData];
+                          updated[dayIdx].exercises[exIdx] = { ...ex, reps: e.target.value };
+                          setEditTrainingData(updated);
+                        }}
+                        className="w-14 bg-card-border/20 rounded px-1 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Reps"
+                      />
+                      <input
+                        value={ex.rest}
+                        onChange={(e) => {
+                          const updated = [...editTrainingData];
+                          updated[dayIdx].exercises[exIdx] = { ...ex, rest: e.target.value };
+                          setEditTrainingData(updated);
+                        }}
+                        className="w-12 bg-card-border/20 rounded px-1 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder="Rest"
+                      />
+                      <button
+                        onClick={() => {
+                          const updated = [...editTrainingData];
+                          updated[dayIdx].exercises.splice(exIdx, 1);
+                          setEditTrainingData(updated);
+                        }}
+                        className="text-danger/60 hover:text-danger"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const updated = [...editTrainingData];
+                      updated[dayIdx].exercises.push({ id: `custom-${Date.now()}`, name: "", sets: 4, reps: "8-12", rest: "60s" });
+                      setEditTrainingData(updated);
+                    }}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+                  >
+                    <Plus className="h-3 w-3" /> Agregar ejercicio
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  setSavingTraining(true);
+                  await supabase
+                    .from("training_plans")
+                    .update({ data: { days: editTrainingData } })
+                    .eq("user_id", id);
+                  setTrainingPlan({ ...trainingPlan, data: { days: editTrainingData } });
+                  setEditingTraining(false);
+                  setSavingTraining(false);
+                }}
+                disabled={savingTraining}
+                className="flex-1 flex items-center justify-center gap-2 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl hover:opacity-90 disabled:opacity-50"
+              >
+                {savingTraining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Guardar Cambios
+              </button>
+              <button
+                onClick={() => setEditingTraining(false)}
+                className="px-4 py-2.5 text-sm text-muted border border-card-border rounded-xl hover:bg-card-border/20"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         )}
       </div>
