@@ -33,6 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [showPushBanner, setShowPushBanner] = useState(false);
 
   // Redirect to login if no session (fixes iOS standalone PWA)
   useEffect(() => {
@@ -102,8 +103,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (Notification.permission === "granted") {
         syncPushSubscription();
       } else if (Notification.permission === "default") {
-        // Auto-request on first visit
-        requestPushPermission();
+        const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+          || ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone);
+        if (isStandalone) {
+          // In PWA: show banner (iOS requires user gesture)
+          setShowPushBanner(true);
+        } else {
+          // In browser: auto-request
+          requestPushPermission();
+        }
       }
     }
 
@@ -297,6 +305,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         )}
       </div>
+
+      {/* Push notification permission banner (iOS PWA) */}
+      {showPushBanner && (
+        <div className="fixed bottom-20 left-2 right-2 z-50 md:left-auto md:right-4 md:max-w-sm md:bottom-4">
+          <div className="glass-card rounded-2xl p-4 border border-primary/30 shadow-lg shadow-black/30">
+            <p className="text-sm font-semibold mb-2">Activar notificaciones</p>
+            <p className="text-xs text-muted mb-3">Recibí alertas de mensajes con sonido aunque no estés en la app</p>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  const granted = await requestPushPermission();
+                  if (granted) syncPushSubscription();
+                  setShowPushBanner(false);
+                }}
+                className="flex-1 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl"
+              >
+                Activar
+              </button>
+              <button
+                onClick={() => setShowPushBanner(false)}
+                className="px-4 py-2.5 text-sm text-muted hover:text-white rounded-xl"
+              >
+                Ahora no
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MAIN */}
       <main className="flex-1 md:ml-60 pt-14 md:pt-0">

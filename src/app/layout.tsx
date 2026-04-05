@@ -78,15 +78,8 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){
-  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||('ontouchend' in document&&navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
   if('serviceWorker' in navigator){
-    if(isIOS){
-      // iOS: unregister any existing SW and clear caches to fix stuck PWAs
-      navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});});
-      if(typeof caches!=='undefined'){caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});}
-    }else{
-      navigator.serviceWorker.register('/sw.js').catch(function(){});
-    }
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
   }
   window.__pwaInstallPrompt=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});
 })();`,
