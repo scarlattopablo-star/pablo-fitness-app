@@ -162,9 +162,17 @@ function AccesoGratisForm() {
     );
   }
 
-  if (success) {
-    // Auto-redirect: check if user has survey, route accordingly
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+  // Auto-redirect when success — use useEffect to avoid running in render
+  useEffect(() => {
+    if (!success) return;
+    let cancelled = false;
+
+    async function redirect() {
+      // Wait a moment for session to be established after signup
+      await new Promise(r => setTimeout(r, 500));
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+
       if (session?.user) {
         const { data: survey } = await supabase
           .from("surveys")
@@ -174,10 +182,30 @@ function AccesoGratisForm() {
           .maybeSingle();
         router.push(survey ? "/dashboard" : "/encuesta-directa");
       } else {
-        router.push("/login");
-      }
-    });
+        // If no session (e.g., email confirmation pending), try waiting a bit more
+        await new Promise(r => setTimeout(r, 1500));
+        const { data: { session: retrySession } } = await supabase.auth.getSession();
+        if (cancelled) return;
 
+        if (retrySession?.user) {
+          const { data: survey } = await supabase
+            .from("surveys")
+            .select("id")
+            .eq("user_id", retrySession.user.id)
+            .limit(1)
+            .maybeSingle();
+          router.push(survey ? "/dashboard" : "/encuesta-directa");
+        } else {
+          router.push("/encuesta-directa");
+        }
+      }
+    }
+
+    redirect();
+    return () => { cancelled = true; };
+  }, [success, router]);
+
+  if (success) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -189,7 +217,10 @@ function AccesoGratisForm() {
           <div className="flex justify-center mb-4">
             <Loader2 className="h-6 w-6 text-primary animate-spin" />
           </div>
-          <p className="text-sm text-muted">Redirigiendo...</p>
+          <p className="text-sm text-muted">Redirigiendo a tu encuesta...</p>
+          <a href="/encuesta-directa" className="text-primary text-xs hover:underline mt-4 inline-block">
+            Si no redirige, toca aca
+          </a>
         </div>
       </main>
     );
