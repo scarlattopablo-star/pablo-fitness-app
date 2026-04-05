@@ -6,12 +6,13 @@ import {
   Dumbbell, LayoutDashboard, ClipboardList, TrendingUp,
   User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
 import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/lib/push-notifications";
-import ChatNotificationToast from "@/components/chat-notification-toast";
+import { supabase } from "@/lib/supabase";
+import ChatNotificationToast, { triggerChatNotification } from "@/components/chat-notification-toast";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -39,6 +40,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       window.location.href = "/login";
     }
   }, [loading, user]);
+
+  // Global realtime listener for chat notifications (toast + sound)
+  const pathnameRef = useRef(pathname);
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("layout-notifications")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" },
+        async (payload) => {
+          const msg = payload.new as { sender_id: string; conversation_id: string; content: string };
+          if (msg.sender_id === user.id) return;
+          if (pathnameRef.current?.includes(msg.conversation_id)) return;
+
+          const { data: p } = await supabase.from("profiles").select("full_name").eq("id", msg.sender_id).single();
+          triggerChatNotification({
+            senderName: p?.full_name || "Gym Bro",
+            message: msg.content.substring(0, 80),
+            url: `/dashboard/chat/${msg.conversation_id}`,
+          });
+        }
+      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "general_messages" },
+        async (payload) => {
+          const msg = payload.new as { sender_id: string; content: string };
+          if (msg.sender_id === user.id) return;
+          if (pathnameRef.current?.includes("/chat/general")) return;
+
+          const { data: p } = await supabase.from("profiles").select("full_name").eq("id", msg.sender_id).single();
+          triggerChatNotification({
+            senderName: p?.full_name || "Gym Bro",
+            message: msg.content.substring(0, 80),
+            url: "/dashboard/chat/general",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   useEffect(() => {
     if (profile?.avatar_url) {
