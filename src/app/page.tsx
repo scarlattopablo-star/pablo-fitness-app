@@ -24,8 +24,8 @@ export default function HomePage() {
       {/* NAVBAR — minimal, floating */}
       <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-background/70 border-b border-card-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-20 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+          <Link href="/" className="flex items-center">
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-10 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#planes" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
@@ -62,7 +62,16 @@ export default function HomePage() {
         <div className="absolute top-32 right-0 w-[500px] h-[500px] bg-primary/[0.04] rounded-full blur-[120px]" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/[0.03] rounded-full blur-[100px]" />
 
-        <div className="relative max-w-6xl mx-auto">
+        <div className="relative max-w-6xl mx-auto flex items-center gap-8">
+          {/* Logo — fixed on the right side on desktop */}
+          <div className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 items-center justify-center">
+            <img
+              src="/logo-pablo.jpg"
+              alt="Pablo Scarlatto"
+              className="w-[320px] h-auto opacity-[0.12]"
+              style={{ filter: "invert(1)", mixBlendMode: "screen" }}
+            />
+          </div>
           <div className="max-w-3xl">
             {/* Badge */}
             <div className="badge-gold inline-flex items-center gap-2 mb-8 animate-fade-in-up">
