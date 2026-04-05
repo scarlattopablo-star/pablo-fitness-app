@@ -1,5 +1,5 @@
-const CACHE_NAME = "ps-entrena-v5";
-const STATIC_CACHE = "ps-static-v5";
+const CACHE_NAME = "ps-entrena-v6";
+const STATIC_CACHE = "ps-static-v6";
 
 // Dashboard pages to cache for offline use
 const DASHBOARD_PAGES = [
@@ -120,19 +120,32 @@ self.addEventListener("fetch", (event) => {
 // Push notifications
 self.addEventListener("push", (event) => {
   const data = event.data?.json() || {};
-  // Unique tag per message so each notification triggers sound + vibration
   const tag = "gym-bro-" + Date.now();
+
   event.waitUntil(
-    self.registration.showNotification(data.title || "Nuevo mensaje", {
-      body: data.body || "",
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      vibrate: [200, 100, 200, 100, 200],
-      tag: tag,
-      renotify: true,
-      silent: false,
-      requireInteraction: true,
-      data: { url: data.url || "/dashboard/chat" },
+    // Check if any app window is currently visible
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      const hasVisibleClient = windowClients.some((c) => c.visibilityState === "visible");
+
+      // If app is open, tell the client to play sound (JS Audio works better)
+      if (hasVisibleClient) {
+        windowClients.forEach((client) => {
+          client.postMessage({ type: "PUSH_RECEIVED", data: data });
+        });
+      }
+
+      // Always show the system notification (even if app is open)
+      return self.registration.showNotification(data.title || "Nuevo mensaje", {
+        body: data.body || "",
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        vibrate: [200, 100, 200, 100, 200],
+        tag: tag,
+        renotify: true,
+        silent: false,
+        requireInteraction: !hasVisibleClient,
+        data: { url: data.url || "/dashboard/chat" },
+      });
     })
   );
 });

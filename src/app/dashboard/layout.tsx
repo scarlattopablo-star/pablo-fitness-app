@@ -11,6 +11,7 @@ import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
 import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/lib/push-notifications";
+import ChatNotificationToast from "@/components/chat-notification-toast";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -249,6 +250,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 md:ml-60 pt-14 md:pt-0">
         <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">{children}</div>
       </main>
+
+      {/* In-app chat notification toast */}
+      <ChatNotificationToast />
     </div>
   );
 }
