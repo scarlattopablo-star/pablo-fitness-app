@@ -61,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className="p-5 pb-4">
           <Link href="/" className="flex items-center">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-12 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-16 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
         </div>
 
@@ -137,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="md:hidden fixed top-0 w-full z-50 backdrop-blur-md bg-background/80 border-b border-card-border/50">
         <div className="px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-9 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-12 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
           <button onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
