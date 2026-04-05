@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, Bell, BellOff } from "lucide-react";
+import { MessageCircle, Bell, BellOff, Users } from "lucide-react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
   fetchConversations,
@@ -120,8 +121,23 @@ export default function ChatPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-heading font-bold">Gym Bro</h1>
+      </div>
+
+      {/* Tabs: General / Privado */}
+      <div className="flex gap-2 mb-4">
+        <Link
+          href="/dashboard/chat/general"
+          className="flex items-center gap-2 px-4 py-2.5 glass-card rounded-xl hover:bg-white/10 transition-colors"
+        >
+          <Users className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">General</span>
+        </Link>
+        <div className="flex items-center gap-2 px-4 py-2.5 gradient-primary rounded-xl">
+          <MessageCircle className="h-4 w-4 text-black" />
+          <span className="text-sm font-bold text-black">Privado</span>
+        </div>
       </div>
 
       {/* Push notification banner */}

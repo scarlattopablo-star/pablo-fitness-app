@@ -172,3 +172,39 @@ export async function getConversationPartner(conversationId: string, currentUser
   const partner = u1?.id === currentUserId ? u2 : u1;
   return partner as { id: string; full_name: string; avatar_url: string | null };
 }
+
+// =============================================
+// General Chat (group chat for all users)
+// =============================================
+
+export async function fetchGeneralMessages(cursor?: string, limit = 50) {
+  let query = supabase
+    .from("general_messages")
+    .select("id, sender_id, content, flagged, created_at, profiles(full_name, avatar_url)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []).reverse().map((msg: any) => ({
+    ...msg,
+    sender_name: Array.isArray(msg.profiles) ? msg.profiles[0]?.full_name : msg.profiles?.full_name,
+    sender_avatar: Array.isArray(msg.profiles) ? msg.profiles[0]?.avatar_url : msg.profiles?.avatar_url,
+  }));
+}
+
+export async function sendGeneralMessage(senderId: string, content: string) {
+  const { data, error } = await supabase
+    .from("general_messages")
+    .insert({ sender_id: senderId, content: content.trim() })
+    .select("id, sender_id, content, flagged, created_at")
+    .single();
+
+  if (error) throw error;
+  return data;
+}
