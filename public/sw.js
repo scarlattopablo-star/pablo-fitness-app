@@ -1,5 +1,5 @@
-const CACHE_NAME = "ps-entrena-v6";
-const STATIC_CACHE = "ps-static-v6";
+const CACHE_NAME = "ps-entrena-v7";
+const STATIC_CACHE = "ps-static-v7";
 
 // Dashboard pages to cache for offline use
 const DASHBOARD_PAGES = [
@@ -24,9 +24,8 @@ self.addEventListener("activate", (event) => {
           .filter((k) => k !== CACHE_NAME && k !== STATIC_CACHE)
           .map((k) => caches.delete(k))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -34,8 +33,9 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  // Never cache API calls
+  // Never cache API calls, auth pages, or root redirects
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname === "/login" || url.pathname === "/registro" || url.pathname === "/") return;
 
   // Cache Next.js static assets (JS/CSS chunks) - cache-first
   if (url.pathname.startsWith("/_next/static/")) {
