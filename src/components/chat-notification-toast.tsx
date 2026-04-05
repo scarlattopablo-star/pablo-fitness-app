@@ -13,11 +13,11 @@ interface ToastData {
   url: string;
 }
 
-/**
- * Global toast notification for chat messages.
- * Shows a WhatsApp-style popup + plays sound when a message arrives
- * and the user is NOT on that specific chat page.
- */
+// Global function to trigger toast from anywhere
+export function triggerChatNotification(data: { senderName: string; message: string; url: string }) {
+  window.dispatchEvent(new CustomEvent("chat-notification", { detail: data }));
+}
+
 export default function ChatNotificationToast() {
   const { user } = useAuth();
   const router = useRouter();
@@ -25,32 +25,22 @@ export default function ChatNotificationToast() {
   const [toast, setToast] = useState<ToastData | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const pathnameRef = useRef(pathname);
 
-  // Preload audio + listen for SW push messages
+  // Preload audio
   useEffect(() => {
     audioRef.current = new Audio("/sounds/notification.wav");
     audioRef.current.volume = 0.7;
-
-    // When SW receives a push while app is open, it sends us a message
-    const handleSWMessage = (event: MessageEvent) => {
-      if (event.data?.type === "PUSH_RECEIVED") {
-        playSound();
-      }
-    };
-    navigator.serviceWorker?.addEventListener("message", handleSWMessage);
-    return () => {
-      navigator.serviceWorker?.removeEventListener("message", handleSWMessage);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // iOS: preload by loading metadata
+    audioRef.current.load();
+  }, []);
 
   const playSound = useCallback(() => {
-    // Try HTML Audio first
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {
-        // iOS Safari fallback: use AudioContext (works after user interaction)
         try {
-          const ctx = new (window.AudioContext || (window as unknown as Record<string,unknown>).webkitAudioContext as typeof AudioContext)();
+          const ctx = new (window.AudioContext || (window as unknown as Record<string, unknown>).webkitAudioContext as typeof AudioContext)();
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.connect(gain);
@@ -63,20 +53,15 @@ export default function ChatNotificationToast() {
         } catch { /* ignore */ }
       });
     }
-    // Vibrate if supported (not on iOS but works on Android)
     if (navigator.vibrate) {
       navigator.vibrate([200, 100, 200]);
     }
   }, []);
 
   const showToast = useCallback((data: ToastData) => {
-    // Clear previous timer
     if (timerRef.current) clearTimeout(timerRef.current);
-
     setToast(data);
     playSound();
-
-    // Auto-dismiss after 5 seconds
     timerRef.current = setTimeout(() => setToast(null), 5000);
   }, [playSound]);
 
@@ -91,32 +76,39 @@ export default function ChatNotificationToast() {
     router.push(toast.url);
   }, [toast, dismissToast, router]);
 
-  // Listen for private messages
+  // Listen for CustomEvent from chat components
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      showToast({ id: Date.now().toString(), ...detail });
+    };
+    window.addEventListener("chat-notification", handler);
+    return () => window.removeEventListener("chat-notification", handler);
+  }, [showToast]);
+
+  // Keep pathname ref in sync
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+
+  // Listen via Supabase realtime — stable channel, never re-creates on navigation
   useEffect(() => {
     if (!user) return;
 
-    console.log("[Toast] Setting up realtime listener for user:", user.id);
-
     const channel = supabase
-      .channel("global-msg-notifications")
+      .channel("toast-" + user.id)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         async (payload) => {
-          console.log("[Toast] Private message received:", payload.new);
           const msg = payload.new as { id: string; sender_id: string; conversation_id: string; content: string };
           if (msg.sender_id === user.id) return;
-          if (pathname?.includes(msg.conversation_id)) return;
+          if (pathnameRef.current?.includes(msg.conversation_id)) return;
 
-          const { data: senderProfile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", msg.sender_id)
-            .single();
+          const { data: p } = await supabase
+            .from("profiles").select("full_name").eq("id", msg.sender_id).single();
 
           showToast({
             id: msg.id,
-            senderName: senderProfile?.full_name || "Gym Bro",
+            senderName: p?.full_name || "Gym Bro",
             message: msg.content.substring(0, 80),
             url: `/dashboard/chat/${msg.conversation_id}`,
           });
@@ -126,33 +118,25 @@ export default function ChatNotificationToast() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "general_messages" },
         async (payload) => {
-          console.log("[Toast] General message received:", payload.new);
           const msg = payload.new as { id: string; sender_id: string; content: string };
           if (msg.sender_id === user.id) return;
-          if (pathname?.includes("/chat/general")) return;
+          if (pathnameRef.current?.includes("/chat/general")) return;
 
-          const { data: senderProfile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", msg.sender_id)
-            .single();
+          const { data: p } = await supabase
+            .from("profiles").select("full_name").eq("id", msg.sender_id).single();
 
           showToast({
             id: msg.id,
-            senderName: senderProfile?.full_name || "Gym Bro",
+            senderName: p?.full_name || "Gym Bro",
             message: msg.content.substring(0, 80),
             url: "/dashboard/chat/general",
           });
         }
       )
-      .subscribe((status) => {
-        console.log("[Toast] Realtime subscription status:", status);
-      });
+      .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, pathname, showToast]);
+    return () => { supabase.removeChannel(channel); };
+  }, [user, showToast]);
 
   if (!toast) return null;
 
