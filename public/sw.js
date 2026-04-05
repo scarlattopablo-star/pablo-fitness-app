@@ -1,5 +1,5 @@
-const CACHE_NAME = "ps-entrena-v3";
-const STATIC_CACHE = "ps-static-v3";
+const CACHE_NAME = "ps-entrena-v4";
+const STATIC_CACHE = "ps-static-v4";
 
 // Dashboard pages to cache for offline use
 const DASHBOARD_PAGES = [
@@ -123,8 +123,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || "Nuevo mensaje", {
       body: data.body || "",
-      icon: "/icons/icon-192x192.png",
-      badge: "/icons/icon-72x72.png",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
       vibrate: [200, 100, 200],
       tag: "gym-bro-chat",
       renotify: true,
