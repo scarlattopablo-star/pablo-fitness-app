@@ -13,35 +13,63 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+/**
+ * Request push permission AND subscribe + save to DB.
+ * Also re-syncs subscription if permission was already granted.
+ */
 export async function requestPushPermission(): Promise<boolean> {
-  if (!("Notification" in window)) return false;
-  if (!("serviceWorker" in navigator)) return false;
-  if (!VAPID_PUBLIC_KEY) return false;
+  if (!isPushSupported()) return false;
+  if (!VAPID_PUBLIC_KEY) {
+    console.warn("[Push] VAPID_PUBLIC_KEY not set");
+    return false;
+  }
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return false;
 
+  return syncPushSubscription();
+}
+
+/**
+ * Ensure push subscription exists in DB.
+ * Call this whenever the user has permission granted.
+ */
+export async function syncPushSubscription(): Promise<boolean> {
+  if (!isPushSupported() || !VAPID_PUBLIC_KEY) return false;
+  if (Notification.permission !== "granted") return false;
+
   try {
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
-    });
+
+    // Check for existing subscription first
+    let subscription = await registration.pushManager.getSubscription();
+
+    // If no subscription, create one
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+      });
+    }
 
     await savePushSubscription(subscription);
     return true;
-  } catch {
+  } catch (err) {
+    console.error("[Push] Failed to sync subscription:", err);
     return false;
   }
 }
 
 async function savePushSubscription(subscription: PushSubscription) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
+  if (!session) {
+    console.warn("[Push] No session, cannot save subscription");
+    return;
+  }
 
   const subJson = subscription.toJSON();
 
-  await fetch("/api/push/subscribe", {
+  const res = await fetch("/api/push/subscribe", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -53,6 +81,11 @@ async function savePushSubscription(subscription: PushSubscription) {
       auth: subJson.keys?.auth,
     }),
   });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("[Push] Failed to save subscription:", err);
+  }
 }
 
 export async function sendPushNotification(recipientId: string, title: string, body: string, url: string) {

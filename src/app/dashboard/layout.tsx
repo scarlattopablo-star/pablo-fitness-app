@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
+import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/lib/push-notifications";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -44,6 +45,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const standalone = window.matchMedia("(display-mode: standalone)").matches
       || ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone);
     if (standalone) setIsInstalled(true);
+
+    // Auto-sync push subscription on every dashboard visit
+    if (isPushSupported()) {
+      if (Notification.permission === "granted") {
+        syncPushSubscription();
+      } else if (Notification.permission === "default") {
+        // Auto-request on first visit
+        requestPushPermission();
+      }
+    }
 
     // Pick up prompt captured globally (fires before React mounts)
     const win = window as unknown as Record<string,unknown>;
