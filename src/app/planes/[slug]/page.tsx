@@ -100,11 +100,11 @@ export default function PlanDetailPage({
             <div className="space-y-4">
               {[
                 "Elegís este plan y la duración que prefieras",
-                "Completás una encuesta rápida (edad, peso, altura, objetivo, nivel de actividad)",
+                "Completás una encuesta rápida (edad, peso, altura, nivel de actividad)",
+                "Creás tu cuenta y completás el pago de forma segura",
                 "Calculamos automáticamente tus calorías y macros de forma personalizada",
                 "Recibís tu plan de entrenamiento y nutrición 100% personalizado",
-                "Accedés a videos de cada ejercicio para saber cómo ejecutarlos",
-                "Subís fotos y medidas para seguir tu progreso",
+                "Accedés a videos de cada ejercicio y seguís tu progreso",
               ].map((step, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

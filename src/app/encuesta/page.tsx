@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload, Sparkles, Target, Utensils, Clock } from "lucide-react";
 import { calculateMacros } from "@/lib/harris-benedict";
 import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
 import type { Sex, ActivityLevel, PlanSlug, MacroCalculation } from "@/types";
@@ -35,7 +35,6 @@ export default function EncuestaPage() {
   const [restrictions, setRestrictions] = useState<string[]>([]);
   const [emphasis, setEmphasis] = useState("ninguno");
   const [macros, setMacros] = useState<MacroCalculation | null>(null);
-  const [skipPhotos, setSkipPhotos] = useState(false);
   const [photoFront, setPhotoFront] = useState<File | null>(null);
   const [photoSide, setPhotoSide] = useState<File | null>(null);
   const [photoBack, setPhotoBack] = useState<File | null>(null);
@@ -52,7 +51,7 @@ export default function EncuestaPage() {
       case 1: return sex !== "" && age !== "" && Number(age) > 0;
       case 2: return weight !== "" && height !== "" && Number(weight) > 0 && Number(height) > 0;
       case 3: return activityLevel !== "";
-      case 4: return true; // Photos are optional
+      case 4: return true;
       default: return true;
     }
   };
@@ -91,11 +90,11 @@ export default function EncuestaPage() {
             <Link href={`/planes/${planSlug}`} className="text-muted hover:text-white transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </Link>
-          ) : (
+          ) : step < 5 ? (
             <button onClick={() => setStep(step - 1)} className="text-muted hover:text-white transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
-          )}
+          ) : null}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <Dumbbell className="h-4 w-4 text-primary" />
@@ -113,7 +112,7 @@ export default function EncuestaPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-10">
-        {plan && (
+        {plan && step < 5 && (
           <div className="glass-card rounded-xl p-4 mb-8 flex items-center justify-between">
             <div>
               <p className="text-sm text-muted">Plan seleccionado</p>
@@ -327,7 +326,7 @@ export default function EncuestaPage() {
 
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-4">
               <p className="text-sm text-primary font-medium">
-                🔒 Tus fotos son privadas
+                Tus fotos son privadas
               </p>
               <p className="text-xs text-muted mt-1">
                 Solo vos y tu entrenador pueden verlas. No se comparten ni se publican en ningún lado.
@@ -339,8 +338,8 @@ export default function EncuestaPage() {
                 <strong className="text-white">Consejos para las fotos:</strong>
               </p>
               <ul className="text-sm text-muted mt-2 space-y-1">
-                <li>&#8226; Usá ropa ajustada o ropa interior</li>
-                <li>&#8226; Buena iluminación, fondo neutro</li>
+                <li>&#8226; Usa ropa ajustada o ropa interior</li>
+                <li>&#8226; Buena iluminacion, fondo neutro</li>
                 <li>&#8226; Mismo lugar y hora para futuras comparaciones</li>
                 <li>&#8226; Postura relajada y natural</li>
               </ul>
@@ -354,7 +353,7 @@ export default function EncuestaPage() {
             </button>
 
             <button
-              onClick={() => { setSkipPhotos(true); handleNext(); }}
+              onClick={() => { handleNext(); }}
               className="w-full text-sm text-muted hover:text-white text-center py-2"
             >
               Saltar este paso
@@ -362,55 +361,67 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 5: Ready - redirect to payment */}
+        {/* STEP 5: Encuesta completada - Invitar al pago (SIN mostrar macros) */}
         {step === 5 && macros && (
           <div className="animate-fade-in-up">
             <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
-                <Check className="h-8 w-8 text-black" />
+              <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="h-10 w-10 text-black" />
               </div>
-              <h2 className="text-2xl font-black mb-2">¡Encuesta Completada!</h2>
-              <p className="text-muted">Ya calculamos tu plan personalizado</p>
-            </div>
-
-            <div className="glass-card rounded-xl p-6 mb-6 text-center">
-              <p className="text-muted mb-2">Tu plan incluye:</p>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Calorías/día</p>
-                  <p className="text-lg font-black text-primary">{macros.targetCalories}</p>
-                </div>
-                <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Proteínas</p>
-                  <p className="text-lg font-black text-red-400">{macros.protein}g</p>
-                </div>
-                <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Carbohidratos</p>
-                  <p className="text-lg font-black text-yellow-400">{macros.carbs}g</p>
-                </div>
-                <div className="bg-card-bg rounded-lg p-3">
-                  <p className="text-xs text-muted">Grasas</p>
-                  <p className="text-lg font-black text-blue-400">{macros.fats}g</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted">
-                Completá el pago para desbloquear tu plan completo con rutinas y comidas personalizadas.
+              <h2 className="text-2xl font-black mb-2">¡Ya estamos preparando tu plan!</h2>
+              <p className="text-muted">
+                Con tus datos vamos a armar un entrenamiento y nutricion 100% personalizado para vos.
               </p>
             </div>
 
-            <div className="glass-card rounded-xl p-4 mb-8">
-              <h3 className="font-bold mb-2">Tus Datos</h3>
-              <div className="space-y-1 text-sm text-muted">
-                <p>Sexo: {sex === "hombre" ? "Hombre" : "Mujer"} | Edad: {age} años</p>
-                <p>Peso: {weight}kg | Altura: {height}cm</p>
-                <p>Actividad: {activityLevel && ACTIVITY_LABELS[activityLevel as ActivityLevel]?.label}</p>
-                <p>Restricciones: {restrictions.length > 0 ? restrictions.join(", ") : "Ninguna"}</p>
+            <div className="glass-card rounded-2xl p-6 mb-6">
+              <p className="text-sm font-bold mb-4 text-center">Tu plan va a incluir:</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Rutina de entrenamiento personalizada</p>
+                    <p className="text-xs text-muted">Ejercicios adaptados a tu nivel y objetivo</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Utensils className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Tus macros y plan de nutricion</p>
+                    <p className="text-xs text-muted">Calorias, proteinas, carbohidratos y grasas calculados para vos</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Clock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Seguimiento de tu progreso</p>
+                    <p className="text-xs text-muted">Fotos, medidas y peso para ver tu transformacion</p>
+                  </div>
+                </div>
               </div>
             </div>
 
+            {plan && (
+              <div className="glass-card rounded-xl p-4 mb-6 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted">Plan seleccionado</p>
+                  <p className="font-bold">{plan.name} - {DURATION_LABELS[duration]}</p>
+                </div>
+                <span className="text-primary font-bold text-lg">
+                  ${formatPrice(plan.prices[duration as keyof typeof plan.prices])}
+                </span>
+              </div>
+            )}
+
             <button
               onClick={() => {
-                // Guardar encuesta en localStorage para no perder los datos al ir al registro/pago
+                // Guardar encuesta en localStorage (macros calculados pero NO mostrados)
                 localStorage.setItem("pendingSurvey", JSON.stringify({
                   sex, age: Number(age), weight: Number(weight), height: Number(height),
                   activityLevel, restrictions, emphasis, planSlug,
@@ -422,10 +433,14 @@ export default function EncuestaPage() {
                 }));
                 window.location.href = `/registro?plan=${planSlug}&duration=${duration}`;
               }}
-              className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-lg"
             >
               Continuar al Pago <ArrowRight className="h-5 w-5" />
             </button>
+
+            <p className="text-xs text-muted text-center mt-3">
+              Pago seguro con MercadoPago
+            </p>
           </div>
         )}
 

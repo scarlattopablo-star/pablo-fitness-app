@@ -1,9 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle, ArrowRight, Dumbbell, Smartphone } from "lucide-react";
+import { CheckCircle, ArrowRight, Dumbbell, Smartphone, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function CompraExitosaPage() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        // User is logged in - check if they need to complete survey
+        const { data: survey } = await supabase
+          .from("surveys")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .limit(1)
+          .maybeSingle();
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", session.user.id)
+          .single();
+
+        setChecking(false);
+
+        // Auto-redirect after countdown
+        const destination = profile?.is_admin
+          ? "/admin"
+          : survey
+            ? "/dashboard"
+            : "/encuesta-directa";
+
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              router.push(destination);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(timer);
+      } else {
+        // No session - show login link
+        setChecking(false);
+      }
+    });
+  }, [router]);
+
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full text-center">
@@ -11,20 +63,58 @@ export default function CompraExitosaPage() {
           <CheckCircle className="h-10 w-10 text-black" />
         </div>
 
-        <h1 className="text-3xl font-black mb-3">¡Registro Exitoso!</h1>
+        <h1 className="text-3xl font-black mb-3">¡Pago Exitoso!</h1>
         <p className="text-muted mb-8">
-          Tu plan esta listo. Ingresa a tu cuenta para ver tu entrenamiento y nutricion personalizada.
+          Tu plan esta listo. {checking
+            ? "Verificando tu sesion..."
+            : countdown > 0
+              ? `Te redirigimos en ${countdown} segundos...`
+              : "Redirigiendo..."}
         </p>
 
-        <Link
-          href="/login"
-          className="block w-full gradient-primary text-black font-bold py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-4"
-        >
-          Iniciar Sesion <ArrowRight className="h-5 w-5" />
-        </Link>
+        {checking ? (
+          <div className="flex justify-center mb-4">
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+          </div>
+        ) : countdown > 0 ? (
+          <button
+            onClick={() => {
+              setCountdown(0);
+              supabase.auth.getSession().then(async ({ data: { session } }) => {
+                if (session?.user) {
+                  const { data: survey } = await supabase
+                    .from("surveys")
+                    .select("id")
+                    .eq("user_id", session.user.id)
+                    .limit(1)
+                    .maybeSingle();
+                  router.push(survey ? "/dashboard" : "/encuesta-directa");
+                } else {
+                  router.push("/login");
+                }
+              });
+            }}
+            className="block w-full gradient-primary text-black font-bold py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 mb-4"
+          >
+            Ir a Mi Plan <ArrowRight className="h-5 w-5" />
+          </button>
+        ) : (
+          <div className="flex justify-center mb-4">
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+          </div>
+        )}
+
+        {!checking && (
+          <Link
+            href="/login"
+            className="text-sm text-muted hover:text-primary transition-colors"
+          >
+            Tambien podes iniciar sesion manualmente
+          </Link>
+        )}
 
         {/* Install instructions */}
-        <div className="glass-card rounded-2xl p-5 mb-6 text-left">
+        <div className="glass-card rounded-2xl p-5 mb-6 text-left mt-6">
           <div className="flex items-center gap-3 mb-3">
             <Smartphone className="h-5 w-5 text-primary" />
             <p className="font-bold text-sm">Descarga la app en tu celular</p>

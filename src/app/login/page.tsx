@@ -60,8 +60,22 @@ export default function LoginPage() {
             .single();
 
           if (!survey) {
-            // No survey - send to survey flow
-            router.push("/encuesta-directa");
+            // Check if user has an active subscription before sending to survey
+            const { data: sub } = await supabase
+              .from("subscriptions")
+              .select("id")
+              .eq("user_id", data.user.id)
+              .eq("status", "active")
+              .limit(1)
+              .maybeSingle();
+
+            if (sub) {
+              // Has subscription but no survey - complete the survey
+              router.push("/encuesta-directa");
+            } else {
+              // No subscription and no survey - needs to pay first
+              router.push("/sin-plan");
+            }
           } else {
             router.push("/dashboard");
           }

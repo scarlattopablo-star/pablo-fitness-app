@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { calculateMacros } from "@/lib/harris-benedict";
-import type { Sex, ActivityLevel } from "@/types";
+import type { Sex, ActivityLevel, PlanSlug } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
   sedentario: { label: "Sedentario", desc: "Trabajo de oficina, poco movimiento" },
@@ -75,14 +75,27 @@ export default function EncuestaDirectaPage() {
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
 
-    // Get plan_slug from user's free access code
-    const { data: codeData } = await supabase
-      .from("free_access_codes")
-      .select("plan_slug")
-      .eq("used_by", userId)
+    // Get plan_slug from user's subscription first, then fall back to free access code
+    let planSlug: PlanSlug = "direct-client" as PlanSlug;
+    const { data: subData } = await supabase
+      .from("subscriptions")
+      .select("*, plans(slug)")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    const planSlug = codeData?.plan_slug || "direct-client";
+    if (subData?.plans?.slug) {
+      planSlug = subData.plans.slug as PlanSlug;
+    } else {
+      const { data: codeData } = await supabase
+        .from("free_access_codes")
+        .select("plan_slug")
+        .eq("used_by", userId)
+        .limit(1)
+        .maybeSingle();
+      if (codeData?.plan_slug) planSlug = codeData.plan_slug as PlanSlug;
+    }
 
     const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug);
 
