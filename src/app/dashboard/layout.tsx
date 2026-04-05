@@ -26,12 +26,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { profile, signOut, hasActiveSubscription } = useAuth();
+  const { user, profile, loading, signOut, hasActiveSubscription } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Redirect to login if no session (fixes iOS standalone PWA)
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -109,6 +116,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const handleSignOut = async () => { await signOut(); router.push("/"); };
+
+  // Show loading screen while auth initializes (prevents blank screen on iOS PWA)
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-24 w-auto mx-auto mb-4" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen flex">
