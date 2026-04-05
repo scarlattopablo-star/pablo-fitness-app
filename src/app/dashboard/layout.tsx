@@ -125,6 +125,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 App instalada
               </div>
             )}
+            <Link
+              href="/manual"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-white hover:bg-white/5 transition-all"
+            >
+              <Dumbbell className="h-5 w-5" />
+              Manual de Uso
+            </Link>
             <a
               href="https://instagram.com/pabloscarlattoentrenamientos"
               target="_blank"
@@ -203,6 +210,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <p>3. Toca <strong className="text-white">Agregar</strong></p>
                 </div>
               )}
+              <Link
+                href="/manual"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-white"
+              >
+                <Dumbbell className="h-5 w-5" />
+                Manual de Uso
+              </Link>
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-muted hover:text-danger w-full"
