@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import {
-  Flame, TrendingUp, ClipboardList, Camera, Dumbbell,
+  Flame, TrendingUp, Camera, Dumbbell,
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
-  TrendingDown, Loader2,
+  Loader2, ChevronRight, Zap,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
@@ -22,21 +22,6 @@ interface SurveyData {
   created_at: string;
 }
 
-interface ProgressEntry {
-  weight: number | null;
-  date: string;
-}
-
-const MOTIVATIONS = [
-  "El dolor que sientes hoy sera la fuerza que sientes manana.",
-  "No cuentes los dias, haz que los dias cuenten.",
-  "Tu cuerpo puede soportar casi todo. Es tu mente la que tienes que convencer.",
-  "El exito no se mide por lo que logras, sino por los obstaculos que superas.",
-  "Cada repeticion te acerca mas a tu mejor version.",
-  "La disciplina es el puente entre tus metas y tus logros.",
-  "No te detengas cuando estes cansado, detenete cuando hayas terminado.",
-];
-
 export default function DashboardPage() {
   const { user, profile, subscription } = useAuth();
   const [survey, setSurvey] = useState<SurveyData | null>(null);
@@ -46,249 +31,192 @@ export default function DashboardPage() {
   const [weightLost, setWeightLost] = useState<number | null>(null);
   const [daysSinceProgress, setDaysSinceProgress] = useState(999);
 
-  const motivation = MOTIVATIONS[new Date().getDate() % MOTIVATIONS.length];
-
   useEffect(() => {
     if (user) loadData();
   }, [user]);
 
   const loadData = async () => {
     if (!user) return;
-
     try {
       const { data: surveyData } = await supabase
-        .from("surveys")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        .from("surveys").select("*").eq("user_id", user.id)
+        .order("created_at", { ascending: false }).limit(1).single();
 
       if (surveyData) {
         setSurvey(surveyData);
-        const start = new Date(surveyData.created_at);
-        const now = new Date();
-        setDaysActive(Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+        setDaysActive(Math.floor((Date.now() - new Date(surveyData.created_at).getTime()) / 86400000));
         cacheData("dashboard", { survey: surveyData });
       }
 
       const { data: progressEntries } = await supabase
-        .from("progress_entries")
-        .select("weight, date, created_at")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false })
-        .limit(1);
+        .from("progress_entries").select("weight, date, created_at")
+        .eq("user_id", user.id).order("date", { ascending: false }).limit(1);
 
-      if (progressEntries && progressEntries.length > 0 && progressEntries[0].weight) {
+      if (progressEntries?.length && progressEntries[0].weight) {
         setCurrentWeight(progressEntries[0].weight);
-        if (surveyData?.weight) {
-          setWeightLost(Number((surveyData.weight - progressEntries[0].weight).toFixed(1)));
-        }
-        const lastDate = new Date(progressEntries[0].date || progressEntries[0].created_at);
-        setDaysSinceProgress(Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24)));
+        if (surveyData?.weight) setWeightLost(Number((surveyData.weight - progressEntries[0].weight).toFixed(1)));
+        setDaysSinceProgress(Math.floor((Date.now() - new Date(progressEntries[0].date || progressEntries[0].created_at).getTime()) / 86400000));
       } else {
         if (surveyData?.weight) setCurrentWeight(surveyData.weight);
         setDaysSinceProgress(999);
       }
     } catch {
-      // Offline fallback
       const cached = getCachedData<{ survey: SurveyData }>("dashboard");
-      if (cached?.survey) {
-        setSurvey(cached.survey);
-        if (cached.survey.weight) setCurrentWeight(cached.survey.weight);
-      }
+      if (cached?.survey) { setSurvey(cached.survey); if (cached.survey.weight) setCurrentWeight(cached.survey.weight); }
     }
-
     setLoading(false);
   };
 
-  const displayName = profile?.full_name?.split(" ")[0] || user?.user_metadata?.full_name?.split(" ")[0] || "Cliente";
-
-  // Calculate plan progress percentage
+  const displayName = profile?.full_name?.split(" ")[0] || "Cliente";
   const planProgress = subscription
-    ? Math.min(100, Math.round((daysActive / Math.max(1, Math.floor((new Date(subscription.end_date).getTime() - new Date(subscription.start_date).getTime()) / (1000 * 60 * 60 * 24)))) * 100))
+    ? Math.min(100, Math.round((daysActive / Math.max(1, Math.floor((new Date(subscription.end_date).getTime() - new Date(subscription.start_date).getTime()) / 86400000))) * 100))
     : Math.min(100, Math.round((daysActive / 90) * 100));
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-      </div>
-    );
-  }
+  // Time-based greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Buenos dias" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;
 
   return (
-    <div className="relative">
-      {/* Background image - grayscale, blurred, faded */}
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.35]"
-          style={{
-            backgroundImage: "url(/images/gym-bg.png)",
-            filter: "grayscale(100%) blur(1px) brightness(1.3)",
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/70 to-background" />
-      </div>
-
+    <div>
       <OfflineBanner />
-      {/* HERO HEADER */}
-      <div className="relative rounded-2xl overflow-hidden mb-6 p-6 sm:p-8" style={{ background: "linear-gradient(135deg, #0f1a0f 0%, #0a0a0a 50%, #0a1a0a 100%)" }}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <p className="text-xs font-bold text-primary tracking-widest mb-1">BIENVENIDO DE VUELTA</p>
-        <h1 className="text-2xl sm:text-3xl font-black mb-1">Hola, {displayName}</h1>
-        <p className="text-muted text-sm">Tu transformacion esta en marcha</p>
-        <div className="mt-4 p-3 bg-primary/5 border border-primary/15 rounded-xl">
-          <p className="text-sm text-primary/80 italic">&ldquo;{motivation}&rdquo; &mdash; Pablo Scarlatto</p>
+
+      {/* HERO — clean, no background image */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">{greeting}</p>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{displayName}</h1>
+          </div>
+          <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shrink-0">
+            <span className="text-xl font-black text-black">{displayName.charAt(0)}</span>
+          </div>
         </div>
+
+        {/* Progress bar */}
+        {daysActive > 0 && (
+          <div className="mt-5">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-muted">Dia {daysActive}</span>
+              <span className="text-xs font-bold text-primary">{planProgress}%</span>
+            </div>
+            <div className="h-1.5 bg-card-border/50 rounded-full overflow-hidden">
+              <div className="h-full gradient-primary rounded-full transition-all duration-1000" style={{ width: `${planProgress}%` }} />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* PROGRESS BAR */}
-      {daysActive > 0 && (
-        <div className="glass-card rounded-2xl p-5 mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs text-muted flex items-center gap-1">
-              <Calendar className="h-3 w-3" /> Dia {daysActive} de tu plan
-            </span>
-            <span className="text-xs font-bold text-primary">{planProgress}% completado</span>
-          </div>
-          <div className="h-2 bg-card-border rounded-full overflow-hidden">
-            <div className="h-full gradient-primary rounded-full transition-all duration-1000" style={{ width: `${planProgress}%` }} />
-          </div>
-        </div>
-      )}
-
-      {/* ALERT: Update progress */}
+      {/* ALERT */}
       {daysSinceProgress >= 20 && (
-        <div className="rounded-2xl p-4 mb-6 flex items-center gap-3 border border-warning/25" style={{ background: "linear-gradient(135deg, rgba(245,158,11,.08), rgba(245,158,11,.03))" }}>
-          <div className="w-10 h-10 rounded-xl bg-warning/15 flex items-center justify-center shrink-0">
+        <Link href="/dashboard/progreso"
+          className="card-premium rounded-2xl p-4 mb-6 flex items-center gap-4 border-warning/20 group block"
+        >
+          <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
             <Camera className="h-5 w-5 text-warning" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-bold text-warning">Hora de actualizar tu progreso</p>
+            <p className="text-sm font-bold text-warning">Actualiza tu progreso</p>
             <p className="text-xs text-muted">
-              {daysSinceProgress >= 999
-                ? "Aun no registraste tu primer progreso."
-                : `Hace ${daysSinceProgress} dias que no actualizas.`}
-              {" "}Subi fotos, peso y medidas.
+              {daysSinceProgress >= 999 ? "Registra tu primer progreso" : `Hace ${daysSinceProgress} dias`}
             </p>
           </div>
-          <Link href="/dashboard/progreso" className="bg-warning/15 text-warning text-xs font-semibold px-4 py-2 rounded-lg shrink-0 hover:bg-warning/25 transition-colors">
-            Actualizar
-          </Link>
-        </div>
+          <ChevronRight className="h-4 w-4 text-warning group-hover:translate-x-1 transition-transform" />
+        </Link>
       )}
+
+      {/* STATS — horizontal scorecard */}
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        {[
+          { value: currentWeight ? `${currentWeight}` : "-", unit: "kg", label: "Peso", icon: Scale, color: "text-foreground" },
+          { value: weightLost !== null ? `${weightLost > 0 ? "-" : "+"}${Math.abs(weightLost)}` : "-", unit: "kg", label: "Cambio", icon: TrendingUp, color: weightLost && weightLost > 0 ? "text-primary" : "text-foreground" },
+          { value: `${daysActive}`, unit: "", label: "Dias", icon: Calendar, color: "text-foreground" },
+        ].map(({ value, unit, label, icon: Icon, color }) => (
+          <div key={label} className="card-premium rounded-2xl p-4 text-center">
+            <Icon className="h-4 w-4 text-muted mx-auto mb-2" />
+            <p className={`text-2xl font-black ${color}`}>{value}<span className="text-xs text-muted font-normal ml-0.5">{unit}</span></p>
+            <p className="text-[10px] text-muted uppercase tracking-wider mt-1">{label}</p>
+          </div>
+        ))}
+      </div>
 
       {/* MACROS */}
       {survey ? (
-        <>
-          <h2 className="font-bold flex items-center gap-2 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Tus Macros Diarios
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="glass-card rounded-2xl p-4 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 gradient-primary" />
-              <Flame className="h-6 w-6 text-primary mx-auto mb-2" />
-              <p className="text-2xl font-black text-primary">{survey.target_calories.toLocaleString()}</p>
-              <p className="text-[10px] text-muted font-medium">CALORIAS / DIA</p>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Macros Diarios</h2>
+            <Link href="/dashboard/plan?v=nutricion" className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline">
+              Ver plan <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {/* Calories — large */}
+          <div className="card-premium rounded-2xl p-5 mb-3 flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Flame className="h-7 w-7 text-primary" />
             </div>
-            <div className="glass-card rounded-2xl p-4 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
-              <Target className="h-6 w-6 text-red-400 mx-auto mb-2" />
-              <p className="text-2xl font-black text-red-400">{survey.protein}<span className="text-base">g</span></p>
-              <p className="text-[10px] text-muted font-medium">PROTEINAS</p>
-            </div>
-            <div className="glass-card rounded-2xl p-4 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-yellow-500" />
-              <UtensilsCrossed className="h-6 w-6 text-yellow-400 mx-auto mb-2" />
-              <p className="text-2xl font-black text-yellow-400">{survey.carbs}<span className="text-base">g</span></p>
-              <p className="text-[10px] text-muted font-medium">CARBOHIDRATOS</p>
-            </div>
-            <div className="glass-card rounded-2xl p-4 text-center relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500" />
-              <Scale className="h-6 w-6 text-blue-400 mx-auto mb-2" />
-              <p className="text-2xl font-black text-blue-400">{survey.fats}<span className="text-base">g</span></p>
-              <p className="text-[10px] text-muted font-medium">GRASAS</p>
+            <div>
+              <p className="text-3xl font-black text-primary stat-glow">{survey.target_calories.toLocaleString()}</p>
+              <p className="text-xs text-muted">calorias por dia</p>
             </div>
           </div>
-        </>
+
+          {/* P / C / F */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { value: survey.protein, label: "Proteinas", color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
+              { value: survey.carbs, label: "Carbos", color: "#eab308", bg: "rgba(234,179,8,0.08)" },
+              { value: survey.fats, label: "Grasas", color: "#3b82f6", bg: "rgba(59,130,246,0.08)" },
+            ].map(({ value, label, color, bg }) => (
+              <div key={label} className="card-premium rounded-2xl p-4 text-center">
+                <p className="text-2xl font-black" style={{ color }}>{value}<span className="text-xs text-muted font-normal">g</span></p>
+                <p className="text-[10px] text-muted uppercase tracking-wider mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
-        <div className="glass-card rounded-2xl p-6 mb-6 text-center">
-          <Dumbbell className="h-8 w-8 text-primary mx-auto mb-2" />
+        <div className="card-premium rounded-2xl p-8 mb-8 text-center">
+          <Dumbbell className="h-8 w-8 text-primary mx-auto mb-3" />
           <p className="font-bold">Tu entrenador esta preparando tu plan</p>
-          <p className="text-sm text-muted mt-1">Pronto veras tus macros y tu plan personalizado aca.</p>
+          <p className="text-sm text-muted mt-1">Pronto veras tus macros y plan personalizado.</p>
         </div>
       )}
 
-      {/* STATS */}
-      <h2 className="font-bold flex items-center gap-2 mb-3">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Tu Progreso
-      </h2>
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="glass-card rounded-2xl p-4 text-center">
-          <p className="text-xl font-black">{currentWeight || "-"} <span className="text-xs text-muted">kg</span></p>
-          <p className="text-[10px] text-muted">Peso Actual</p>
-        </div>
-        <div className="glass-card rounded-2xl p-4 text-center">
-          <p className={`text-xl font-black ${weightLost && weightLost > 0 ? "text-primary" : ""}`}>
-            {weightLost !== null ? `${weightLost > 0 ? "-" : "+"}${Math.abs(weightLost)}` : "-"} <span className="text-xs text-muted">kg</span>
-          </p>
-          <p className="text-[10px] text-muted">Total Perdido</p>
-        </div>
-        <div className="glass-card rounded-2xl p-4 text-center">
-          <p className="text-xl font-black">{daysActive}</p>
-          <p className="text-[10px] text-muted">Dias Activo</p>
-        </div>
+      {/* QUICK ACTIONS — full width buttons */}
+      <div className="space-y-3 mb-8">
+        {[
+          { href: "/dashboard/plan?v=entrenamiento", icon: Dumbbell, title: "Entrenamiento", sub: "Tu rutina personalizada", color: "text-primary", bg: "bg-primary/10" },
+          { href: "/dashboard/plan?v=nutricion", icon: UtensilsCrossed, title: "Nutricion", sub: "Tus comidas y macros", color: "text-amber-400", bg: "bg-amber-400/10" },
+          { href: "/dashboard/progreso", icon: TrendingUp, title: "Mi Progreso", sub: "Peso, medidas y fotos", color: "text-blue-400", bg: "bg-blue-400/10" },
+        ].map(({ href, icon: Icon, title, sub, color, bg }) => (
+          <Link key={href} href={href} className="card-premium rounded-2xl p-4 flex items-center gap-4 group block">
+            <div className={`w-12 h-12 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+              <Icon className={`h-6 w-6 ${color}`} />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm group-hover:text-primary transition-colors">{title}</p>
+              <p className="text-xs text-muted">{sub}</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
+          </Link>
+        ))}
       </div>
 
-      {/* QUICK ACTIONS */}
-      <h2 className="font-bold flex items-center gap-2 mb-3">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Acciones Rapidas
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-        <Link href="/dashboard/plan?v=entrenamiento" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
-          <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-            <Dumbbell className="h-6 w-6 text-primary" />
-          </div>
-          <p className="font-bold group-hover:text-primary transition-colors">Mi Plan de Entrenamiento</p>
-          <p className="text-xs text-muted mt-1">Tu rutina personalizada</p>
-        </Link>
-        <Link href="/dashboard/plan?v=nutricion" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
-          <div className="w-11 h-11 rounded-xl bg-warning/10 flex items-center justify-center mb-3">
-            <UtensilsCrossed className="h-6 w-6 text-warning" />
-          </div>
-          <p className="font-bold group-hover:text-primary transition-colors">Mi Plan de Nutricion</p>
-          <p className="text-xs text-muted mt-1">Tus comidas y macros del dia</p>
-        </Link>
-        <Link href="/dashboard/progreso" className="glass-card rounded-2xl p-5 hover-glow transition-all group">
-          <div className="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mb-3">
-            <Camera className="h-6 w-6 text-blue-400" />
-          </div>
-          <p className="font-bold group-hover:text-primary transition-colors">Registrar Progreso</p>
-          <p className="text-xs text-muted mt-1">Subi fotos, peso y medidas</p>
-        </Link>
-      </div>
-
-      {/* TRAINER */}
-      <h2 className="font-bold flex items-center gap-2 mb-3">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Tu Entrenador
-      </h2>
-      <div className="glass-card rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center shrink-0">
-          <span className="text-xl font-black text-black">PS</span>
+      {/* TRAINER — inline, subtle */}
+      <div className="flex items-center gap-4 py-4 border-t border-card-border/50">
+        <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shrink-0">
+          <span className="text-sm font-black text-black">PS</span>
         </div>
-        <div>
-          <p className="font-bold">Pablo Scarlatto</p>
-          <p className="text-xs text-muted">Entrenador Personal Certificado</p>
-          <a
-            href="https://instagram.com/pabloscarlattoentrenamientos"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary font-semibold mt-1 hover:underline"
-          >
-            <InstagramIcon className="h-3 w-3" /> @pabloscarlattoentrenamientos
-          </a>
+        <div className="flex-1">
+          <p className="text-sm font-bold">Pablo Scarlatto</p>
+          <p className="text-[10px] text-muted">Entrenador Personal</p>
         </div>
+        <a href="https://instagram.com/pabloscarlattoentrenamientos" target="_blank" rel="noopener noreferrer"
+          className="btn-outline-premium px-3 py-1.5 rounded-full text-xs flex items-center gap-1.5">
+          <InstagramIcon className="h-3.5 w-3.5" /> Seguir
+        </a>
       </div>
     </div>
   );

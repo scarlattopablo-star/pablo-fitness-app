@@ -2,21 +2,9 @@
 
 import Link from "next/link";
 import {
-  Flame,
-  Dumbbell,
-  Sparkles,
-  GraduationCap,
-  Trophy,
-  Heart,
-  Shield,
-  RefreshCw,
-  Users,
-  Medal,
-  Home,
-  ArrowRight,
-  CheckCircle,
-  Star,
-  ChevronRight,
+  Flame, Dumbbell, Sparkles, GraduationCap, Trophy, Heart,
+  Shield, RefreshCw, Users, Medal, Home, ArrowRight, Star,
+  ChevronRight, Zap, Target, BarChart3, Smartphone, UtensilsCrossed,
 } from "lucide-react";
 import { PLANS, formatPrice } from "@/lib/plans-data";
 import { InstagramIcon } from "@/components/icons";
@@ -32,279 +20,242 @@ export default function HomePage() {
   const { t } = useI18n();
 
   return (
-    <main className="min-h-screen">
-      {/* NAVBAR */}
-      <nav className="fixed top-0 w-full z-50 glass-card border-b border-card-border">
+    <main className="min-h-screen overflow-hidden">
+      {/* NAVBAR — minimal, floating */}
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-background/70 border-b border-card-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Dumbbell className="h-7 w-7 text-primary" />
-            <span className="font-bold text-lg tracking-tight">
-              PABLO SCARLATTO
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
+              <span className="text-black font-black text-xs">PS</span>
+            </div>
+            <span className="font-bold text-sm tracking-wide uppercase">
+              Pablo Scarlatto
             </span>
           </Link>
-          <div className="hidden md:flex items-center gap-6">
-            <a href="#planes" className="text-sm text-muted hover:text-white transition-colors">
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#planes" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
               {t("nav.plans")}
             </a>
-            <a href="#como-funciona" className="text-sm text-muted hover:text-white transition-colors">
+            <a href="#como-funciona" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
               {t("nav.howItWorks")}
             </a>
-            <a href="#testimonios" className="text-sm text-muted hover:text-white transition-colors">
+            <a href="#testimonios" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
               {t("nav.results")}
             </a>
+            <div className="w-px h-4 bg-card-border" />
             <LanguageSelector />
-            <Link
-              href="/login"
-              className="text-sm text-muted hover:text-white transition-colors font-medium"
-            >
+            <Link href="/login" className="text-xs text-muted hover:text-foreground transition-colors font-medium">
               {t("nav.login")}
             </Link>
-            <Link
-              href="/planes"
-              className="gradient-primary text-black font-semibold text-sm px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
-            >
+            <Link href="/planes" className="btn-shimmer text-sm px-5 py-2 rounded-full">
               {t("nav.startNow")}
             </Link>
           </div>
           <div className="flex md:hidden items-center gap-3">
             <LanguageSelector />
-            <Link
-              href="/login"
-              className="text-sm text-muted hover:text-white transition-colors font-medium"
-            >
-              {t("nav.login")}
-            </Link>
-            <Link
-              href="/planes"
-              className="gradient-primary text-black font-semibold text-sm px-4 py-2 rounded-full"
-            >
-              {t("nav.start")}
-            </Link>
+            <Link href="/login" className="text-xs text-muted font-medium">{t("nav.login")}</Link>
+            <Link href="/planes" className="btn-shimmer text-xs px-4 py-2 rounded-full">{t("nav.start")}</Link>
           </div>
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className="relative pt-32 pb-20 px-4 overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.30]"
-          style={{
-            backgroundImage: "url(/images/gym-bg.png)",
-            filter: "grayscale(100%) brightness(1.0)",
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/60 to-background" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
-        <div className="relative max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm mb-8 animate-fade-in-up">
-            <Star className="h-4 w-4" />
-            {t("hero.badge")}
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-tight mb-6 animate-fade-in-up animate-delay-100">
-            {t("hero.title1")}
-            <br />
-            <span className="text-gradient">{t("hero.title2")}</span>
-          </h1>
-          <p className="text-lg sm:text-xl text-muted max-w-2xl mx-auto mb-10 animate-fade-in-up animate-delay-200">
-            {t("hero.subtitle")}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in-up animate-delay-300">
-            <Link
-              href="/planes"
-              className="gradient-primary text-black font-bold text-lg px-8 py-4 rounded-full hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-            >
-              {t("hero.viewPlans")} <ArrowRight className="h-5 w-5" />
-            </Link>
-            <a
-              href="https://instagram.com/pabloscarlattoentrenamientos"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border border-card-border text-white font-semibold text-lg px-8 py-4 rounded-full hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
-            >
-              <InstagramIcon className="h-5 w-5" /> Instagram
-            </a>
-          </div>
-          <div className="flex justify-center gap-8 mt-12 text-sm text-muted animate-fade-in-up animate-delay-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-primary" />
-              {t("hero.online")}
+      {/* HERO — dramatic, asymmetric */}
+      <section className="relative pt-28 sm:pt-36 pb-24 sm:pb-32 px-4">
+        {/* Background layers */}
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20" style={{ backgroundImage: "url(/images/gym-bg.png)", filter: "grayscale(100%)" }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
+        <div className="absolute top-32 right-0 w-[500px] h-[500px] bg-primary/[0.04] rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-primary/[0.03] rounded-full blur-[100px]" />
+
+        <div className="relative max-w-6xl mx-auto">
+          <div className="max-w-3xl">
+            {/* Badge */}
+            <div className="badge-gold inline-flex items-center gap-2 mb-8 animate-fade-in-up">
+              <Zap className="h-3 w-3" />
+              {t("hero.badge")}
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-primary" />
-              {t("hero.personalized")}
+
+            {/* Title — huge */}
+            <h1 className="text-5xl sm:text-6xl md:text-8xl font-black leading-[0.95] mb-8 animate-fade-in-up animate-delay-100 tracking-tight">
+              {t("hero.title1")}
+              <br />
+              <span className="text-gradient">{t("hero.title2")}</span>
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-lg sm:text-xl text-muted max-w-lg mb-10 animate-fade-in-up animate-delay-200 leading-relaxed">
+              {t("hero.subtitle")}
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up animate-delay-300">
+              <Link href="/planes" className="btn-shimmer text-lg px-8 py-4 rounded-full flex items-center justify-center gap-2">
+                {t("hero.viewPlans")} <ArrowRight className="h-5 w-5" />
+              </Link>
+              <a href="https://instagram.com/pabloscarlattoentrenamientos" target="_blank" rel="noopener noreferrer"
+                className="btn-outline-premium text-lg px-8 py-4 rounded-full flex items-center justify-center gap-2">
+                <InstagramIcon className="h-5 w-5" /> Instagram
+              </a>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-primary" />
-              {t("hero.tracking")}
+
+            {/* Trust signals */}
+            <div className="flex flex-wrap gap-6 mt-14 animate-fade-in-up animate-delay-400">
+              {[
+                { label: t("hero.online"), value: "100%" },
+                { label: t("hero.personalized"), value: "75+" },
+                { label: t("hero.tracking"), value: "24/7" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center gap-3">
+                  <span className="text-2xl font-black text-primary stat-glow">{item.value}</span>
+                  <span className="text-xs text-muted uppercase tracking-wider">{item.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* PLANES */}
-      <section id="planes" className="py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+      {/* DIVIDER */}
+      <div className="line-accent max-w-5xl mx-auto" />
+
+      {/* PLANES — horizontal cards */}
+      <section id="planes" className="py-24 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-16">
+            <span className="badge-primary mb-4 inline-block">{t("nav.plans")}</span>
+            <h2 className="text-4xl sm:text-5xl font-black mb-4 tracking-tight">
               {t("plans.title1")} <span className="text-gradient">{t("plans.title2")}</span>
             </h2>
-            <p className="text-muted max-w-xl mx-auto">
-              {t("plans.subtitle")}
-            </p>
+            <p className="text-muted max-w-lg">{t("plans.subtitle")}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {PLANS.map((plan) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {PLANS.slice(0, 6).map((plan, i) => {
               const Icon = ICON_MAP[plan.icon] || Dumbbell;
+              const isPopular = plan.slug === "ganancia-muscular";
               return (
-                <Link
-                  key={plan.slug}
-                  href={`/planes/${plan.slug}`}
-                  className="glass-card rounded-2xl p-6 hover-glow transition-all duration-300 hover:-translate-y-1 group"
+                <Link key={plan.slug} href={`/planes/${plan.slug}`}
+                  className={`card-premium rounded-2xl p-6 group relative ${isPopular ? "border-primary/30" : ""}`}
+                  style={{ animationDelay: `${i * 80}ms` }}
                 >
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                    style={{ backgroundColor: `${plan.color}20` }}
-                  >
-                    <Icon className="h-6 w-6" style={{ color: plan.color }} />
-                  </div>
-                  <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">
-                    {plan.name}
-                  </h3>
-                  <p className="text-sm text-muted mb-4 line-clamp-2">
-                    {plan.shortDescription}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-primary font-bold">
-                      {t("plans.from")} ${formatPrice(plan.prices["1-mes"])}/{t("plans.month")}
-                    </span>
-                    <ChevronRight className="h-4 w-4 text-muted group-hover:text-primary transition-colors" />
+                  {isPopular && <div className="badge-gold absolute top-4 right-4">Popular</div>}
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${plan.color}15` }}>
+                      <Icon className="h-6 w-6" style={{ color: plan.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base mb-1 group-hover:text-primary transition-colors">{plan.name}</h3>
+                      <p className="text-xs text-muted mb-3 line-clamp-2">{plan.shortDescription}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-primary font-bold text-sm">{t("plans.from")} ${formatPrice(plan.prices["1-mes"])}<span className="text-muted font-normal">/{t("plans.month")}</span></span>
+                        <ChevronRight className="h-4 w-4 text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                      </div>
+                    </div>
                   </div>
                 </Link>
               );
             })}
           </div>
+          {PLANS.length > 6 && (
+            <div className="text-center mt-8">
+              <Link href="/planes" className="btn-outline-premium inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm">
+                Ver los {PLANS.length} planes <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* COMO FUNCIONA */}
-      <section id="como-funciona" className="py-20 px-4 bg-card-bg/50">
-        <div className="max-w-5xl mx-auto">
+      {/* DIVIDER */}
+      <div className="line-accent max-w-5xl mx-auto" />
+
+      {/* COMO FUNCIONA — Timeline vertical */}
+      <section id="como-funciona" className="py-24 px-4">
+        <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+            <span className="badge-primary mb-4 inline-block">{t("nav.howItWorks")}</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight">
               {t("how.title1")} <span className="text-gradient">{t("how.title2")}</span>
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[1, 2, 3, 4].map((num) => (
-              <div key={num} className="text-center">
-                <div className="text-5xl font-black text-primary/20 mb-4">
-                  {String(num).padStart(2, "0")}
+          <div className="space-y-0">
+            {[1, 2, 3, 4].map((num, i) => (
+              <div key={num} className="flex gap-6">
+                {/* Timeline */}
+                <div className="flex flex-col items-center">
+                  <div className="timeline-dot" />
+                  {i < 3 && <div className="timeline-line flex-1 min-h-[80px]" />}
                 </div>
-                <h3 className="font-bold text-lg mb-2">{t(`how.step${num}.title`)}</h3>
-                <p className="text-sm text-muted">{t(`how.step${num}.desc`)}</p>
+                {/* Content */}
+                <div className="pb-12">
+                  <span className="text-xs text-primary font-bold uppercase tracking-widest">Paso {num}</span>
+                  <h3 className="font-bold text-lg mt-1 mb-2">{t(`how.step${num}.title`)}</h3>
+                  <p className="text-sm text-muted leading-relaxed">{t(`how.step${num}.desc`)}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="py-20 px-4">
+      {/* FEATURES — icon + text rows */}
+      <section className="py-24 px-4 bg-card-bg/30">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+            <span className="badge-primary mb-4 inline-block">Incluido</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight">
               {t("features.title1")} <span className="text-gradient">{t("features.title2")}</span>
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {["macros", "videos", "photos", "nutrition", "training", "support"].map((key) => (
-              <div
-                key={key}
-                className="glass-card rounded-2xl p-6 hover-glow transition-all"
-              >
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <CheckCircle className="h-5 w-5 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+            {[
+              { icon: Target, key: "macros" },
+              { icon: Dumbbell, key: "videos" },
+              { icon: BarChart3, key: "photos" },
+              { icon: UtensilsCrossed, key: "nutrition" },
+              { icon: Zap, key: "training" },
+              { icon: Smartphone, key: "support" },
+            ].map(({ icon: Icon, key }) => (
+              <div key={key} className="flex items-start gap-5">
+                <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="font-bold mb-2">{t(`features.${key}.title`)}</h3>
-                <p className="text-sm text-muted">{t(`features.${key}.desc`)}</p>
+                <div>
+                  <h3 className="font-bold text-sm mb-1">{t(`features.${key}.title`)}</h3>
+                  <p className="text-sm text-muted leading-relaxed">{t(`features.${key}.desc`)}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* APP DOWNLOAD CTA */}
-      <section className="py-20 px-4 bg-card-bg/50">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center gap-10">
-          <div className="flex-1 text-center md:text-left">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              {t("app.title1")} <span className="text-gradient">{t("app.title2")}</span>
-            </h2>
-            <p className="text-muted mb-6">
-              {t("app.desc")}
-            </p>
-            <ul className="space-y-3 mb-6">
-              {["app.feature1", "app.feature2", "app.feature3", "app.feature4"].map((key) => (
-                <li key={key} className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                  <span>{t(key)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="glass-card rounded-2xl p-8 text-center min-w-[280px]">
-            <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
-              <Dumbbell className="h-8 w-8 text-black" />
-            </div>
-            <p className="font-bold text-lg mb-1">PS Entrenamientos</p>
-            <p className="text-xs text-muted mb-4">{t("app.installDesc")}</p>
-            <Link
-              href="/planes"
-              className="block gradient-primary text-black font-bold py-3 px-6 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              {t("nav.startNow")}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIOS */}
-      <section id="testimonios" className="py-20 px-4 bg-card-bg/50">
+      {/* TESTIMONIOS — offset layout with large quotes */}
+      <section id="testimonios" className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
+            <span className="badge-primary mb-4 inline-block">{t("nav.results")}</span>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight">
               {t("testimonials.title1")} <span className="text-gradient">{t("testimonials.title2")}</span>
             </h2>
-            <p className="text-muted">{t("testimonials.subtitle")}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              {
-                name: "Manuela G.",
-                result: "Perdió 12kg en 6 meses",
-                text: "El plan de quema grasa cambió mi vida. Las comidas son fáciles de preparar y el entrenamiento es desafiante pero alcanzable.",
-              },
-              {
-                name: "Javier C.",
-                result: "Ganó 8kg de músculo en 4 meses",
-                text: "Increíble cómo el plan personalizado y los videos de ejercicios me ayudaron a ejecutar todo correctamente desde el primer día.",
-              },
-              {
-                name: "Paulina B.",
-                result: "Mejoró su rendimiento deportivo",
-                text: "La nutrición con timing para mis carreras fue clave. Bajé mis tiempos y me siento con más energía que nunca.",
-              },
-            ].map((item) => (
-              <div key={item.name} className="glass-card rounded-2xl p-6">
-                <div className="flex gap-1 mb-4">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="h-4 w-4 fill-primary text-primary" />
-                  ))}
-                </div>
-                <p className="text-sm text-muted mb-4">&ldquo;{item.text}&rdquo;</p>
-                <div>
-                  <p className="font-bold">{item.name}</p>
-                  <p className="text-sm text-primary">{item.result}</p>
+              { name: "Manuela G.", result: "Perdio 12kg en 6 meses", text: "El plan de quema grasa cambio mi vida. Las comidas son faciles de preparar y el entrenamiento es desafiante pero alcanzable." },
+              { name: "Javier C.", result: "Gano 8kg de musculo en 4 meses", text: "Increible como el plan personalizado y los videos de ejercicios me ayudaron a ejecutar todo correctamente desde el primer dia." },
+              { name: "Paulina B.", result: "Mejoro su rendimiento deportivo", text: "La nutricion con timing para mis carreras fue clave. Baje mis tiempos y me siento con mas energia que nunca." },
+            ].map((item, i) => (
+              <div key={item.name} className={`card-premium rounded-2xl p-6 ${i === 1 ? "md:-translate-y-4" : ""}`}>
+                {/* Large quote mark */}
+                <span className="text-5xl font-black text-primary/15 leading-none block mb-2">&ldquo;</span>
+                <p className="text-sm text-muted mb-6 leading-relaxed">{item.text}</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-black font-bold text-xs">
+                    {item.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm">{item.name}</p>
+                    <p className="text-xs text-primary">{item.result}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -312,58 +263,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 px-4">
+      {/* CTA FINAL — clean, powerful */}
+      <section className="py-24 px-4">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-black mb-6">
-            {t("cta.title1")} <span className="text-gradient">{t("cta.title2")}</span>
+          <h2 className="text-4xl sm:text-6xl font-black mb-6 tracking-tight">
+            {t("cta.title1")}
+            <br />
+            <span className="text-gradient">{t("cta.title2")}</span>
           </h2>
-          <p className="text-muted mb-10 max-w-xl mx-auto">
-            {t("cta.subtitle")}
-          </p>
-          <Link
-            href="/planes"
-            className="inline-flex items-center gap-2 gradient-primary text-black font-bold text-lg px-10 py-4 rounded-full hover:opacity-90 transition-opacity"
-          >
+          <p className="text-muted mb-10 max-w-md mx-auto leading-relaxed">{t("cta.subtitle")}</p>
+          <Link href="/planes" className="btn-shimmer inline-flex items-center gap-2 text-lg px-10 py-4 rounded-full">
             {t("cta.viewAll")} <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="border-t border-card-border py-10 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      {/* FOOTER — compact, single row */}
+      <footer className="border-t border-card-border/50 py-6 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <Dumbbell className="h-5 w-5 text-primary" />
-            <span className="font-bold">PABLO SCARLATTO ENTRENAMIENTOS</span>
+            <div className="w-6 h-6 rounded gradient-primary flex items-center justify-center">
+              <span className="text-black font-black text-[8px]">PS</span>
+            </div>
+            <span className="font-bold text-xs uppercase tracking-wider">Pablo Scarlatto</span>
           </div>
-          <div className="flex items-center gap-6">
-            <a
-              href="https://instagram.com/pabloscarlattoentrenamientos"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted hover:text-primary transition-colors"
-            >
-              <InstagramIcon className="h-5 w-5" />
+          <div className="flex items-center gap-5">
+            <a href="https://instagram.com/pabloscarlattoentrenamientos" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-primary transition-colors">
+              <InstagramIcon className="h-4 w-4" />
             </a>
-            <Link href="/planes" className="text-sm text-muted hover:text-white transition-colors">
-              {t("nav.plans")}
-            </Link>
-            <Link href="/login" className="text-sm text-muted hover:text-white transition-colors">
-              {t("footer.login")}
-            </Link>
+            <Link href="/planes" className="text-xs text-muted hover:text-foreground transition-colors">{t("nav.plans")}</Link>
+            <Link href="/login" className="text-xs text-muted hover:text-foreground transition-colors">{t("footer.login")}</Link>
+            <Link href="/terminos" className="text-xs text-muted hover:text-foreground transition-colors">Terminos</Link>
+            <Link href="/privacidad" className="text-xs text-muted hover:text-foreground transition-colors">Privacidad</Link>
           </div>
-          <div className="flex items-center gap-4">
-            <Link href="/terminos" className="text-xs text-muted hover:text-white transition-colors">
-              Términos
-            </Link>
-            <Link href="/privacidad" className="text-xs text-muted hover:text-white transition-colors">
-              Privacidad
-            </Link>
-          </div>
-          <p className="text-xs text-muted">
-            &copy; 2026 {t("footer.rights")}
-          </p>
+          <p className="text-[10px] text-muted/60">&copy; 2026 {t("footer.rights")}</p>
         </div>
       </footer>
     </main>
