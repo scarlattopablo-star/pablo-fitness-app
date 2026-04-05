@@ -61,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className="p-5 pb-4">
           <Link href="/" className="flex items-center">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-20 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-28 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
         </div>
 
