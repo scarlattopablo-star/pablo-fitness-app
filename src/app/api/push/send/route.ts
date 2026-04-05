@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
-const VAPID_EMAIL = process.env.VAPID_CONTACT_EMAIL || "mailto:scarlattopablo@gmail.com";
-
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+let vapidConfigured = false;
+function ensureVapid() {
+  if (vapidConfigured) return true;
+  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+  const priv = process.env.VAPID_PRIVATE_KEY || "";
+  if (!pub || !priv) return false;
+  webpush.setVapidDetails(
+    process.env.VAPID_CONTACT_EMAIL || "mailto:scarlattopablo@gmail.com",
+    pub, priv
+  );
+  vapidConfigured = true;
+  return true;
 }
 
 export async function POST(request: NextRequest) {
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing recipientId" }, { status: 400 });
     }
 
-    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    if (!ensureVapid()) {
       return NextResponse.json({ error: "VAPID keys not configured" }, { status: 500 });
     }
 
