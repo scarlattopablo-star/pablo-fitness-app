@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Timeout: if getSession takes too long (iOS standalone), stop loading
     const timeout = setTimeout(() => {
       setLoading(false);
-    }, 5000);
+    }, 2000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout);

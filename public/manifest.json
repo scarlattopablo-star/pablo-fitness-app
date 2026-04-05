@@ -3,7 +3,7 @@
   "name": "Pablo Scarlatto Entrenamientos",
   "short_name": "PS Entrena",
   "description": "Planes de entrenamiento y nutrición personalizados",
-  "start_url": "/dashboard",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
