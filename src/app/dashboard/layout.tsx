@@ -99,14 +99,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (standalone) setIsInstalled(true);
 
     // Push notifications setup
-    if ("Notification" in window) {
-      if (Notification.permission === "granted") {
-        syncPushSubscription();
-      } else if (Notification.permission === "default") {
-        // Show banner to request permission (iOS needs user gesture, Android too in some cases)
-        if (!localStorage.getItem("push-banner-dismissed")) {
-          setShowPushBanner(true);
-        }
+    const notifAvailable = "Notification" in window;
+    if (notifAvailable && Notification.permission === "granted") {
+      syncPushSubscription();
+    } else if (!notifAvailable || Notification.permission === "default") {
+      // Show banner: either Notification API not available (iOS Safari) or not yet asked
+      if (!localStorage.getItem("push-banner-dismissed")) {
+        setShowPushBanner(true);
       }
     }
 
@@ -310,8 +309,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex gap-2">
               <button
                 onClick={async () => {
+                  if (!("Notification" in window) || !("PushManager" in window)) {
+                    // iOS Safari: can't do push, need PWA
+                    alert("Para recibir notificaciones con la app cerrada, instalá la app: Compartir (⬆) > Agregar a pantalla de inicio. Después abrila desde ahí y tocá Activar.");
+                    setShowPushBanner(false);
+                    return;
+                  }
                   const granted = await requestPushPermission();
-                  if (granted) syncPushSubscription();
+                  if (granted) await syncPushSubscription();
                   setShowPushBanner(false);
                 }}
                 className="flex-1 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl"
