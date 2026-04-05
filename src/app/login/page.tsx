@@ -97,7 +97,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-6">
-              <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-24 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+              <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-36 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
             </Link>
             <h1 className="text-2xl font-black">Recuperar Contraseña</h1>
             <p className="text-muted text-sm mt-2">Te enviaremos un email para crear una nueva contraseña</p>
@@ -167,7 +167,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-24 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-36 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
           <h1 className="text-2xl font-black">Iniciar Sesión</h1>
           <p className="text-muted text-sm mt-2">Accedé a tu plan personalizado</p>

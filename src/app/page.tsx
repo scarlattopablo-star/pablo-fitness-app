@@ -25,7 +25,7 @@ export default function HomePage() {
       <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-background/70 border-b border-card-border/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-16 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-20 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#planes" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
@@ -277,7 +277,7 @@ export default function HomePage() {
       <footer className="border-t border-card-border/50 py-6 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-12 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-16 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </div>
           <div className="flex items-center gap-5">
             <a href="https://instagram.com/pabloscarlattoentrenamientos" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-primary transition-colors">
