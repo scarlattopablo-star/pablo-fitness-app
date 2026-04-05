@@ -19,6 +19,7 @@ import {
 import UserSearch from "@/components/chat/user-search";
 import ConversationItem from "@/components/chat/conversation-item";
 import { supabase } from "@/lib/supabase";
+import { usePresence } from "@/hooks/use-presence";
 
 interface Conversation {
   id: string;
@@ -35,6 +36,7 @@ export default function ChatPage() {
   const [blocked, setBlocked] = useState(false);
   const [pushState, setPushState] = useState<string>("default");
   const [unreadConvIds, setUnreadConvIds] = useState<Set<string>>(new Set());
+  const { isUserOnline, onlineCount } = usePresence(user?.id || "", profile?.full_name || "");
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -139,6 +141,10 @@ export default function ChatPage() {
         >
           <Users className="h-4 w-4 text-primary" />
           <span className="text-sm font-medium">General</span>
+          <span className="flex items-center gap-1 text-[10px] text-emerald-400">
+            <span className="online-dot !w-[6px] !h-[6px] !animate-none" />
+            {onlineCount}
+          </span>
         </Link>
         <div className="flex items-center gap-2 px-4 py-2.5 gradient-primary rounded-xl">
           <MessageCircle className="h-4 w-4 text-black" />
@@ -191,6 +197,7 @@ export default function ChatPage() {
                 lastMessagePreview={conv.lastMessagePreview}
                 lastMessageAt={conv.lastMessageAt}
                 hasUnread={unreadConvIds.has(conv.id)}
+                isOnline={isUserOnline(conv.otherUser.id)}
               />
             ))}
           </div>

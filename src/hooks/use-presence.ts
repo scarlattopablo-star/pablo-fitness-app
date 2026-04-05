@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -10,20 +10,14 @@ export interface PresenceUser {
   online_at: string;
 }
 
-interface UsePresenceOptions {
-  channelName: string;
-  userId: string;
-  fullName: string;
-}
-
-export function usePresence({ channelName, userId, fullName }: UsePresenceOptions) {
+export function usePresence(userId: string, fullName: string) {
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
-  const channelRef = useRef<RealtimeChannel | null>(null);
+  const [channelRef, setChannelRef] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase.channel(channelName, {
+    const channel = supabase.channel("app-presence", {
       config: { presence: { key: userId } },
     });
 
@@ -31,8 +25,6 @@ export function usePresence({ channelName, userId, fullName }: UsePresenceOption
       .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState<PresenceUser>();
         const users = new Map<string, PresenceUser>();
-
-        // Deduplicate by user_id (multiple tabs = multiple entries)
         for (const presences of Object.values(state)) {
           for (const p of presences) {
             if (!users.has(p.user_id)) {
@@ -40,7 +32,6 @@ export function usePresence({ channelName, userId, fullName }: UsePresenceOption
             }
           }
         }
-
         setOnlineUsers(Array.from(users.values()));
       })
       .subscribe(async (status) => {
@@ -53,17 +44,23 @@ export function usePresence({ channelName, userId, fullName }: UsePresenceOption
         }
       });
 
-    channelRef.current = channel;
+    setChannelRef(channel);
 
     return () => {
       channel.untrack();
       supabase.removeChannel(channel);
-      channelRef.current = null;
+      setChannelRef(null);
     };
-  }, [channelName, userId, fullName]);
+  }, [userId, fullName]);
+
+  const isUserOnline = useCallback(
+    (id: string) => onlineUsers.some((u) => u.user_id === id),
+    [onlineUsers]
+  );
 
   return {
     onlineUsers,
     onlineCount: onlineUsers.length,
+    isUserOnline,
   };
 }

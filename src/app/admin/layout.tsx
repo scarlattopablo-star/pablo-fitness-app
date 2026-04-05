@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { href: "/admin/planes", icon: ClipboardList, label: "Planes" },
   { href: "/admin/ejercicios", icon: BookOpen, label: "Ejercicios" },
   { href: "/admin/pagos", icon: CreditCard, label: "Pagos" },
-  { href: "/admin/chat-general", icon: MessageCircle, label: "Chat General" },
+  { href: "/admin/chat", icon: MessageCircle, label: "Chat" },
   { href: "/admin/acceso-gratis", icon: Gift, label: "Acceso Gratis" },
   { href: "/admin/papelera", icon: Trash2, label: "Papelera" },
 ];

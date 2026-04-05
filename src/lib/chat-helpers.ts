@@ -198,6 +198,70 @@ export async function fetchGeneralMessages(cursor?: string, limit = 50) {
   }));
 }
 
+// Fetch all clients with their last private message (for admin sidebar)
+export async function fetchAllClientsForChat(adminId: string) {
+  // Get all non-admin, non-deleted profiles
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, avatar_url")
+    .eq("is_admin", false)
+    .is("deleted_at", null)
+    .order("full_name");
+
+  if (!profiles) return [];
+
+  // Get all conversations involving admin
+  const { data: convos } = await supabase
+    .from("conversations")
+    .select("id, user1_id, user2_id, last_message_at, last_message_preview")
+    .or(`user1_id.eq.${adminId},user2_id.eq.${adminId}`)
+    .order("last_message_at", { ascending: false });
+
+  // Get unread counts per conversation
+  const { data: unreadMsgs } = await supabase
+    .from("messages")
+    .select("conversation_id")
+    .neq("sender_id", adminId)
+    .is("read_at", null);
+
+  const unreadMap = new Map<string, number>();
+  if (unreadMsgs) {
+    for (const msg of unreadMsgs) {
+      unreadMap.set(msg.conversation_id, (unreadMap.get(msg.conversation_id) || 0) + 1);
+    }
+  }
+
+  // Map conversations to client IDs
+  const convoByClient = new Map<string, { conversationId: string; lastMessageAt: string | null; lastMessagePreview: string | null; unread: number }>();
+  if (convos) {
+    for (const c of convos) {
+      const clientId = c.user1_id === adminId ? c.user2_id : c.user1_id;
+      if (!convoByClient.has(clientId)) {
+        convoByClient.set(clientId, {
+          conversationId: c.id,
+          lastMessageAt: c.last_message_at,
+          lastMessagePreview: c.last_message_preview,
+          unread: unreadMap.get(c.id) || 0,
+        });
+      }
+    }
+  }
+
+  return profiles.map((p) => {
+    const convo = convoByClient.get(p.id);
+    return {
+      id: p.id,
+      full_name: p.full_name,
+      email: p.email,
+      avatar_url: p.avatar_url,
+      conversationId: convo?.conversationId || null,
+      lastMessageAt: convo?.lastMessageAt || null,
+      lastMessagePreview: convo?.lastMessagePreview || null,
+      unread: convo?.unread || 0,
+    };
+  });
+}
+
 export async function sendGeneralMessage(senderId: string, content: string) {
   const { data, error } = await supabase
     .from("general_messages")

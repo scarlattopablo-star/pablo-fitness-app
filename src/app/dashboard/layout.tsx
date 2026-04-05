@@ -13,6 +13,7 @@ import { getPhotoUrl } from "@/lib/upload-photo";
 import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import ChatNotificationToast, { triggerChatNotification } from "@/components/chat-notification-toast";
+import { usePresence } from "@/hooks/use-presence";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -34,6 +35,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isIOS, setIsIOS] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showPushBanner, setShowPushBanner] = useState(false);
+
+  // Track user presence for online status
+  usePresence(user?.id || "", profile?.full_name || "");
 
   // Redirect to login if no session (fixes iOS standalone PWA)
   useEffect(() => {

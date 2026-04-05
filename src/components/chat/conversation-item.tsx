@@ -12,6 +12,7 @@ interface ConversationItemProps {
   lastMessagePreview: string | null;
   lastMessageAt: string;
   hasUnread?: boolean;
+  isOnline?: boolean;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -32,14 +33,20 @@ export default function ConversationItem({
   lastMessagePreview,
   lastMessageAt,
   hasUnread,
+  isOnline,
 }: ConversationItemProps) {
   return (
     <Link
       href={`/dashboard/chat/${id}`}
       className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors rounded-xl"
     >
-      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold shrink-0">
-        {otherUser.full_name?.charAt(0)?.toUpperCase() || "?"}
+      <div className="relative shrink-0">
+        <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+          {otherUser.full_name?.charAt(0)?.toUpperCase() || "?"}
+        </div>
+        {isOnline !== undefined && (
+          <span className={`${isOnline ? "online-dot" : "offline-dot"} absolute -bottom-0.5 -right-0.5 border-2 border-background`} />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm truncate">{otherUser.full_name}</p>

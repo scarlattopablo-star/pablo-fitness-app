@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, AlertTriangle, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Users } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -14,8 +14,6 @@ import {
 import { checkMessage, WARNING_MESSAGES } from "@/lib/chat-moderation";
 import { sendGeneralPushNotification } from "@/lib/push-notifications";
 import MessageInput from "@/components/chat/message-input";
-import OnlineUsersPanel from "@/components/chat/online-users-panel";
-import { usePresence } from "@/hooks/use-presence";
 
 interface GeneralMessage {
   id: string;
@@ -51,31 +49,15 @@ export default function GeneralChatPage() {
   const [loading, setLoading] = useState(true);
   const [blocked, setBlocked] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
-  const [showOnlinePanel, setShowOnlinePanel] = useState(false);
-  const [viewportHeight, setViewportHeight] = useState<string>("100dvh");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const { onlineUsers, onlineCount } = usePresence({
-    channelName: "general-chat-presence",
-    userId: user?.id || "",
-    fullName: profile?.full_name || "Usuario",
-  });
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Mobile keyboard handling via visualViewport
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const handler = () => setViewportHeight(`${vv.height}px`);
-    vv.addEventListener("resize", handler);
-    return () => vv.removeEventListener("resize", handler);
-  }, []);
-
   useEffect(() => {
     if (!user) return;
+
     async function load() {
       try {
         const [msgs, blockStatus] = await Promise.all([
@@ -90,6 +72,7 @@ export default function GeneralChatPage() {
         setLoading(false);
       }
     }
+
     load();
   }, [user]);
 
@@ -100,6 +83,7 @@ export default function GeneralChatPage() {
   // Realtime subscription
   useEffect(() => {
     if (!user) return;
+
     const channel = supabase
       .channel("general-chat")
       .on(
@@ -107,6 +91,8 @@ export default function GeneralChatPage() {
         { event: "INSERT", schema: "public", table: "general_messages" },
         async (payload) => {
           const newMsg = payload.new as GeneralMessage;
+
+          // Fetch sender info
           const { data: senderProfile } = await supabase
             .from("profiles")
             .select("full_name, avatar_url")
@@ -160,6 +146,8 @@ export default function GeneralChatPage() {
           } as GeneralMessage,
         ];
       });
+
+      // Push notification to all other users
       sendGeneralPushNotification(
         profile?.full_name || "Gym Bro",
         content.substring(0, 100)
@@ -178,125 +166,86 @@ export default function GeneralChatPage() {
   }
 
   return (
-    <div className="flex max-w-4xl" style={{ height: `calc(${viewportHeight} - 60px)` }}>
-      {/* Main chat area */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-card-border bg-card-bg shrink-0">
-          <Link href="/dashboard/chat" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shrink-0">
-            <Users className="h-5 w-5 text-black" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">Chat General</p>
-            <p className="text-xs text-muted">Todos los Gym Bros</p>
-          </div>
-
-          {/* Online badge - tappable on mobile to show drawer */}
-          <button
-            onClick={() => setShowOnlinePanel(!showOnlinePanel)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium lg:hidden"
-          >
-            <span className="online-dot !w-2 !h-2 !animate-none" />
-            {onlineCount} en linea
-            {showOnlinePanel ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
-
-          {/* Desktop online count (not clickable) */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
-            <span className="online-dot !w-2 !h-2 !animate-none" />
-            {onlineCount} en linea
-          </div>
+    <div className="flex flex-col h-[calc(100vh-60px)] md:h-screen max-w-2xl">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-card-border bg-card-bg shrink-0">
+        <Link href="/dashboard/chat" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shrink-0">
+          <Users className="h-5 w-5 text-black" />
         </div>
-
-        {/* Mobile: collapsible online users drawer */}
-        {showOnlinePanel && (
-          <div className="lg:hidden border-b border-card-border bg-card-bg/80 backdrop-blur-sm max-h-48 overflow-y-auto animate-fade-in shrink-0">
-            <OnlineUsersPanel users={onlineUsers} currentUserId={user?.id || ""} />
-          </div>
-        )}
-
-        {/* Warning */}
-        {warning && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-warning/20 text-warning text-xs shrink-0">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <p>{warning}</p>
-          </div>
-        )}
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
-          {messages.length === 0 && (
-            <div className="text-center text-muted text-sm py-8">
-              Se el primero en escribir en el chat general
-            </div>
-          )}
-
-          {messages.map((msg, i) => {
-            const isMine = msg.sender_id === user?.id;
-            const showDate =
-              i === 0 || getDateLabel(msg.created_at) !== getDateLabel(messages[i - 1].created_at);
-            const showName =
-              !isMine && (i === 0 || messages[i - 1].sender_id !== msg.sender_id);
-
-            return (
-              <div key={msg.id}>
-                {showDate && (
-                  <div className="text-center my-4">
-                    <span className="text-xs text-muted bg-card-bg px-3 py-1 rounded-full">
-                      {getDateLabel(msg.created_at)}
-                    </span>
-                  </div>
-                )}
-                <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}>
-                  {!isMine && (
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0 mr-2 mt-1">
-                      {msg.sender_name?.charAt(0)?.toUpperCase() || "?"}
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[75%] px-4 py-2.5 ${
-                      isMine
-                        ? "gradient-primary text-black rounded-2xl rounded-br-sm"
-                        : "glass-card rounded-2xl rounded-bl-sm"
-                    } ${msg.flagged ? "opacity-60" : ""}`}
-                  >
-                    {showName && !isMine && (
-                      <p className="text-xs font-semibold text-primary mb-1">
-                        {msg.sender_name}
-                      </p>
-                    )}
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                    <p className={`text-[10px] mt-1 text-right ${isMine ? "text-black/50" : "text-muted"}`}>
-                      {formatTime(msg.created_at)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <div className="shrink-0">
-          <MessageInput onSend={handleSend} disabled={blocked} />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm">Chat General</p>
+          <p className="text-xs text-muted">Todos los Gym Bros</p>
         </div>
       </div>
 
-      {/* Desktop: side panel with online users */}
-      <div className="hidden lg:flex flex-col w-72 border-l border-card-border bg-card-bg/50 shrink-0">
-        <div className="px-4 py-3 border-b border-card-border">
-          <div className="flex items-center gap-2">
-            <span className="online-dot !w-2.5 !h-2.5" />
-            <p className="text-sm font-semibold">Conectados ({onlineCount})</p>
+      {/* Warning */}
+      {warning && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-warning/20 text-warning text-xs shrink-0">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <p>{warning}</p>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {messages.length === 0 && (
+          <div className="text-center text-muted text-sm py-8">
+            Se el primero en escribir en el chat general
           </div>
-        </div>
-        <div className="flex-1 overflow-y-auto py-2">
-          <OnlineUsersPanel users={onlineUsers} currentUserId={user?.id || ""} />
-        </div>
+        )}
+
+        {messages.map((msg, i) => {
+          const isMine = msg.sender_id === user?.id;
+          const showDate =
+            i === 0 || getDateLabel(msg.created_at) !== getDateLabel(messages[i - 1].created_at);
+          const showName =
+            !isMine && (i === 0 || messages[i - 1].sender_id !== msg.sender_id);
+
+          return (
+            <div key={msg.id}>
+              {showDate && (
+                <div className="text-center my-4">
+                  <span className="text-xs text-muted bg-card-bg px-3 py-1 rounded-full">
+                    {getDateLabel(msg.created_at)}
+                  </span>
+                </div>
+              )}
+              <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-2`}>
+                {!isMine && (
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0 mr-2 mt-1">
+                    {msg.sender_name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+                )}
+                <div
+                  className={`max-w-[75%] px-4 py-2.5 ${
+                    isMine
+                      ? "gradient-primary text-black rounded-2xl rounded-br-sm"
+                      : "glass-card rounded-2xl rounded-bl-sm"
+                  } ${msg.flagged ? "opacity-60" : ""}`}
+                >
+                  {showName && !isMine && (
+                    <p className="text-xs font-semibold text-primary mb-1">
+                      {msg.sender_name}
+                    </p>
+                  )}
+                  <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                  <p className={`text-[10px] mt-1 text-right ${isMine ? "text-black/50" : "text-muted"}`}>
+                    {formatTime(msg.created_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <div className="shrink-0">
+        <MessageInput onSend={handleSend} disabled={blocked} />
       </div>
     </div>
   );
