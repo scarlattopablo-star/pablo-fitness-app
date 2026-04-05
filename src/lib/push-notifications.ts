@@ -90,9 +90,12 @@ async function savePushSubscription(subscription: PushSubscription) {
 
 export async function sendPushNotification(recipientId: string, title: string, body: string, url: string) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
+  if (!session) {
+    console.warn("[Push] No session, cannot send push");
+    return;
+  }
 
-  await fetch("/api/push/send", {
+  const res = await fetch("/api/push/send", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -100,13 +103,19 @@ export async function sendPushNotification(recipientId: string, title: string, b
     },
     body: JSON.stringify({ recipientId, title, body, url }),
   });
+
+  const result = await res.json();
+  console.log("[Push] Send result:", result);
 }
 
 export async function sendGeneralPushNotification(senderName: string, body: string) {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
+  if (!session) {
+    console.warn("[Push] No session, cannot send general push");
+    return;
+  }
 
-  await fetch("/api/push/send-general", {
+  const res = await fetch("/api/push/send-general", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -114,6 +123,9 @@ export async function sendGeneralPushNotification(senderName: string, body: stri
     },
     body: JSON.stringify({ title: `${senderName} en Chat General`, body }),
   });
+
+  const result = await res.json();
+  console.log("[Push] General send result:", result);
 }
 
 export function isPushSupported(): boolean {

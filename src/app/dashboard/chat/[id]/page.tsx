@@ -148,10 +148,10 @@ export default function ConversationPage() {
       if (partner) {
         sendPushNotification(
           partner.id,
-          `${user.user_metadata?.full_name || "Gym Bro"}`,
+          profile?.full_name || user.user_metadata?.full_name || "Gym Bro",
           content.substring(0, 100),
           `/dashboard/chat/${conversationId}`
-        );
+        ).catch((err) => console.error("[Push] Failed to send:", err));
       }
     } catch {
       // Ignore send errors
