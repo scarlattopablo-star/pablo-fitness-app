@@ -77,17 +77,19 @@ export default function RootLayout({
         <Providers>{children}</Providers>
         <script
           dangerouslySetInnerHTML={{
-            __html: `if('serviceWorker' in navigator){
-  navigator.serviceWorker.getRegistrations().then(function(regs){
-    var needsReload=false;
-    regs.forEach(function(r){
-      if(r.active&&r.active.scriptURL&&!r.active.scriptURL.includes('sw.js')){r.unregister();}
-    });
-    if(typeof caches!=='undefined'){caches.keys().then(function(k){k.forEach(function(n){if(n.indexOf('v8')===-1){caches.delete(n);needsReload=true;}});if(needsReload&&window.matchMedia('(display-mode:standalone)').matches){location.reload();}});}
-  });
-  navigator.serviceWorker.register('/sw.js').catch(function(){});
-}
-window.__pwaInstallPrompt=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});`,
+            __html: `(function(){
+  var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||('ontouchend' in document&&navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+  if('serviceWorker' in navigator){
+    if(isIOS){
+      // iOS: unregister any existing SW and clear caches to fix stuck PWAs
+      navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});});
+      if(typeof caches!=='undefined'){caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});}
+    }else{
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
+    }
+  }
+  window.__pwaInstallPrompt=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});
+})();`,
           }}
         />
       </body>
