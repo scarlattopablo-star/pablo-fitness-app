@@ -98,19 +98,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       || ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone);
     if (standalone) setIsInstalled(true);
 
-    // Auto-sync push subscription on every dashboard visit
-    if (isPushSupported()) {
+    // Push notifications setup
+    if ("Notification" in window) {
       if (Notification.permission === "granted") {
         syncPushSubscription();
       } else if (Notification.permission === "default") {
-        const isStandalone = window.matchMedia("(display-mode: standalone)").matches
-          || ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone);
-        if (isStandalone) {
-          // In PWA: show banner (iOS requires user gesture)
+        // Show banner to request permission (iOS needs user gesture, Android too in some cases)
+        if (!localStorage.getItem("push-banner-dismissed")) {
           setShowPushBanner(true);
-        } else {
-          // In browser: auto-request
-          requestPushPermission();
         }
       }
     }
@@ -324,7 +319,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 Activar
               </button>
               <button
-                onClick={() => setShowPushBanner(false)}
+                onClick={() => { setShowPushBanner(false); localStorage.setItem("push-banner-dismissed", "true"); }}
                 className="px-4 py-2.5 text-sm text-muted hover:text-white rounded-xl"
               >
                 Ahora no
