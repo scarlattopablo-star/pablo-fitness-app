@@ -95,20 +95,20 @@ export default function ChatNotificationToast() {
   useEffect(() => {
     if (!user) return;
 
+    console.log("[Toast] Setting up realtime listener for user:", user.id);
+
     const channel = supabase
       .channel("global-msg-notifications")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         async (payload) => {
+          console.log("[Toast] Private message received:", payload.new);
           const msg = payload.new as { id: string; sender_id: string; conversation_id: string; content: string };
           if (msg.sender_id === user.id) return;
-
-          // Don't show if user is already on this conversation
           if (pathname?.includes(msg.conversation_id)) return;
 
-          // Get sender name
-          const { data: profile } = await supabase
+          const { data: senderProfile } = await supabase
             .from("profiles")
             .select("full_name")
             .eq("id", msg.sender_id)
@@ -116,7 +116,7 @@ export default function ChatNotificationToast() {
 
           showToast({
             id: msg.id,
-            senderName: profile?.full_name || "Gym Bro",
+            senderName: senderProfile?.full_name || "Gym Bro",
             message: msg.content.substring(0, 80),
             url: `/dashboard/chat/${msg.conversation_id}`,
           });
@@ -126,13 +126,12 @@ export default function ChatNotificationToast() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "general_messages" },
         async (payload) => {
+          console.log("[Toast] General message received:", payload.new);
           const msg = payload.new as { id: string; sender_id: string; content: string };
           if (msg.sender_id === user.id) return;
-
-          // Don't show if user is already on general chat
           if (pathname?.includes("/chat/general")) return;
 
-          const { data: profile } = await supabase
+          const { data: senderProfile } = await supabase
             .from("profiles")
             .select("full_name")
             .eq("id", msg.sender_id)
@@ -140,13 +139,15 @@ export default function ChatNotificationToast() {
 
           showToast({
             id: msg.id,
-            senderName: profile?.full_name || "Gym Bro",
+            senderName: senderProfile?.full_name || "Gym Bro",
             message: msg.content.substring(0, 80),
             url: "/dashboard/chat/general",
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[Toast] Realtime subscription status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
