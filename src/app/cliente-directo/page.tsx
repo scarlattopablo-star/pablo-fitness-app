@@ -8,8 +8,8 @@ import {
   ArrowRight, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { calculateMacros } from "@/lib/harris-benedict";
-import type { Sex, ActivityLevel } from "@/types";
+import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
   sedentario: { label: "Sedentario", desc: "Trabajo de oficina, poco movimiento" },
@@ -26,7 +26,8 @@ function ClienteDirectoForm() {
 
   const [validating, setValidating] = useState(true);
   const [valid, setValid] = useState(false);
-  const [step, setStep] = useState(1); // 1=register, 2=sex+age, 3=weight+height, 4=activity, 5=photos, 6=done
+  const [step, setStep] = useState(1);
+  const [nutritionalGoal, setNutritionalGoal] = useState<NutritionalGoal | "">("");
 
   // Registration
   const [fullName, setFullName] = useState("");
@@ -64,7 +65,17 @@ function ClienteDirectoForm() {
   const [photoSide, setPhotoSide] = useState<File | null>(null);
   const [photoBack, setPhotoBack] = useState<File | null>(null);
 
-  const totalSteps = 6;
+  const needsGoal = PLANS_NEEDING_GOAL.includes(codePlanSlug as PlanSlug);
+  const totalSteps = needsGoal ? 7 : 6;
+
+  // Step mapping: register is always 1, then optionally goal, then data steps
+  const stepRegister = 1;
+  const stepGoalCD = needsGoal ? 2 : -1;
+  const stepDataCD = needsGoal ? 3 : 2;
+  const stepMedidasCD = needsGoal ? 4 : 3;
+  const stepActividadCD = needsGoal ? 5 : 4;
+  const stepFotosCD = needsGoal ? 6 : 5;
+  const stepFinCD = needsGoal ? 7 : 6;
 
   useEffect(() => {
     if (!code) { setValidating(false); return; }
@@ -101,7 +112,7 @@ function ClienteDirectoForm() {
         await supabase.from("profiles")
           .update({ phone, full_name: fullName })
           .eq("id", data.user.id);
-        setStep(2);
+        setStep(needsGoal ? stepGoalCD : stepDataCD);
       }
     } catch { setError("Error inesperado."); }
     finally { setLoading(false); }
@@ -120,13 +131,16 @@ function ClienteDirectoForm() {
       setError("La combinacion de peso y altura no parece correcta. Verifica los datos.");
       return;
     }
-    const macros = calculateMacros(sex, w, h, a, activityLevel, "quema-grasa");
+    const planSlug = (codePlanSlug || "direct-client") as PlanSlug;
+    const goal = needsGoal && nutritionalGoal ? nutritionalGoal : undefined;
+    const macros = calculateMacros(sex, w, h, a, activityLevel, planSlug, goal);
 
     const { error: surveyError } = await supabase.from("surveys").insert({
       user_id: userId,
       age: Number(age), sex, weight: Number(weight), height: Number(height),
       activity_level: activityLevel, dietary_restrictions: restrictions,
-      objective: "direct-client",
+      objective: planSlug,
+      nutritional_goal: goal || null,
       tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
       protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
       training_days: Number(trainingDays),
@@ -152,7 +166,6 @@ function ClienteDirectoForm() {
     }
 
     // Auto-generate training + nutrition plans based on survey data
-    const planSlug = codePlanSlug || "direct-client";
     await fetch("/api/generate-plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -171,7 +184,7 @@ function ClienteDirectoForm() {
       notes: "Registro inicial (encuesta)",
     });
 
-    setStep(6);
+    setStep(stepFinCD);
   };
 
   const toggleRestriction = (r: string) => {
@@ -201,8 +214,8 @@ function ClienteDirectoForm() {
     );
   }
 
-  // STEP 6: Done
-  if (step === 6) {
+  // STEP FIN: Done
+  if (step === stepFinCD) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -235,7 +248,7 @@ function ClienteDirectoForm() {
       {/* Header */}
       <div className="glass-card border-b border-card-border sticky top-0 z-50">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center gap-4">
-          {step > 1 && step < 6 && (
+          {step > 1 && step < stepFinCD && (
             <button onClick={() => setStep(step - 1)} className="text-muted hover:text-white"><ArrowLeft className="h-5 w-5" /></button>
           )}
           <div className="flex-1">
@@ -252,8 +265,8 @@ function ClienteDirectoForm() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-10">
-        {/* STEP 1: Register */}
-        {step === 1 && (
+        {/* STEP REGISTER */}
+        {step === stepRegister && (
           <div className="animate-fade-in-up">
             <div className="text-center mb-8">
               <UserPlus className="h-10 w-10 text-primary mx-auto mb-3" />
@@ -304,8 +317,36 @@ function ClienteDirectoForm() {
           </div>
         )}
 
-        {/* STEP 2: Sex + Age */}
-        {step === 2 && (
+        {/* STEP GOAL: Objetivo nutricional (solo para planes sin objetivo definido) */}
+        {needsGoal && step === stepGoalCD && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">¿Cual es tu objetivo?</h2>
+            <p className="text-muted mb-8">Tu plan de nutricion se va a adaptar a lo que quieras lograr.</p>
+            <div className="space-y-3">
+              {([
+                { value: "perder-grasa" as NutritionalGoal, label: "Perder grasa", desc: "Deficit calorico para bajar de peso y definir", icon: "🔥" },
+                { value: "ganar-musculo" as NutritionalGoal, label: "Ganar masa muscular", desc: "Superavit calorico para aumentar musculo", icon: "💪" },
+                { value: "mantenimiento" as NutritionalGoal, label: "Mantenimiento", desc: "Mantener tu peso actual y mejorar composicion corporal", icon: "⚖️" },
+              ]).map((opt) => (
+                <button key={opt.value} onClick={() => setNutritionalGoal(opt.value)}
+                  className={`w-full text-left p-5 rounded-xl border transition-all flex items-center gap-4 ${nutritionalGoal === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"}`}>
+                  <span className="text-2xl">{opt.icon}</span>
+                  <div>
+                    <p className="font-bold">{opt.label}</p>
+                    <p className="text-sm text-muted">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setStep(stepDataCD)} disabled={!nutritionalGoal}
+              className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${nutritionalGoal ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
+              Siguiente <ArrowRight className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        {/* STEP DATA: Sex + Age */}
+        {step === stepDataCD && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Datos Personales</h2>
             <p className="text-muted mb-8">Necesitamos estos datos para tu plan personalizado.</p>
@@ -327,15 +368,15 @@ function ClienteDirectoForm() {
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
               </div>
             </div>
-            <button onClick={() => setStep(3)} disabled={!sex || !age}
+            <button onClick={() => setStep(stepMedidasCD)} disabled={!sex || !age}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${sex && age ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 3: Weight + Height + Body Measurements */}
-        {step === 3 && (
+        {/* STEP MEDIDAS: Weight + Height + Body Measurements */}
+        {step === stepMedidasCD && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tus Medidas</h2>
             <p className="text-muted mb-8">Para calcular tu plan de nutricion personalizado.</p>
@@ -382,15 +423,15 @@ function ClienteDirectoForm() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setStep(4)} disabled={!weight || !height}
+            <button onClick={() => setStep(stepActividadCD)} disabled={!weight || !height}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${weight && height ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 4: Activity + Restrictions */}
-        {step === 4 && (
+        {/* STEP ACTIVIDAD: Activity + Restrictions */}
+        {step === stepActividadCD && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tu Actividad</h2>
             <p className="text-muted mb-8">Esto nos ayuda a calcular tu plan.</p>
@@ -450,15 +491,15 @@ function ClienteDirectoForm() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setStep(5)} disabled={!activityLevel}
+            <button onClick={() => setStep(stepFotosCD)} disabled={!activityLevel}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${activityLevel ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 5: Photos */}
-        {step === 5 && (
+        {/* STEP FOTOS: Photos */}
+        {step === stepFotosCD && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Fotos Iniciales</h2>
             <p className="text-muted mb-6">Subí 3 fotos de cuerpo entero para que tu entrenador vea tu punto de partida.</p>

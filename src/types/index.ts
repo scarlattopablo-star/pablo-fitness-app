@@ -13,6 +13,8 @@ export type PlanSlug =
 
 export type Duration = '1-mes' | '3-meses' | '6-meses' | '1-ano';
 
+export type NutritionalGoal = 'perder-grasa' | 'ganar-musculo' | 'mantenimiento';
+
 export type ActivityLevel = 'sedentario' | 'moderado' | 'activo' | 'muy-activo';
 
 export type Sex = 'hombre' | 'mujer';
@@ -49,6 +51,7 @@ export interface SurveyData {
   objective: PlanSlug;
   activityLevel: ActivityLevel;
   dietaryRestrictions: string[];
+  nutritionalGoal?: NutritionalGoal;
 }
 
 export interface MacroCalculation {

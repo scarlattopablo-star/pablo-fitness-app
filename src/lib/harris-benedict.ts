@@ -1,4 +1,4 @@
-import type { Sex, ActivityLevel, PlanSlug, MacroCalculation } from '@/types';
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, MacroCalculation } from '@/types';
 
 const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
   'sedentario': 1.2,
@@ -19,7 +19,22 @@ const OBJECTIVE_ADJUSTMENTS: Record<string, number> = {
   'plan-pareja': 0,
   'competicion': -0.15,
   'direct-client': 0,
+  'entrenamiento-casa': 0,
 };
+
+const NUTRITIONAL_GOAL_ADJUSTMENTS: Record<NutritionalGoal, number> = {
+  'perder-grasa': -0.20,
+  'ganar-musculo': 0.15,
+  'mantenimiento': 0,
+};
+
+// Planes que NO tienen un objetivo nutricional inherente y necesitan que el cliente elija
+export const PLANS_NEEDING_GOAL: PlanSlug[] = [
+  'entrenamiento-casa',
+  'post-parto',
+  'principiante-total',
+  'plan-pareja',
+];
 
 export function calculateTMB(sex: Sex, weight: number, height: number, age: number): number {
   if (sex === 'hombre') {
@@ -38,18 +53,23 @@ export function calculateMacros(
   height: number,
   age: number,
   activityLevel: ActivityLevel,
-  objective: PlanSlug
+  objective: PlanSlug,
+  nutritionalGoal?: NutritionalGoal
 ): MacroCalculation {
   const tmb = calculateTMB(sex, weight, height, age);
   const tdee = calculateTDEE(tmb, activityLevel);
 
-  const adjustment = OBJECTIVE_ADJUSTMENTS[objective] ?? 0;
+  // Si el plan necesita objetivo y el cliente eligió uno, usar ese ajuste
+  const adjustment = nutritionalGoal
+    ? NUTRITIONAL_GOAL_ADJUSTMENTS[nutritionalGoal]
+    : (OBJECTIVE_ADJUSTMENTS[objective] ?? 0);
   const targetCalories = Math.max(1200, Math.round(tdee * (1 + adjustment)));
 
   const protein = Math.round(weight * 2);
   const proteinCalories = protein * 4;
 
-  const fatPercentage = objective === 'quema-grasa' ? 0.25 : 0.30;
+  const isDeficit = nutritionalGoal === 'perder-grasa' || objective === 'quema-grasa';
+  const fatPercentage = isDeficit ? 0.25 : 0.30;
   const fatCalories = Math.round(targetCalories * fatPercentage);
   const fats = Math.round(fatCalories / 9);
 

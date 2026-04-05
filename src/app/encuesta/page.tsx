@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload, Sparkles, Target, Utensils, Clock } from "lucide-react";
-import { calculateMacros } from "@/lib/harris-benedict";
+import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
 import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
-import type { Sex, ActivityLevel, PlanSlug, MacroCalculation } from "@/types";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, MacroCalculation } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
   sedentario: { label: "Sedentario", desc: "Trabajo de oficina, poco movimiento" },
@@ -39,32 +39,44 @@ export default function EncuestaPage() {
   const [photoSide, setPhotoSide] = useState<File | null>(null);
   const [photoBack, setPhotoBack] = useState<File | null>(null);
 
+  const [nutritionalGoal, setNutritionalGoal] = useState<NutritionalGoal | "">("");
+
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const planSlug = (searchParams?.get("plan") || "quema-grasa") as PlanSlug;
   const duration = searchParams?.get("duration") || "3-meses";
   const plan = getPlanBySlug(planSlug);
 
-  const totalSteps = 5;
+  const needsGoal = PLANS_NEEDING_GOAL.includes(planSlug);
+  const totalSteps = needsGoal ? 6 : 5;
+
+  // Mapeo de pasos: si needsGoal, paso 1=objetivo, 2=datos, 3=medidas, 4=actividad, 5=fotos, 6=fin
+  // Si no needsGoal: 1=datos, 2=medidas, 3=actividad, 4=fotos, 5=fin
+  const stepGoal = needsGoal ? 1 : -1;
+  const stepData = needsGoal ? 2 : 1;
+  const stepMedidas = needsGoal ? 3 : 2;
+  const stepActividad = needsGoal ? 4 : 3;
+  const stepFotos = needsGoal ? 5 : 4;
+  const stepFin = needsGoal ? 6 : 5;
 
   const canProceed = () => {
-    switch (step) {
-      case 1: return sex !== "" && age !== "" && Number(age) > 0;
-      case 2: return weight !== "" && height !== "" && Number(weight) > 0 && Number(height) > 0;
-      case 3: return activityLevel !== "";
-      case 4: return true;
-      default: return true;
-    }
+    if (step === stepGoal) return nutritionalGoal !== "";
+    if (step === stepData) return sex !== "" && age !== "" && Number(age) > 0;
+    if (step === stepMedidas) return weight !== "" && height !== "" && Number(weight) > 0 && Number(height) > 0;
+    if (step === stepActividad) return activityLevel !== "";
+    if (step === stepFotos) return true;
+    return true;
   };
 
   const handleNext = () => {
-    if (step === 4 && sex && activityLevel) {
+    if (step === stepFotos && sex && activityLevel) {
       const result = calculateMacros(
         sex,
         Number(weight),
         Number(height),
         Number(age),
         activityLevel,
-        planSlug
+        planSlug,
+        needsGoal && nutritionalGoal ? nutritionalGoal : undefined
       );
       setMacros(result);
     }
@@ -90,7 +102,7 @@ export default function EncuestaPage() {
             <Link href={`/planes/${planSlug}`} className="text-muted hover:text-white transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </Link>
-          ) : step < 5 ? (
+          ) : step < stepFin ? (
             <button onClick={() => setStep(step - 1)} className="text-muted hover:text-white transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
@@ -112,7 +124,7 @@ export default function EncuestaPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-10">
-        {plan && step < 5 && (
+        {plan && step < stepFin && (
           <div className="glass-card rounded-xl p-4 mb-8 flex items-center justify-between">
             <div>
               <p className="text-sm text-muted">Plan seleccionado</p>
@@ -124,8 +136,38 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 1: Datos básicos */}
-        {step === 1 && (
+        {/* STEP GOAL: Objetivo nutricional (solo para planes sin objetivo definido) */}
+        {needsGoal && step === stepGoal && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">¿Cual es tu objetivo?</h2>
+            <p className="text-muted mb-8">Tu plan de nutricion se va a adaptar a lo que quieras lograr.</p>
+
+            <div className="space-y-3">
+              {([
+                { value: "perder-grasa" as NutritionalGoal, label: "Perder grasa", desc: "Deficit calorico para bajar de peso y definir", icon: "🔥" },
+                { value: "ganar-musculo" as NutritionalGoal, label: "Ganar masa muscular", desc: "Superavit calorico para aumentar musculo", icon: "💪" },
+                { value: "mantenimiento" as NutritionalGoal, label: "Mantenimiento", desc: "Mantener tu peso actual y mejorar composicion corporal", icon: "⚖️" },
+              ]).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setNutritionalGoal(opt.value)}
+                  className={`w-full text-left p-5 rounded-xl border transition-all flex items-center gap-4 ${
+                    nutritionalGoal === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"
+                  }`}
+                >
+                  <span className="text-2xl">{opt.icon}</span>
+                  <div>
+                    <p className="font-bold">{opt.label}</p>
+                    <p className="text-sm text-muted">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STEP DATA: Datos básicos */}
+        {step === stepData && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Datos Personales</h2>
             <p className="text-muted mb-8">Necesitamos estos datos para calcular tus macros.</p>
@@ -164,8 +206,8 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 2: Medidas */}
-        {step === 2 && (
+        {/* STEP MEDIDAS: Medidas */}
+        {step === stepMedidas && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tus Medidas</h2>
             <p className="text-muted mb-8">Con estos datos calculamos tu Tasa Metabólica Basal.</p>
@@ -201,8 +243,8 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 3: Actividad y restricciones */}
-        {step === 3 && (
+        {/* STEP ACTIVIDAD: Actividad y restricciones */}
+        {step === stepActividad && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tu Actividad</h2>
             <p className="text-muted mb-8">Esto define tu gasto calórico diario.</p>
@@ -269,8 +311,8 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 4: Photos */}
-        {step === 4 && (
+        {/* STEP FOTOS: Photos */}
+        {step === stepFotos && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Fotos Iniciales</h2>
             <p className="text-muted mb-6">
@@ -361,8 +403,8 @@ export default function EncuestaPage() {
           </div>
         )}
 
-        {/* STEP 5: Encuesta completada - Invitar al pago (SIN mostrar macros) */}
-        {step === 5 && macros && (
+        {/* STEP FIN: Encuesta completada - Invitar al pago (SIN mostrar macros) */}
+        {step === stepFin && macros && (
           <div className="animate-fade-in-up">
             <div className="text-center mb-8">
               <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
@@ -425,6 +467,7 @@ export default function EncuestaPage() {
                 localStorage.setItem("pendingSurvey", JSON.stringify({
                   sex, age: Number(age), weight: Number(weight), height: Number(height),
                   activityLevel, restrictions, emphasis, planSlug,
+                  ...(nutritionalGoal ? { nutritionalGoal } : {}),
                   macros: {
                     tmb: macros.tmb, tdee: macros.tdee,
                     targetCalories: macros.targetCalories,
@@ -445,7 +488,7 @@ export default function EncuestaPage() {
         )}
 
         {/* Navigation */}
-        {step < 5 && step !== 4 && (
+        {step < stepFin && step !== stepFotos && (
           <div className="mt-10">
             <button
               onClick={handleNext}

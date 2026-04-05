@@ -31,6 +31,7 @@ CREATE TABLE public.surveys (
   protein INTEGER,
   carbs INTEGER,
   fats INTEGER,
+  nutritional_goal TEXT CHECK (nutritional_goal IN ('perder-grasa', 'ganar-musculo', 'mantenimiento')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

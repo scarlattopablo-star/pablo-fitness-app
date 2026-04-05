@@ -7,8 +7,8 @@ import {
   ArrowRight, ArrowLeft,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { calculateMacros } from "@/lib/harris-benedict";
-import type { Sex, ActivityLevel, PlanSlug } from "@/types";
+import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
   sedentario: { label: "Sedentario", desc: "Trabajo de oficina, poco movimiento" },
@@ -23,8 +23,11 @@ export default function EncuestaDirectaPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState("");
-  const [step, setStep] = useState(1); // 1=sex+age, 2=weight+height, 3=activity, 4=photos, 5=done
-  const totalSteps = 5;
+  const [step, setStep] = useState(1);
+  const [detectedPlanSlug, setDetectedPlanSlug] = useState<PlanSlug>("direct-client" as PlanSlug);
+  const [nutritionalGoal, setNutritionalGoal] = useState<NutritionalGoal | "">("");
+  const needsGoal = PLANS_NEEDING_GOAL.includes(detectedPlanSlug);
+  const totalSteps = needsGoal ? 6 : 5;
 
   // Survey fields
   const [sex, setSex] = useState<Sex | "">("");
@@ -53,57 +56,55 @@ export default function EncuestaDirectaPage() {
   const [photoBack, setPhotoBack] = useState<File | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) {
         router.push("/login");
         return;
       }
       // Check if already has survey
-      supabase.from("surveys").select("id").eq("user_id", session.user.id).limit(1).single()
-        .then(({ data: survey }) => {
-          if (survey) {
-            // Already completed survey, go to dashboard
-            router.push("/dashboard");
-            return;
-          }
-          setUserId(session.user.id);
-          setLoading(false);
-        });
+      const { data: survey } = await supabase.from("surveys").select("id").eq("user_id", session.user.id).limit(1).single();
+      if (survey) {
+        router.push("/dashboard");
+        return;
+      }
+      // Detect plan slug from subscription or free access code
+      const { data: subData } = await supabase
+        .from("subscriptions")
+        .select("*, plans(slug)")
+        .eq("user_id", session.user.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (subData?.plans?.slug) {
+        setDetectedPlanSlug(subData.plans.slug as PlanSlug);
+      } else {
+        const { data: codeData } = await supabase
+          .from("free_access_codes")
+          .select("plan_slug")
+          .eq("used_by", session.user.id)
+          .limit(1)
+          .maybeSingle();
+        if (codeData?.plan_slug) setDetectedPlanSlug(codeData.plan_slug as PlanSlug);
+      }
+      setUserId(session.user.id);
+      setLoading(false);
     });
   }, [router]);
 
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
 
-    // Get plan_slug from user's subscription first, then fall back to free access code
-    let planSlug: PlanSlug = "direct-client" as PlanSlug;
-    const { data: subData } = await supabase
-      .from("subscriptions")
-      .select("*, plans(slug)")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (subData?.plans?.slug) {
-      planSlug = subData.plans.slug as PlanSlug;
-    } else {
-      const { data: codeData } = await supabase
-        .from("free_access_codes")
-        .select("plan_slug")
-        .eq("used_by", userId)
-        .limit(1)
-        .maybeSingle();
-      if (codeData?.plan_slug) planSlug = codeData.plan_slug as PlanSlug;
-    }
-
-    const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug);
+    const planSlug = detectedPlanSlug;
+    const goal = needsGoal && nutritionalGoal ? nutritionalGoal : undefined;
+    const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug, goal);
 
     await supabase.from("surveys").insert({
       user_id: userId,
       age: Number(age), sex, weight: Number(weight), height: Number(height),
       activity_level: activityLevel, dietary_restrictions: restrictions,
       objective: planSlug,
+      nutritional_goal: goal || null,
       tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
       protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
       training_days: Number(trainingDays),
@@ -131,7 +132,7 @@ export default function EncuestaDirectaPage() {
       body: JSON.stringify({ userId, planSlug }),
     });
 
-    setStep(5);
+    setStep(needsGoal ? 6 : 5);
   };
 
   const toggleRestriction = (r: string) => {
@@ -146,8 +147,16 @@ export default function EncuestaDirectaPage() {
     return <div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>;
   }
 
-  // STEP 5: Done - show install app option
-  if (step === 5) {
+  // Step mapping for dynamic goal step
+  const stepGoal = needsGoal ? 1 : -1;
+  const stepData = needsGoal ? 2 : 1;
+  const stepMedidas = needsGoal ? 3 : 2;
+  const stepActividad = needsGoal ? 4 : 3;
+  const stepFotos = needsGoal ? 5 : 4;
+  const stepFin = needsGoal ? 6 : 5;
+
+  // STEP FIN: Done - show install app option
+  if (step === stepFin) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -197,8 +206,36 @@ export default function EncuestaDirectaPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 pt-10">
-        {/* STEP 1: Sex + Age */}
-        {step === 1 && (
+        {/* STEP GOAL: Objetivo nutricional (solo para planes sin objetivo definido) */}
+        {needsGoal && step === stepGoal && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">¿Cual es tu objetivo?</h2>
+            <p className="text-muted mb-8">Tu plan de nutricion se va a adaptar a lo que quieras lograr.</p>
+            <div className="space-y-3">
+              {([
+                { value: "perder-grasa" as NutritionalGoal, label: "Perder grasa", desc: "Deficit calorico para bajar de peso y definir", icon: "🔥" },
+                { value: "ganar-musculo" as NutritionalGoal, label: "Ganar masa muscular", desc: "Superavit calorico para aumentar musculo", icon: "💪" },
+                { value: "mantenimiento" as NutritionalGoal, label: "Mantenimiento", desc: "Mantener tu peso actual y mejorar composicion corporal", icon: "⚖️" },
+              ]).map((opt) => (
+                <button key={opt.value} onClick={() => setNutritionalGoal(opt.value)}
+                  className={`w-full text-left p-5 rounded-xl border transition-all flex items-center gap-4 ${nutritionalGoal === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"}`}>
+                  <span className="text-2xl">{opt.icon}</span>
+                  <div>
+                    <p className="font-bold">{opt.label}</p>
+                    <p className="text-sm text-muted">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setStep(stepData)} disabled={!nutritionalGoal}
+              className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${nutritionalGoal ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
+              Siguiente <ArrowRight className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        {/* STEP DATA: Sex + Age */}
+        {step === stepData && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Datos Personales</h2>
             <p className="text-muted mb-8">Necesitamos estos datos para tu plan personalizado.</p>
@@ -220,15 +257,15 @@ export default function EncuestaDirectaPage() {
                   className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
               </div>
             </div>
-            <button onClick={() => setStep(2)} disabled={!sex || !age}
+            <button onClick={() => setStep(stepMedidas)} disabled={!sex || !age}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${sex && age ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 2: Weight + Height + Body Measurements */}
-        {step === 2 && (
+        {/* STEP MEDIDAS: Weight + Height + Body Measurements */}
+        {step === stepMedidas && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tus Medidas</h2>
             <p className="text-muted mb-8">Para calcular tu plan de nutricion personalizado.</p>
@@ -275,15 +312,15 @@ export default function EncuestaDirectaPage() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setStep(3)} disabled={!weight || !height}
+            <button onClick={() => setStep(stepActividad)} disabled={!weight || !height}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${weight && height ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 3: Activity + Restrictions */}
-        {step === 3 && (
+        {/* STEP ACTIVIDAD: Activity + Restrictions */}
+        {step === stepActividad && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Tu Actividad</h2>
             <p className="text-muted mb-8">Esto nos ayuda a calcular tu plan.</p>
@@ -363,15 +400,15 @@ export default function EncuestaDirectaPage() {
                 </div>
               </div>
             </div>
-            <button onClick={() => setStep(4)} disabled={!activityLevel}
+            <button onClick={() => setStep(stepFotos)} disabled={!activityLevel}
               className={`w-full mt-8 font-bold py-4 rounded-xl flex items-center justify-center gap-2 ${activityLevel ? "gradient-primary text-black hover:opacity-90" : "bg-card-border text-muted cursor-not-allowed"}`}>
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* STEP 4: Photos */}
-        {step === 4 && (
+        {/* STEP FOTOS: Photos */}
+        {step === stepFotos && (
           <div className="animate-fade-in-up">
             <h2 className="text-2xl font-black mb-2">Fotos Iniciales</h2>
             <p className="text-muted mb-6">Subí 3 fotos de cuerpo entero para que tu entrenador vea tu punto de partida.</p>

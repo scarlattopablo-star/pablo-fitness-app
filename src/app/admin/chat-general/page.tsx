@@ -1,17 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ArrowLeft, AlertTriangle, Users, ChevronDown, ChevronUp } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import {
   fetchGeneralMessages,
   sendGeneralMessage,
-  checkUserBlocked,
-  recordWarning,
 } from "@/lib/chat-helpers";
-import { checkMessage, WARNING_MESSAGES } from "@/lib/chat-moderation";
 import { sendGeneralPushNotification } from "@/lib/push-notifications";
 import MessageInput from "@/components/chat/message-input";
 import OnlineUsersPanel from "@/components/chat/online-users-panel";
@@ -45,27 +41,24 @@ function getDateLabel(dateStr: string): string {
   return date.toLocaleDateString("es-UY", { day: "numeric", month: "long" });
 }
 
-export default function GeneralChatPage() {
+export default function AdminChatGeneralPage() {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<GeneralMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [blocked, setBlocked] = useState(false);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [showOnlinePanel, setShowOnlinePanel] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<string>("100dvh");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { onlineUsers, onlineCount } = usePresence({
     channelName: "general-chat-presence",
     userId: user?.id || "",
-    fullName: profile?.full_name || "Usuario",
+    fullName: profile?.full_name || "Admin",
   });
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Mobile keyboard handling via visualViewport
+  // Mobile keyboard handling
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
@@ -78,12 +71,8 @@ export default function GeneralChatPage() {
     if (!user) return;
     async function load() {
       try {
-        const [msgs, blockStatus] = await Promise.all([
-          fetchGeneralMessages(),
-          checkUserBlocked(user!.id),
-        ]);
+        const msgs = await fetchGeneralMessages();
         setMessages(msgs as GeneralMessage[]);
-        setBlocked(blockStatus.blocked);
       } catch {
         // ignore
       } finally {
@@ -101,7 +90,7 @@ export default function GeneralChatPage() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("general-chat")
+      .channel("admin-general-chat")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "general_messages" },
@@ -133,20 +122,9 @@ export default function GeneralChatPage() {
   }, [user]);
 
   async function handleSend(content: string) {
-    if (!user || blocked) return;
+    if (!user) return;
 
-    const modResult = checkMessage(content);
-    if (modResult.flagged) {
-      const warningCount = await recordWarning(user.id, modResult.reason);
-      if (warningCount >= 3) {
-        setBlocked(true);
-        setWarning(WARNING_MESSAGES.blocked);
-        return;
-      }
-      setWarning(warningCount === 1 ? WARNING_MESSAGES.first : WARNING_MESSAGES.second);
-      setTimeout(() => setWarning(null), 6000);
-    }
-
+    // Admin sends without moderation
     try {
       const msg = await sendGeneralMessage(user.id, content);
       setMessages((prev) => {
@@ -155,13 +133,13 @@ export default function GeneralChatPage() {
           ...prev,
           {
             ...msg,
-            sender_name: profile?.full_name || "Yo",
+            sender_name: profile?.full_name || "Pablo",
             sender_avatar: null,
           } as GeneralMessage,
         ];
       });
       sendGeneralPushNotification(
-        profile?.full_name || "Gym Bro",
+        profile?.full_name || "Pablo",
         content.substring(0, 100)
       );
     } catch {
@@ -178,59 +156,32 @@ export default function GeneralChatPage() {
   }
 
   return (
-    <div className="flex max-w-4xl" style={{ height: `calc(${viewportHeight} - 60px)` }}>
+    <div
+      className="flex -m-4 sm:-m-6 lg:-m-8"
+      style={{ height: `calc(${viewportHeight} - 56px)` }}
+    >
       {/* Main chat area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-card-border bg-card-bg shrink-0">
-          <Link href="/dashboard/chat" className="p-1 hover:bg-white/10 rounded-lg transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
           <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shrink-0">
             <Users className="h-5 w-5 text-black" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm">Chat General</p>
-            <p className="text-xs text-muted">Todos los Gym Bros</p>
+            <p className="text-xs text-muted">Todos los usuarios</p>
           </div>
-
-          {/* Online badge - tappable on mobile to show drawer */}
-          <button
-            onClick={() => setShowOnlinePanel(!showOnlinePanel)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium lg:hidden"
-          >
-            <span className="online-dot !w-2 !h-2 !animate-none" />
-            {onlineCount} en linea
-            {showOnlinePanel ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
-
-          {/* Desktop online count (not clickable) */}
-          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
             <span className="online-dot !w-2 !h-2 !animate-none" />
             {onlineCount} en linea
           </div>
         </div>
 
-        {/* Mobile: collapsible online users drawer */}
-        {showOnlinePanel && (
-          <div className="lg:hidden border-b border-card-border bg-card-bg/80 backdrop-blur-sm max-h-48 overflow-y-auto animate-fade-in shrink-0">
-            <OnlineUsersPanel users={onlineUsers} currentUserId={user?.id || ""} />
-          </div>
-        )}
-
-        {/* Warning */}
-        {warning && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-warning/20 text-warning text-xs shrink-0">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <p>{warning}</p>
-          </div>
-        )}
-
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {messages.length === 0 && (
             <div className="text-center text-muted text-sm py-8">
-              Se el primero en escribir en el chat general
+              No hay mensajes todavia
             </div>
           )}
 
@@ -261,7 +212,7 @@ export default function GeneralChatPage() {
                       isMine
                         ? "gradient-primary text-black rounded-2xl rounded-br-sm"
                         : "glass-card rounded-2xl rounded-bl-sm"
-                    } ${msg.flagged ? "opacity-60" : ""}`}
+                    } ${msg.flagged ? "opacity-60 line-through" : ""}`}
                   >
                     {showName && !isMine && (
                       <p className="text-xs font-semibold text-primary mb-1">
@@ -282,12 +233,12 @@ export default function GeneralChatPage() {
 
         {/* Input */}
         <div className="shrink-0">
-          <MessageInput onSend={handleSend} disabled={blocked} />
+          <MessageInput onSend={handleSend} />
         </div>
       </div>
 
-      {/* Desktop: side panel with online users */}
-      <div className="hidden lg:flex flex-col w-72 border-l border-card-border bg-card-bg/50 shrink-0">
+      {/* Side panel with online users - always visible */}
+      <div className="hidden md:flex flex-col w-72 border-l border-card-border bg-card-bg/50 shrink-0">
         <div className="px-4 py-3 border-b border-card-border">
           <div className="flex items-center gap-2">
             <span className="online-dot !w-2.5 !h-2.5" />
@@ -295,7 +246,7 @@ export default function GeneralChatPage() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto py-2">
-          <OnlineUsersPanel users={onlineUsers} currentUserId={user?.id || ""} />
+          <OnlineUsersPanel users={onlineUsers} currentUserId={user?.id || ""} isAdmin />
         </div>
       </div>
     </div>

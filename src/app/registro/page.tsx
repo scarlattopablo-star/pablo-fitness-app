@@ -87,6 +87,7 @@ function RegistroForm() {
             activity_level: survey.activityLevel,
             dietary_restrictions: survey.restrictions || [],
             objective: survey.planSlug || planSlug || "quema-grasa",
+            nutritional_goal: survey.nutritionalGoal || null,
             tmb: survey.macros.tmb,
             tdee: survey.macros.tdee,
             target_calories: survey.macros.targetCalories,

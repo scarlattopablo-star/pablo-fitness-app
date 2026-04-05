@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import { generateMealPlan } from "@/lib/generate-meal-plan";
+import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
 
 // Admin-only endpoint to regenerate all training plans with updated programming
 export async function POST(request: NextRequest) {
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
     // Get all users who have surveys (meaning they have plan data)
     const { data: surveys, error: surveyError } = await supabase
       .from("surveys")
-      .select("user_id, target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, sex, activity_level")
+      .select("user_id, target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level")
       .order("created_at", { ascending: false });
 
     if (surveyError || !surveys) {
@@ -60,18 +62,27 @@ export async function POST(request: NextRequest) {
         const emphasis = survey.emphasis || "ninguno";
         const userWeight = survey.weight || 70;
         const dietaryRestrictions: string[] = survey.dietary_restrictions || [];
+        const userSex = (survey.sex || "hombre") as Sex;
+        const activityLevel = (survey.activity_level || "moderado") as ActivityLevel;
+        const nutritionalGoal = survey.nutritional_goal as NutritionalGoal | null;
 
-        // Generate new plans with frequency-2 programming
-        const userSex = survey.sex || "hombre";
-        const activityLevel = survey.activity_level || "moderado";
+        // Recalculate macros if nutritional goal exists for plans that need it
+        let { target_calories, protein, carbs, fats } = survey;
+        if (nutritionalGoal && PLANS_NEEDING_GOAL.includes(objective as PlanSlug)) {
+          const recalc = calculateMacros(
+            userSex, userWeight, survey.height || 170, survey.age || 25,
+            activityLevel, objective as PlanSlug, nutritionalGoal
+          );
+          target_calories = recalc.targetCalories;
+          protein = recalc.protein;
+          carbs = recalc.carbs;
+          fats = recalc.fats;
+        }
+
         const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
         const nutrition = generateMealPlan(
-          survey.target_calories,
-          survey.protein,
-          survey.carbs,
-          survey.fats,
-          survey.wake_hour || 7,
-          survey.sleep_hour || 23,
+          target_calories, protein, carbs, fats,
+          survey.wake_hour || 7, survey.sleep_hour || 23,
           dietaryRestrictions
         );
 
