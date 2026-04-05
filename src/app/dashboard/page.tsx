@@ -206,8 +206,8 @@ export default function DashboardPage() {
 
       {/* TRAINER — inline, subtle */}
       <div className="flex items-center gap-4 py-4 border-t border-card-border/50">
-        <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center shrink-0">
-          <span className="text-sm font-black text-black">PS</span>
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-card-bg shrink-0">
+          <img src="/logo-pablo.jpg" alt="PS" className="w-full h-full object-contain" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
         </div>
         <div className="flex-1">
           <p className="text-sm font-bold">Pablo Scarlatto</p>

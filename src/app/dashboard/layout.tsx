@@ -60,14 +60,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="hidden md:flex w-60 flex-col fixed h-screen border-r border-card-border/50 bg-background">
         {/* Logo */}
         <div className="p-5 pb-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-black font-black text-xs">PS</span>
-            </div>
-            <div>
-              <p className="font-bold text-xs tracking-wide uppercase">Pablo Scarlatto</p>
-              <p className="text-[10px] text-muted tracking-wider uppercase">Entrenamientos</p>
-            </div>
+          <Link href="/" className="flex items-center">
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-12 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
         </div>
 
@@ -142,11 +136,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* MOBILE NAV — clean */}
       <div className="md:hidden fixed top-0 w-full z-50 backdrop-blur-md bg-background/80 border-b border-card-border/50">
         <div className="px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md gradient-primary flex items-center justify-center">
-              <span className="text-black font-black text-[9px]">PS</span>
-            </div>
-            <span className="font-bold text-xs uppercase tracking-wide">PS Entrenamientos</span>
+          <Link href="/" className="flex items-center">
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-9 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
           <button onClick={() => setMenuOpen(!menuOpen)}>
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
