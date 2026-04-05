@@ -9,6 +9,7 @@ import {
 import { useState, useEffect } from "react";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
+import { getPhotoUrl } from "@/lib/upload-photo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -27,6 +28,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      getPhotoUrl(profile.avatar_url).then(url => { if (url) setAvatarUrl(url); });
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -69,9 +77,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* User */}
         {profile && (
-          <div className="px-5 py-3">
-            <p className="text-sm font-medium truncate">{profile.full_name}</p>
-            <p className="text-[10px] text-muted truncate">{profile.email}</p>
+          <div className="px-5 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full overflow-hidden shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full gradient-primary flex items-center justify-center">
+                  <span className="text-xs font-black text-black">{profile.full_name?.charAt(0) || "U"}</span>
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{profile.full_name}</p>
+              <p className="text-[10px] text-muted truncate">{profile.email}</p>
+            </div>
           </div>
         )}
 

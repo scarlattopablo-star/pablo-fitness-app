@@ -11,6 +11,7 @@ interface UserProfile {
   phone?: string;
   is_admin: boolean;
   deleted_at?: string | null;
+  avatar_url?: string | null;
 }
 
 interface Subscription {

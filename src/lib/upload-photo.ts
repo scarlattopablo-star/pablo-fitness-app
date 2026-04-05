@@ -25,6 +25,28 @@ export async function uploadProgressPhoto(
   return path;
 }
 
+export async function uploadProfilePhoto(
+  file: File,
+  userId: string
+): Promise<string | null> {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${userId}/avatar.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("progress-photos")
+    .upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+    });
+
+  if (error) {
+    console.error("Avatar upload error:", error);
+    return null;
+  }
+
+  return path;
+}
+
 export async function getPhotoUrl(path: string): Promise<string | null> {
   // Generate a signed URL that expires in 1 hour - only accessible by authenticated users
   const { data, error } = await supabase.storage

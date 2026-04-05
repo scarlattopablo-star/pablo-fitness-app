@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
+import { getPhotoUrl } from "@/lib/upload-photo";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -30,10 +31,14 @@ export default function DashboardPage() {
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [weightLost, setWeightLost] = useState<number | null>(null);
   const [daysSinceProgress, setDaysSinceProgress] = useState(999);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) loadData();
-  }, [user]);
+    if (profile?.avatar_url) {
+      getPhotoUrl(profile.avatar_url).then(url => { if (url) setAvatarUrl(url); });
+    }
+  }, [user, profile]);
 
   const loadData = async () => {
     if (!user) return;
@@ -89,8 +94,14 @@ export default function DashboardPage() {
             <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">{greeting}</p>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{displayName}</h1>
           </div>
-          <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shrink-0">
-            <span className="text-xl font-black text-black">{displayName.charAt(0)}</span>
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full gradient-primary flex items-center justify-center">
+                <span className="text-xl font-black text-black">{displayName.charAt(0)}</span>
+              </div>
+            )}
           </div>
         </div>
 
