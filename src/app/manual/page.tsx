@@ -6,7 +6,7 @@ import {
   ArrowLeft, ChevronDown, ChevronUp, Dumbbell, UtensilsCrossed,
   TrendingUp, User, Smartphone, HelpCircle, LogIn, LayoutDashboard,
   BookOpen, Target, Scale, Camera, RefreshCw, Search, Play, Save,
-  Plus, BarChart3, Apple, Download,
+  Plus, BarChart3, Apple, Download, MessageCircle, Bell, Users,
 } from "lucide-react";
 
 interface SectionProps {
@@ -240,7 +240,52 @@ export default function ManualPage() {
             </div>
           </Section>
 
-          {/* 7. INSTALAR APP */}
+          {/* 7. GYM BRO CHAT */}
+          <Section
+            icon={<MessageCircle className="h-5 w-5 text-black" />}
+            title="Gym Bro - Chat"
+          >
+            <p>Comunicate con otros miembros del gym y con tu entrenador.</p>
+
+            <p className="text-foreground font-semibold mt-2 flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Chat General</p>
+            <p>Una sala abierta para todos los usuarios. Comparte tips, motivacion y consultas con toda la comunidad del gym.</p>
+            <div className="space-y-2 mt-2">
+              <Step number={1} title="Anda a Gym Bro" desc="Desde el menu, toca 'Gym Bro' para ir al chat." />
+              <Step number={2} title="Toca 'General'" desc="Entras al chat grupal donde estan todos los miembros." />
+              <Step number={3} title="Escribi tu mensaje" desc="Todos los usuarios van a poder ver y responder tu mensaje." />
+            </div>
+
+            <p className="text-foreground font-semibold mt-3 flex items-center gap-2"><MessageCircle className="h-4 w-4 text-primary" /> Chat Privado</p>
+            <p>Manda mensajes directos a otros miembros.</p>
+            <div className="space-y-2 mt-2">
+              <Step number={1} title="Toca 'Privado'" desc="En la pantalla de Gym Bro, selecciona la pestaña Privado." />
+              <Step number={2} title="Busca un usuario" desc="Usa el buscador para encontrar a un compañero de gym por nombre." />
+              <Step number={3} title="Chatea" desc="Los mensajes son privados entre vos y la otra persona." />
+            </div>
+
+            <Tip>El chat tiene moderacion automatica. El uso de lenguaje inapropiado genera advertencias y puede resultar en suspension del chat.</Tip>
+          </Section>
+
+          {/* 8. NOTIFICACIONES */}
+          <Section
+            icon={<Bell className="h-5 w-5 text-black" />}
+            title="Notificaciones"
+          >
+            <p>Recibí alertas de mensajes nuevos con sonido y vibracion, incluso con la app cerrada.</p>
+
+            <p className="text-foreground font-semibold mt-2">Activar notificaciones</p>
+            <p>La primera vez que entres al dashboard, te va a aparecer un banner &quot;Activar notificaciones&quot;. Toca &quot;Activar&quot; y acepta el permiso.</p>
+
+            <p className="text-foreground font-semibold mt-3">Notificaciones con la app abierta</p>
+            <p>Si estas navegando en la app y alguien te escribe, vas a ver una notificacion tipo WhatsApp arriba de la pantalla con sonido. Toca la notificacion para ir directo al chat.</p>
+
+            <p className="text-foreground font-semibold mt-3">Notificaciones con la app cerrada</p>
+            <p>Si tenes la app instalada y activaste las notificaciones, recibis alertas del sistema aunque no estes usando la app. Funcionan en Android y en iPhone (con la app instalada desde Safari).</p>
+
+            <Tip>Si no recibis notificaciones, verifica en los ajustes de tu celular que las notificaciones del navegador o de la app esten habilitadas. En iPhone, las push solo funcionan si instalaste la app desde Safari.</Tip>
+          </Section>
+
+          {/* 9. INSTALAR APP */}
           <Section
             icon={<Smartphone className="h-5 w-5 text-black" />}
             title="Instalar la App en tu Celular"
@@ -264,7 +309,7 @@ export default function ManualPage() {
             <Tip>Una vez instalada, la app funciona incluso sin conexion a internet. Tus datos se sincronizan cuando vuelvas a tener señal.</Tip>
           </Section>
 
-          {/* 8. FAQ */}
+          {/* 10. FAQ */}
           <Section
             icon={<HelpCircle className="h-5 w-5 text-black" />}
             title="Preguntas Frecuentes"
@@ -296,7 +341,15 @@ export default function ManualPage() {
               </div>
               <div>
                 <p className="font-bold text-foreground text-xs">Como contacto a mi entrenador?</p>
-                <p className="text-xs mt-1">Por Instagram: <a href="https://instagram.com/pabloscarlattoentrenamientos" className="text-primary">@pabloscarlattoentrenamientos</a>. Tambien podes encontrar el link en tu dashboard.</p>
+                <p className="text-xs mt-1">Por Instagram: <a href="https://instagram.com/pabloscarlattoentrenamientos" className="text-primary">@pabloscarlattoentrenamientos</a>. Tambien podes encontrar el link en tu dashboard o escribirle por el chat de la app.</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-xs">No me llegan las notificaciones del chat, que hago?</p>
+                <p className="text-xs mt-1">Asegurate de haber tocado &quot;Activar&quot; en el banner de notificaciones. En Android verifica que Chrome tenga permisos de notificacion. En iPhone, las notificaciones solo funcionan si instalaste la app desde Safari (Compartir &gt; Agregar a pantalla de inicio).</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-xs">Que es el Chat General?</p>
+                <p className="text-xs mt-1">Es una sala de chat abierta donde todos los miembros del gym pueden escribir. Ideal para compartir tips, motivarse y hacer consultas a la comunidad.</p>
               </div>
             </div>
           </Section>
