@@ -99,11 +99,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (standalone) setIsInstalled(true);
 
     // Push notifications setup
-    const notifAvailable = "Notification" in window;
-    if (notifAvailable && Notification.permission === "granted") {
-      syncPushSubscription();
-    } else if (!notifAvailable || Notification.permission === "default") {
-      // Show banner: either Notification API not available (iOS Safari) or not yet asked
+    try {
+      const notifAvailable = "Notification" in window;
+      if (notifAvailable && Notification.permission === "granted") {
+        syncPushSubscription();
+      } else {
+        // Always show banner unless dismissed
+        if (!localStorage.getItem("push-banner-dismissed")) {
+          setShowPushBanner(true);
+        }
+      }
+    } catch {
+      // If anything fails, still show banner
       if (!localStorage.getItem("push-banner-dismissed")) {
         setShowPushBanner(true);
       }
