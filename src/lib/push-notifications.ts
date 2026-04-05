@@ -69,6 +69,20 @@ export async function sendPushNotification(recipientId: string, title: string, b
   });
 }
 
+export async function sendGeneralPushNotification(senderName: string, body: string) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  await fetch("/api/push/send-general", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ title: `${senderName} en Chat General`, body }),
+  });
+}
+
 export function isPushSupported(): boolean {
   if (typeof window === "undefined") return false;
   return "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;

@@ -67,8 +67,14 @@ export default function ChatPage() {
     // Check block status
     checkUserBlocked(user.id).then(({ blocked: b }) => setBlocked(b));
 
-    // Push permission state
-    setPushState(getPushPermissionState());
+    // Auto-request push permission on first chat visit
+    const currentPush = getPushPermissionState();
+    setPushState(currentPush);
+    if (currentPush === "default" && isPushSupported()) {
+      requestPushPermission().then((granted) => {
+        setPushState(granted ? "granted" : "denied");
+      });
+    }
 
     // Listen for new messages to refresh conversation list
     const channel = supabase

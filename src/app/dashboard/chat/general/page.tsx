@@ -12,6 +12,7 @@ import {
   recordWarning,
 } from "@/lib/chat-helpers";
 import { checkMessage, WARNING_MESSAGES } from "@/lib/chat-moderation";
+import { sendGeneralPushNotification } from "@/lib/push-notifications";
 import MessageInput from "@/components/chat/message-input";
 
 interface GeneralMessage {
@@ -145,6 +146,12 @@ export default function GeneralChatPage() {
           } as GeneralMessage,
         ];
       });
+
+      // Push notification to all other users
+      sendGeneralPushNotification(
+        profile?.full_name || "Gym Bro",
+        content.substring(0, 100)
+      );
     } catch {
       // ignore
     }
