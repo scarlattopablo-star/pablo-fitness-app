@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     // Recent subscriptions (last 10)
     const { data: recentSubs, error: subError } = await adminClient
       .from("subscriptions")
-      .select("id, user_id, plan_slug, duration, status, start_date, end_date, mercadopago_payment_id, created_at")
+      .select("id, user_id, plan_id, duration, status, start_date, end_date, mercadopago_payment_id, created_at, plans(slug, name)")
       .order("created_at", { ascending: false })
       .limit(10);
 

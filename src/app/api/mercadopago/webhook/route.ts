@@ -195,8 +195,6 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         plan_id: plan?.id || null,
-        plan_slug: planSlug,
-        plan_name: plan?.name || planSlug,
         duration,
         amount_paid: payment.transaction_amount,
         start_date: startDate,
