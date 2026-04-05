@@ -112,6 +112,7 @@ function RegistroForm() {
             price,
             email,
             name: fullName,
+            userId: authData.user.id,
           }),
         });
 

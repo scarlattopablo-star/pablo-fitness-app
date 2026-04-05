@@ -5,7 +5,7 @@ import { DURATION_LABELS } from "@/lib/plans-data";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { planName, planSlug, duration, price, email, name } = body;
+    const { planName, planSlug, duration, price, email, name, userId } = body;
 
     if (!planName || !duration || !price || !email) {
       return NextResponse.json(
@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
         failure: `${appUrl}/planes/${planSlug}?error=payment_failed`,
         pending: `${appUrl}/planes/${planSlug}?status=pending`,
       },
-      externalReference: `${planSlug}_${duration}_${Date.now()}`,
+      externalReference: `${planSlug}|${duration}|${userId || ""}|${Date.now()}`,
+      notificationUrl: `${appUrl}/api/mercadopago/webhook`,
     });
 
     return NextResponse.json({

@@ -14,11 +14,13 @@ export async function createPreference({
   payer,
   backUrls,
   externalReference,
+  notificationUrl,
 }: {
   items: MPPreferenceItem[];
   payer: { email: string; name: string };
   backUrls: { success: string; failure: string; pending: string };
   externalReference: string;
+  notificationUrl?: string;
 }) {
   const response = await fetch(`${MP_API_URL}/checkout/preferences`, {
     method: "POST",
@@ -35,7 +37,7 @@ export async function createPreference({
       back_urls: backUrls,
       auto_return: "approved",
       external_reference: externalReference,
-      notification_url: `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/mercadopago/webhook`,
+      notification_url: notificationUrl || `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/mercadopago/webhook`,
     }),
   });
 
