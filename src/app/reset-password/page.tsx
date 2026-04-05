@@ -92,8 +92,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Dumbbell className="h-8 w-8 text-primary" />
-            <span className="font-black text-xl">PABLO SCARLATTO</span>
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-14 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
           </Link>
           <h1 className="text-2xl font-black">Nueva Contraseña</h1>
           <p className="text-muted text-sm mt-2">Elegí tu nueva contraseña</p>
