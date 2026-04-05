@@ -19,7 +19,7 @@ import {
 import UserSearch from "@/components/chat/user-search";
 import ConversationItem from "@/components/chat/conversation-item";
 import { supabase } from "@/lib/supabase";
-import { usePresence } from "@/hooks/use-presence";
+import { usePresenceContext } from "@/hooks/use-presence";
 
 interface Conversation {
   id: string;
@@ -36,7 +36,7 @@ export default function ChatPage() {
   const [blocked, setBlocked] = useState(false);
   const [pushState, setPushState] = useState<string>("default");
   const [unreadConvIds, setUnreadConvIds] = useState<Set<string>>(new Set());
-  const { isUserOnline, onlineCount } = usePresence(user?.id || "", profile?.full_name || "");
+  const { isUserOnline, onlineCount } = usePresenceContext();
 
   const loadConversations = useCallback(async () => {
     if (!user) return;

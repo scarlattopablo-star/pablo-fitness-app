@@ -13,7 +13,7 @@ import { getPhotoUrl } from "@/lib/upload-photo";
 import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import ChatNotificationToast, { triggerChatNotification } from "@/components/chat-notification-toast";
-import { usePresence } from "@/hooks/use-presence";
+import { PresenceProvider } from "@/hooks/use-presence";
 
 const NAV_ITEMS = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Resumen" },
@@ -36,8 +36,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showPushBanner, setShowPushBanner] = useState(false);
 
-  // Track user presence for online status
-  usePresence(user?.id || "", profile?.full_name || "");
 
   // Redirect to login if no session (fixes iOS standalone PWA)
   useEffect(() => {
@@ -347,7 +345,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* MAIN */}
       <main className="flex-1 md:ml-60 pt-14 md:pt-0">
-        <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">{children}</div>
+        <PresenceProvider userId={user?.id || ""} fullName={profile?.full_name || ""}>
+          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">{children}</div>
+        </PresenceProvider>
       </main>
 
       {/* In-app chat notification toast */}

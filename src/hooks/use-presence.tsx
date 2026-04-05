@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 
 export interface PresenceUser {
   user_id: string;
@@ -10,12 +9,20 @@ export interface PresenceUser {
   online_at: string;
 }
 
-export function usePresence(userId: string, fullName: string) {
+interface PresenceValue {
+  onlineUsers: PresenceUser[];
+  onlineCount: number;
+  isUserOnline: (id: string) => boolean;
+}
+
+const defaultValue: PresenceValue = { onlineUsers: [], onlineCount: 0, isUserOnline: () => false };
+const PresenceContext = createContext<PresenceValue>(defaultValue);
+
+function usePresenceChannel(userId: string, fullName: string): PresenceValue {
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
-  const [channelRef, setChannelRef] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !fullName) return;
 
     const channel = supabase.channel("app-presence", {
       config: { presence: { key: userId } },
@@ -44,12 +51,9 @@ export function usePresence(userId: string, fullName: string) {
         }
       });
 
-    setChannelRef(channel);
-
     return () => {
       channel.untrack();
       supabase.removeChannel(channel);
-      setChannelRef(null);
     };
   }, [userId, fullName]);
 
@@ -58,9 +62,21 @@ export function usePresence(userId: string, fullName: string) {
     [onlineUsers]
   );
 
-  return {
-    onlineUsers,
-    onlineCount: onlineUsers.length,
-    isUserOnline,
-  };
+  return { onlineUsers, onlineCount: onlineUsers.length, isUserOnline };
+}
+
+// Provider — wraps dashboard layout, subscribes once
+export function PresenceProvider({ userId, fullName, children }: { userId: string; fullName: string; children: ReactNode }) {
+  const value = usePresenceChannel(userId, fullName);
+  return <PresenceContext.Provider value={value}>{children}</PresenceContext.Provider>;
+}
+
+// For components inside PresenceProvider (client dashboard)
+export function usePresenceContext(): PresenceValue {
+  return useContext(PresenceContext);
+}
+
+// Standalone hook for admin (not wrapped in PresenceProvider)
+export function usePresence(userId: string, fullName: string): PresenceValue {
+  return usePresenceChannel(userId, fullName);
 }
