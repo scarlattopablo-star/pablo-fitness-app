@@ -36,9 +36,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Redirect to login if no session (fixes iOS standalone PWA)
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/login");
+      window.location.href = "/login";
     }
-  }, [loading, user, router]);
+  }, [loading, user]);
 
   useEffect(() => {
     if (profile?.avatar_url) {
@@ -117,17 +117,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSignOut = async () => { await signOut(); router.push("/"); };
 
-  // Show loading screen while auth initializes (prevents blank screen on iOS PWA)
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-24 w-auto mx-auto mb-4" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-        </div>
-      </div>
-    );
-  }
 
 
   return (
