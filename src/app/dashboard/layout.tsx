@@ -46,12 +46,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (standalone) setIsInstalled(true);
 
     // Pick up prompt captured globally (fires before React mounts)
-    if ((window as unknown as Record<string,unknown>).__pwaInstallPrompt) {
-      setDeferredPrompt((window as unknown as Record<string,unknown>).__pwaInstallPrompt as Event);
+    const win = window as unknown as Record<string,unknown>;
+    if (win.__pwaInstallPrompt) {
+      setDeferredPrompt(win.__pwaInstallPrompt as Event);
     }
-    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      (window as unknown as Record<string,unknown>).__pwaInstallPrompt = e;
+    };
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+
+    // Poll briefly in case the global event arrives slightly after mount
+    const poll = setInterval(() => {
+      const p = (window as unknown as Record<string,unknown>).__pwaInstallPrompt;
+      if (p) { setDeferredPrompt(p as Event); clearInterval(poll); }
+    }, 500);
+    const stopPoll = setTimeout(() => clearInterval(poll), 5000);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      clearInterval(poll);
+      clearTimeout(stopPoll);
+    };
   }, []);
 
   const handleInstallApp = async () => {
@@ -63,8 +80,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     } else if (isIOS) {
       setShowIOSGuide(!showIOSGuide);
     } else {
-      // Android fallback: open Chrome's "Add to home screen" via address bar hint
-      alert("Para instalar: tocá el menú (⋮) de Chrome y seleccioná \"Agregar a pantalla de inicio\"");
+      // Android: try to pick up the global prompt one more time
+      const win = window as unknown as Record<string,unknown>;
+      if (win.__pwaInstallPrompt) {
+        const p = win.__pwaInstallPrompt as unknown as { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+        p.prompt();
+        const { outcome } = await p.userChoice;
+        if (outcome === "accepted") setIsInstalled(true);
+        win.__pwaInstallPrompt = null;
+        setDeferredPrompt(null);
+      } else {
+        // Last resort: reload to trigger beforeinstallprompt fresh
+        window.location.reload();
+      }
     }
   };
 
