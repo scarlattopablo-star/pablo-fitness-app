@@ -123,10 +123,18 @@ export default function LoginPage() {
                 <Check className="h-7 w-7 text-black" />
               </div>
               <h2 className="font-bold text-lg mb-2">Email Enviado</h2>
-              <p className="text-sm text-muted mb-6">
+              <p className="text-sm text-muted mb-4">
                 Revisá tu bandeja de entrada en <strong className="text-white">{resetEmail}</strong>.
                 Hace click en el link del email para crear tu nueva contraseña.
               </p>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3 mb-6">
+                <p className="text-xs text-yellow-400 font-medium mb-1">
+                  ¿No lo encontras?
+                </p>
+                <p className="text-xs text-muted">
+                  Revisa tu carpeta de <strong className="text-white">spam</strong> o <strong className="text-white">correo no deseado</strong>. El email puede tardar hasta 2 minutos en llegar.
+                </p>
+              </div>
               <button
                 onClick={() => { setShowReset(false); setResetSent(false); setResetEmail(""); }}
                 className="text-primary hover:underline text-sm"
