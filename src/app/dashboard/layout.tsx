@@ -45,6 +45,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       || ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone);
     if (standalone) setIsInstalled(true);
 
+    // Pick up prompt captured globally (fires before React mounts)
+    if ((window as unknown as Record<string,unknown>).__pwaInstallPrompt) {
+      setDeferredPrompt((window as unknown as Record<string,unknown>).__pwaInstallPrompt as Event);
+    }
     const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
@@ -56,8 +60,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const { outcome } = await (deferredPrompt as unknown as { userChoice: Promise<{ outcome: string }> }).userChoice;
       if (outcome === "accepted") setIsInstalled(true);
       setDeferredPrompt(null);
-    } else {
+    } else if (isIOS) {
       setShowIOSGuide(!showIOSGuide);
+    } else {
+      // Android fallback: open Chrome's "Add to home screen" via address bar hint
+      alert("Para instalar: tocá el menú (⋮) de Chrome y seleccioná \"Agregar a pantalla de inicio\"");
     }
   };
 

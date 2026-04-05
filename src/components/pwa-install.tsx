@@ -30,6 +30,13 @@ export function PWAInstallBanner() {
     const { isStandalone } = getDeviceInfo();
     if (isStandalone) return;
 
+    // Pick up prompt captured globally (fires before React mounts)
+    const win = window as unknown as Record<string,unknown>;
+    if (win.__pwaInstallPrompt) {
+      setDeferredPrompt(win.__pwaInstallPrompt as BeforeInstallPromptEvent);
+      setShowBanner(true);
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -116,6 +123,12 @@ export function PWAInstallButton({ label }: { label?: string }) {
     if (info.isStandalone) {
       setInstalled(true);
       return;
+    }
+
+    // Pick up prompt captured globally (fires before React mounts)
+    const win = window as unknown as Record<string,unknown>;
+    if (win.__pwaInstallPrompt) {
+      setDeferredPrompt(win.__pwaInstallPrompt as BeforeInstallPromptEvent);
     }
 
     const handler = (e: Event) => {
