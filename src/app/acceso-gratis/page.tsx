@@ -2,11 +2,13 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Dumbbell, Gift, Check, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, Gift, Check, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 function AccesoGratisForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get("code") || "";
 
@@ -50,8 +52,8 @@ function AccesoGratisForm() {
 
     try {
       if (mode === "login") {
-        // Existing user: just log in and redirect
-        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+        // Existing user: log in, claim code, create subscription, then redirect
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
         if (loginError) {
           setError(loginError.message === "Invalid login credentials"
             ? "Email o contraseña incorrectos"
@@ -59,7 +61,26 @@ function AccesoGratisForm() {
           setLoading(false);
           return;
         }
-        window.location.href = "/dashboard";
+
+        if (loginData.user && code) {
+          // Claim code for existing user
+          const claimRes = await fetch("/api/free-access", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, userId: loginData.user.id }),
+          });
+
+          if (claimRes.ok) {
+            // Create subscription if they don't already have one active
+            await fetch("/api/create-subscription", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: loginData.user.id, duration, amountPaid: 0, currency: "UYU" }),
+            });
+          }
+        }
+
+        setSuccess(true);
         return;
       }
 
@@ -142,6 +163,21 @@ function AccesoGratisForm() {
   }
 
   if (success) {
+    // Auto-redirect: check if user has survey, route accordingly
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const { data: survey } = await supabase
+          .from("surveys")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .limit(1)
+          .maybeSingle();
+        router.push(survey ? "/dashboard" : "/encuesta-directa");
+      } else {
+        router.push("/login");
+      }
+    });
+
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
@@ -150,27 +186,10 @@ function AccesoGratisForm() {
           </div>
           <h1 className="text-2xl font-black mb-2">¡Acceso Activado!</h1>
           <p className="text-muted mb-4">Tu plan {planName} esta listo.</p>
-          <p className="text-sm text-muted mb-6">Completa la encuesta para que tu entrenador pueda armar tu plan personalizado.</p>
-          <Link
-            href="/encuesta-directa"
-            className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 w-full text-center mb-4"
-          >
-            Completar Encuesta
-          </Link>
-          <div className="glass-card rounded-xl p-4 text-left mb-4">
-            <p className="font-bold text-sm mb-2">Descarga la app en tu celular</p>
-            <p className="text-xs text-muted mb-2">Una vez dentro de tu plan podras instalar la app:</p>
-            <div className="space-y-1 text-xs text-muted">
-              <p><span className="text-primary font-bold">iPhone:</span> Safari → Compartir (⬆) → Agregar a Inicio</p>
-              <p><span className="text-primary font-bold">Android:</span> Chrome → Menu (⋮) → Instalar app</p>
-            </div>
+          <div className="flex justify-center mb-4">
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
           </div>
-          <Link
-            href="/dashboard"
-            className="block text-sm text-primary hover:underline"
-          >
-            Ir a Mi Plan
-          </Link>
+          <p className="text-sm text-muted">Redirigiendo...</p>
         </div>
       </main>
     );
