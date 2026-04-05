@@ -31,7 +31,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "VAPID not configured" }, { status: 500 });
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      const text = await request.text();
+      body = JSON.parse(text);
+    } catch (parseErr) {
+      return NextResponse.json({ error: "Invalid JSON", detail: String(parseErr) }, { status: 400 });
+    }
     const { type, table, record } = body;
 
     if (type !== "INSERT") {
