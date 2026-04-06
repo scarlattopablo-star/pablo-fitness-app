@@ -209,21 +209,21 @@ const I18nContext = createContext<I18nContextType>({
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("locale") as Locale;
-      if (saved && saved in LOCALE_LABELS) return saved;
-      const browserLang = navigator.language.slice(0, 2);
-      if (browserLang === "pt") return "pt";
-      if (browserLang === "en") return "en";
-    }
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("locale") as Locale;
+        if (saved && saved in LOCALE_LABELS) return saved;
+        const browserLang = navigator.language.slice(0, 2);
+        if (browserLang === "pt") return "pt";
+        if (browserLang === "en") return "en";
+      }
+    } catch { /* localStorage blocked in in-app browsers */ }
     return "es";
   });
 
   const handleSetLocale = useCallback((newLocale: Locale) => {
     setLocale(newLocale);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("locale", newLocale);
-    }
+    try { localStorage.setItem("locale", newLocale); } catch { /* blocked */ }
   }, []);
 
   const translate = useCallback(
