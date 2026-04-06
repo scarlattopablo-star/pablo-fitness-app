@@ -110,6 +110,8 @@ function PlanContent() {
   const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [objective, setObjective] = useState("");
+  const [nutritionalGoal, setNutritionalGoal] = useState("");
+  const [tdee, setTdee] = useState(0);
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weight: number; reps: number; date: string; prevWeight?: number }>>({});
   const [activeSession, setActiveSession] = useState<string | null>(null); // day name
@@ -261,7 +263,7 @@ function PlanContent() {
       // Load survey data for macros display
       const { data } = await supabase
         .from("surveys")
-        .select("target_calories, protein, carbs, fats, objective, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level")
+        .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -270,6 +272,8 @@ function PlanContent() {
       if (data && data.target_calories) {
         setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
         setObjective(data.objective || "");
+        setNutritionalGoal(data.nutritional_goal || "");
+        setTdee(data.tdee || 0);
         setHasSurvey(true);
         cacheData("survey", data);
       } else {
@@ -347,10 +351,12 @@ function PlanContent() {
       }
     } catch {
       // Offline fallback - load from cache
-      const cachedSurvey = getCachedData<{ target_calories: number; protein: number; carbs: number; fats: number; objective: string }>("survey");
+      const cachedSurvey = getCachedData<{ target_calories: number; protein: number; carbs: number; fats: number; objective: string; nutritional_goal?: string; tdee?: number }>("survey");
       if (cachedSurvey) {
         setMacros({ calories: cachedSurvey.target_calories, protein: cachedSurvey.protein, carbs: cachedSurvey.carbs, fats: cachedSurvey.fats });
         setObjective(cachedSurvey.objective || "");
+        setNutritionalGoal(cachedSurvey.nutritional_goal || "");
+        setTdee(cachedSurvey.tdee || 0);
       }
       const cachedTraining = getCachedData<TrainingDay[]>("training_plan");
       if (cachedTraining) setTrainingPlan(cachedTraining);
@@ -741,6 +747,114 @@ function PlanContent() {
               );
             })}
           </div>
+
+          {/* ===== RESUMEN NUTRICIONAL ===== */}
+          {(() => {
+            const tCals = mealPlan.meals.reduce((s: number, m: { approxCalories?: number }) => s + (m.approxCalories || 0), 0);
+            const tProt = mealPlan.meals.reduce((s: number, m: { approxProtein?: number }) => s + (m.approxProtein || 0), 0);
+            const tCarbs = mealPlan.meals.reduce((s: number, m: { approxCarbs?: number }) => s + (m.approxCarbs || 0), 0);
+            const tFats = mealPlan.meals.reduce((s: number, m: { approxFats?: number }) => s + (m.approxFats || 0), 0);
+            const dCals = tCals > 0 ? tCals : macros.calories;
+            const dProt = tProt > 0 ? tProt : macros.protein;
+            const dCarbs = tCarbs > 0 ? tCarbs : macros.carbs;
+            const dFats = tFats > 0 ? tFats : macros.fats;
+
+            // Determine goal label
+            let gLabel = ""; let gIcon = ""; let gColor = "";
+            const goalMap: Record<string, [string, string, string]> = {
+              "perder-grasa": ["Deficit calorico — Perdida de grasa", "🔥", "text-orange-400"],
+              "ganar-musculo": ["Superavit calorico — Ganancia muscular", "💪", "text-blue-400"],
+              "mantenimiento": ["Mantenimiento — Recomposicion corporal", "⚖️", "text-emerald-400"],
+            };
+            const objMap: Record<string, [string, string, string]> = {
+              "quema-grasa": ["Deficit calorico — Perdida de grasa", "🔥", "text-orange-400"],
+              "ganancia-muscular": ["Superavit calorico — Ganancia muscular", "💪", "text-blue-400"],
+              "tonificacion": ["Deficit moderado — Tonificacion", "✨", "text-purple-400"],
+              "recomposicion-corporal": ["Deficit moderado — Recomposicion corporal", "🔄", "text-cyan-400"],
+              "rendimiento-deportivo": ["Superavit moderado — Rendimiento deportivo", "⚡", "text-yellow-400"],
+              "fuerza-funcional": ["Superavit leve — Fuerza funcional", "🏋️", "text-yellow-400"],
+              "competicion": ["Deficit agresivo — Preparacion competitiva", "🏆", "text-red-400"],
+              "post-parto": ["Deficit moderado — Recuperacion post parto", "🌸", "text-pink-400"],
+            };
+            if (nutritionalGoal && goalMap[nutritionalGoal]) {
+              [gLabel, gIcon, gColor] = goalMap[nutritionalGoal];
+            } else if (objective && objMap[objective]) {
+              [gLabel, gIcon, gColor] = objMap[objective];
+            } else if (tdee > 0 && dCals > 0) {
+              const r = dCals / tdee;
+              if (r < 0.85) { gLabel = "Deficit calorico — Perdida de grasa"; gIcon = "🔥"; gColor = "text-orange-400"; }
+              else if (r < 0.95) { gLabel = "Deficit moderado — Tonificacion"; gIcon = "✨"; gColor = "text-purple-400"; }
+              else if (r <= 1.05) { gLabel = "Mantenimiento — Recomposicion corporal"; gIcon = "⚖️"; gColor = "text-emerald-400"; }
+              else if (r <= 1.15) { gLabel = "Superavit moderado — Ganancia muscular"; gIcon = "💪"; gColor = "text-blue-400"; }
+              else { gLabel = "Superavit calorico — Volumen"; gIcon = "💪"; gColor = "text-blue-400"; }
+            } else {
+              gLabel = "Plan personalizado"; gIcon = "🎯"; gColor = "text-primary";
+            }
+
+            const totalMC = (dProt * 4) + (dCarbs * 4) + (dFats * 9);
+            const pPct = totalMC > 0 ? Math.round((dProt * 4 / totalMC) * 100) : 0;
+            const cPct = totalMC > 0 ? Math.round((dCarbs * 4 / totalMC) * 100) : 0;
+            const fPct = totalMC > 0 ? Math.round((dFats * 9 / totalMC) * 100) : 0;
+
+            return (
+              <div className="glass-card rounded-2xl p-5 mt-6 border-t-4 border-primary">
+                <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+                  📊 Resumen de tu Plan Nutricional
+                </h3>
+
+                {/* Objetivo */}
+                <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-card-bg">
+                  <span className="text-2xl">{gIcon}</span>
+                  <div>
+                    <p className="text-[10px] text-muted uppercase tracking-wider">Objetivo</p>
+                    <p className={`font-bold text-sm ${gColor}`}>{gLabel}</p>
+                  </div>
+                </div>
+
+                {/* Calorias totales */}
+                <div className="text-center mb-4">
+                  <p className="text-3xl font-black text-primary">{dCals}</p>
+                  <p className="text-xs text-muted">calorias diarias objetivo</p>
+                  {tdee > 0 && (
+                    <p className="text-[10px] text-muted mt-1">
+                      TDEE estimado: {tdee} kcal ({dCals > tdee ? "+" : ""}{dCals - tdee} kcal)
+                    </p>
+                  )}
+                </div>
+
+                {/* Macros breakdown */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="text-center p-3 rounded-xl bg-red-500/10">
+                    <p className="text-lg font-black text-red-400">{dProt}g</p>
+                    <p className="text-[10px] text-muted">Proteina</p>
+                    <p className="text-[10px] text-red-400/70">{pPct}%</p>
+                  </div>
+                  <div className="text-center p-3 rounded-xl bg-yellow-500/10">
+                    <p className="text-lg font-black text-yellow-400">{dCarbs}g</p>
+                    <p className="text-[10px] text-muted">Carbohidratos</p>
+                    <p className="text-[10px] text-yellow-400/70">{cPct}%</p>
+                  </div>
+                  <div className="text-center p-3 rounded-xl bg-blue-500/10">
+                    <p className="text-lg font-black text-blue-400">{dFats}g</p>
+                    <p className="text-[10px] text-muted">Grasas</p>
+                    <p className="text-[10px] text-blue-400/70">{fPct}%</p>
+                  </div>
+                </div>
+
+                {/* Macro bar */}
+                <div className="w-full h-3 rounded-full overflow-hidden flex mb-2">
+                  <div className="bg-red-400 h-full" style={{ width: `${pPct}%` }} />
+                  <div className="bg-yellow-400 h-full" style={{ width: `${cPct}%` }} />
+                  <div className="bg-blue-400 h-full" style={{ width: `${fPct}%` }} />
+                </div>
+                <div className="flex justify-between text-[9px] text-muted">
+                  <span>Proteina {pPct}%</span>
+                  <span>Carbos {cPct}%</span>
+                  <span>Grasas {fPct}%</span>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
