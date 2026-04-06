@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Dumbbell, UserPlus, Check, Eye, EyeOff, Camera, Upload,
@@ -21,8 +20,7 @@ const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = 
 const RESTRICTIONS = ["Ninguna", "Vegetariano", "Vegano", "Sin gluten (celíaco)", "Sin lactosa", "Sin frutos secos", "Diabetes", "Otra"];
 
 function ClienteDirectoForm() {
-  const searchParams = useSearchParams();
-  const code = searchParams.get("code") || "";
+  const [code, setCode] = useState<string | null>(null);
 
   const [validating, setValidating] = useState(true);
   const [valid, setValid] = useState(false);
@@ -77,7 +75,18 @@ function ClienteDirectoForm() {
   const stepFotosCD = needsGoal ? 6 : 5;
   const stepFinCD = needsGoal ? 7 : 6;
 
+  // Read code from URL without useSearchParams (fails in WhatsApp browser)
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      setCode(params.get("code") || "");
+    } catch {
+      setCode("");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (code === null) return; // URL not read yet
     if (!code) { setValidating(false); return; }
     // Safety timeout: if validation takes > 5s, stop loading
     const timeout = setTimeout(() => setValidating(false), 5000);
@@ -649,9 +658,7 @@ class PageBoundary extends React.Component<{ children: React.ReactNode }, { hasE
 export default function ClienteDirectoPage() {
   return (
     <PageBoundary>
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
-        <ClienteDirectoForm />
-      </Suspense>
+      <ClienteDirectoForm />
     </PageBoundary>
   );
 }
