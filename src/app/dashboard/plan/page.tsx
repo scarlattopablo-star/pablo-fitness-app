@@ -259,20 +259,10 @@ function PlanContent() {
         return;
       }
 
-      const { meal: updatedMeal } = await res.json();
+      await res.json(); // consume response
 
-      if (mealPlan && updatedMeal) {
-        // Deep clone to force React re-render
-        const updatedMeals = mealPlan.meals.map((m, i) =>
-          i === swapTarget.mealIndex ? { ...updatedMeal } : { ...m }
-        );
-        const updated = { ...mealPlan, meals: updatedMeals };
-        setMealPlan(updated);
-        cacheData("nutrition_plan", updated);
-      } else {
-        // Fallback: reload entire plan from database
-        await loadMacros();
-      }
+      // Always reload the full plan from database to ensure UI is in sync
+      await loadMacros();
     } catch {
       alert("Error de conexion. Verifica tu internet e intenta de nuevo.");
     }
