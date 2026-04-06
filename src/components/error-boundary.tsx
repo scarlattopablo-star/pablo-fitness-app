@@ -9,16 +9,17 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  errorMsg: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, errorMsg: "" };
   }
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, errorMsg: error?.message || "unknown" };
   }
 
   render() {
@@ -33,9 +34,12 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted mb-4">
               Ocurrio un error inesperado. Recarga la pagina para continuar.
             </p>
+            <p className="text-xs text-danger/70 mb-4 break-all bg-danger/5 p-2 rounded-lg">
+              {this.state.errorMsg}
+            </p>
             <button
               onClick={() => {
-                this.setState({ hasError: false });
+                this.setState({ hasError: false, errorMsg: "" });
                 window.location.reload();
               }}
               className="inline-flex items-center gap-2 gradient-primary text-black font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity"
