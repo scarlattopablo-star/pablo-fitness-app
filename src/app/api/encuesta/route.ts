@@ -16,6 +16,24 @@ export async function POST(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    // Ensure profile exists before inserting survey (FK constraint)
+    // The auth trigger should create it, but race conditions can cause it to be missing
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .single();
+
+    if (!profile) {
+      // Profile missing — create it from auth.users data
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      await supabase.from("profiles").upsert({
+        id: userId,
+        full_name: authUser?.user?.user_metadata?.full_name || "",
+        email: authUser?.user?.email || "",
+      }, { onConflict: "id" });
+    }
+
     const { error } = await supabase.from("surveys").insert({
       user_id: userId,
       ...surveyData,
