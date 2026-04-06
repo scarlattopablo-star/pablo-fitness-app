@@ -41,6 +41,8 @@ interface SurveyData {
   fats: number;
   tmb: number;
   tdee: number;
+  objective?: string;
+  nutritional_goal?: string;
 }
 
 interface SubscriptionData {
@@ -795,6 +797,85 @@ export default function ClienteDetailPage({
                 </div>
               </div>
             ))}
+            {/* Resumen nutricional */}
+            {(() => {
+              const tC = nutritionMeals.reduce((s: number, m: any) => s + (m.approxCalories || 0), 0);
+              const tP = nutritionMeals.reduce((s: number, m: any) => s + (m.approxProtein || 0), 0);
+              const tCb = nutritionMeals.reduce((s: number, m: any) => s + (m.approxCarbs || 0), 0);
+              const tF = nutritionMeals.reduce((s: number, m: any) => s + (m.approxFats || 0), 0);
+              const dC = tC > 0 ? tC : (survey?.target_calories || 0);
+              const dP = tP > 0 ? tP : (survey?.protein || 0);
+              const dCb2 = tCb > 0 ? tCb : (survey?.carbs || 0);
+              const dF = tF > 0 ? tF : (survey?.fats || 0);
+              const userTdee = survey?.tdee || 0;
+
+              let gLabel = ""; let gIcon = ""; let gColor = "";
+              const gMap: Record<string, [string, string, string]> = {
+                "perder-grasa": ["Deficit — Perdida de grasa", "🔥", "text-orange-400"],
+                "ganar-musculo": ["Superavit — Ganancia muscular", "💪", "text-blue-400"],
+                "mantenimiento": ["Mantenimiento", "⚖️", "text-emerald-400"],
+              };
+              const oMap: Record<string, [string, string, string]> = {
+                "quema-grasa": ["Deficit — Perdida de grasa", "🔥", "text-orange-400"],
+                "ganancia-muscular": ["Superavit — Ganancia muscular", "💪", "text-blue-400"],
+                "tonificacion": ["Deficit moderado — Tonificacion", "✨", "text-purple-400"],
+                "recomposicion-corporal": ["Deficit moderado — Recomposicion", "🔄", "text-cyan-400"],
+                "rendimiento-deportivo": ["Superavit — Rendimiento", "⚡", "text-yellow-400"],
+                "fuerza-funcional": ["Superavit leve — Fuerza", "🏋️", "text-yellow-400"],
+                "competicion": ["Deficit agresivo — Competicion", "🏆", "text-red-400"],
+                "post-parto": ["Deficit moderado — Post parto", "🌸", "text-pink-400"],
+              };
+              const ng = survey?.nutritional_goal || "";
+              const obj = survey?.objective || "";
+              if (ng && gMap[ng]) [gLabel, gIcon, gColor] = gMap[ng];
+              else if (obj && oMap[obj]) [gLabel, gIcon, gColor] = oMap[obj];
+              else if (userTdee > 0 && dC > 0) {
+                const r = dC / userTdee;
+                if (r < 0.9) { gLabel = "Deficit"; gIcon = "🔥"; gColor = "text-orange-400"; }
+                else if (r <= 1.05) { gLabel = "Mantenimiento"; gIcon = "⚖️"; gColor = "text-emerald-400"; }
+                else { gLabel = "Superavit"; gIcon = "💪"; gColor = "text-blue-400"; }
+              } else { gLabel = "Personalizado"; gIcon = "🎯"; gColor = "text-primary"; }
+
+              const totMC = (dP * 4) + (dCb2 * 4) + (dF * 9);
+              const pp = totMC > 0 ? Math.round((dP * 4 / totMC) * 100) : 0;
+              const cp = totMC > 0 ? Math.round((dCb2 * 4 / totMC) * 100) : 0;
+              const fp = totMC > 0 ? Math.round((dF * 9 / totMC) * 100) : 0;
+
+              return dC > 0 ? (
+                <div className="bg-card-bg rounded-xl p-4 border border-primary/20">
+                  <p className="text-xs font-bold mb-3">📊 Resumen del Plan</p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span>{gIcon}</span>
+                    <span className={`text-xs font-bold ${gColor}`}>{gLabel}</span>
+                    {userTdee > 0 && <span className="text-[10px] text-muted ml-auto">TDEE: {userTdee} | Plan: {dC} kcal ({dC > userTdee ? "+" : ""}{dC - userTdee})</span>}
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    <div className="text-center p-2 rounded-lg bg-primary/10">
+                      <p className="text-sm font-black text-primary">{dC}</p>
+                      <p className="text-[9px] text-muted">kcal</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-red-500/10">
+                      <p className="text-sm font-black text-red-400">{dP}g</p>
+                      <p className="text-[9px] text-muted">Prot {pp}%</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-yellow-500/10">
+                      <p className="text-sm font-black text-yellow-400">{dCb2}g</p>
+                      <p className="text-[9px] text-muted">Carbs {cp}%</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-blue-500/10">
+                      <p className="text-sm font-black text-blue-400">{dF}g</p>
+                      <p className="text-[9px] text-muted">Grasas {fp}%</p>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 rounded-full overflow-hidden flex">
+                    <div className="bg-red-400 h-full" style={{ width: `${pp}%` }} />
+                    <div className="bg-yellow-400 h-full" style={{ width: `${cp}%` }} />
+                    <div className="bg-blue-400 h-full" style={{ width: `${fp}%` }} />
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
             <button
               onClick={() => {
                 setEditNutritionData(JSON.parse(JSON.stringify(nutritionMeals)));
