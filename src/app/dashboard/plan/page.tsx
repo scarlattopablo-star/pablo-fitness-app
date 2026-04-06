@@ -223,35 +223,58 @@ function PlanContent() {
 
   const handleSwap = async (newFoodId: string) => {
     if (!swapTarget || !user) return;
+
+    // Get a valid access token, refreshing if needed
+    let accessToken: string | undefined;
     const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) {
+    accessToken = session?.access_token;
+    if (!accessToken) {
       const { data: refreshed } = await supabase.auth.refreshSession();
-      if (!refreshed.session?.access_token) return;
+      accessToken = refreshed.session?.access_token;
     }
-    const accessToken = token || (await supabase.auth.getSession()).data.session?.access_token;
-    if (!accessToken) return;
+    if (!accessToken) {
+      alert("Sesion expirada. Recarga la pagina e intenta de nuevo.");
+      setSwapTarget(null);
+      return;
+    }
 
-    const res = await fetch("/api/swap-food", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        mealIndex: swapTarget.mealIndex,
-        foodIndex: swapTarget.foodIndex,
-        newFoodId,
-      }),
-    });
+    try {
+      const res = await fetch("/api/swap-food", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mealIndex: swapTarget.mealIndex,
+          foodIndex: swapTarget.foodIndex,
+          newFoodId,
+        }),
+      });
 
-    if (res.ok && mealPlan) {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+        alert(`Error al cambiar alimento: ${err.error || "intenta de nuevo"}`);
+        setSwapTarget(null);
+        return;
+      }
+
       const { meal: updatedMeal } = await res.json();
-      const updatedMeals = [...mealPlan.meals];
-      updatedMeals[swapTarget.mealIndex] = updatedMeal;
-      const updated = { ...mealPlan, meals: updatedMeals };
-      setMealPlan(updated);
-      cacheData("nutrition_plan", updated);
+
+      if (mealPlan && updatedMeal) {
+        // Deep clone to force React re-render
+        const updatedMeals = mealPlan.meals.map((m, i) =>
+          i === swapTarget.mealIndex ? { ...updatedMeal } : { ...m }
+        );
+        const updated = { ...mealPlan, meals: updatedMeals };
+        setMealPlan(updated);
+        cacheData("nutrition_plan", updated);
+      } else {
+        // Fallback: reload entire plan from database
+        await loadMacros();
+      }
+    } catch {
+      alert("Error de conexion. Verifica tu internet e intenta de nuevo.");
     }
     setSwapTarget(null);
   };
