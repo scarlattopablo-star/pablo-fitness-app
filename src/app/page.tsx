@@ -65,6 +65,13 @@ export default function HomePage() {
 
         <div className="relative max-w-6xl mx-auto">
           <div className="max-w-3xl">
+            {/* Referral hook — first thing visitors see */}
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 animate-fade-in-up">
+              <Gift className="h-4 w-4 text-primary" />
+              <span className="text-sm font-bold text-primary">15% OFF</span>
+              <span className="text-xs text-muted">si un amigo te invito</span>
+            </div>
+
             {/* Badge */}
             <div className="badge-gold inline-flex items-center gap-2 mb-8 animate-fade-in-up">
               <Zap className="h-3 w-3" />
