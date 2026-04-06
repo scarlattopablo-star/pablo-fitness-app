@@ -161,21 +161,26 @@ function ClienteDirectoForm() {
     const goal = needsGoal && nutritionalGoal ? nutritionalGoal : undefined;
     const macros = calculateMacros(sex, w, h, a, activityLevel, planSlug, goal);
 
-    const { error: surveyError } = await supabase.from("surveys").insert({
-      user_id: userId,
-      age: Number(age), sex, weight: Number(weight), height: Number(height),
-      activity_level: activityLevel, dietary_restrictions: restrictions,
-      objective: planSlug,
-      nutritional_goal: goal || null,
-      tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
-      protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
-      training_days: Number(trainingDays),
-      wake_hour: Number(wakeHour),
-      sleep_hour: Number(sleepHour),
+    // Save survey via server-side API (bypasses RLS)
+    const surveyRes = await fetch("/api/encuesta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        age: Number(age), sex, weight: Number(weight), height: Number(height),
+        activity_level: activityLevel, dietary_restrictions: restrictions,
+        objective: planSlug,
+        nutritional_goal: goal || null,
+        tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
+        protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
+        training_days: Number(trainingDays),
+        wake_hour: Number(wakeHour),
+        sleep_hour: Number(sleepHour),
+      }),
     });
-
-    if (surveyError) {
-      setError(`Error al guardar encuesta: ${surveyError.message}`);
+    if (!surveyRes.ok) {
+      const surveyErr = await surveyRes.json().catch(() => ({ error: "unknown" }));
+      setError(`Error al guardar encuesta: ${surveyErr.error || "intenta de nuevo"}`);
       setLoading(false);
       return;
     }
