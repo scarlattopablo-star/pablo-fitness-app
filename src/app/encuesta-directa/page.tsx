@@ -22,6 +22,7 @@ const RESTRICTIONS = ["Ninguna", "Vegetariano", "Vegano", "Sin gluten (celíaco)
 export default function EncuestaDirectaPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [userId, setUserId] = useState("");
   const [step, setStep] = useState(1);
   const [detectedPlanSlug, setDetectedPlanSlug] = useState<PlanSlug>("direct-client" as PlanSlug);
@@ -94,24 +95,37 @@ export default function EncuestaDirectaPage() {
 
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
+    setLoading(true);
+    setError("");
 
     const planSlug = detectedPlanSlug;
     const goal = needsGoal && nutritionalGoal ? nutritionalGoal : undefined;
     const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug, goal);
 
-    await supabase.from("surveys").insert({
-      user_id: userId,
-      age: Number(age), sex, weight: Number(weight), height: Number(height),
-      activity_level: activityLevel, dietary_restrictions: restrictions,
-      objective: planSlug,
-      nutritional_goal: goal || null,
-      tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
-      protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
-      training_days: Number(trainingDays),
-      wake_hour: Number(wakeHour),
-      sleep_hour: Number(sleepHour),
-      emphasis,
+    // Use server-side API to bypass RLS and ensure profile exists
+    const surveyRes = await fetch("/api/encuesta", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId,
+        age: Number(age), sex, weight: Number(weight), height: Number(height),
+        activity_level: activityLevel, dietary_restrictions: restrictions,
+        objective: planSlug,
+        nutritional_goal: goal || null,
+        tmb: macros.tmb, tdee: macros.tdee, target_calories: macros.targetCalories,
+        protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
+        training_days: Number(trainingDays),
+        wake_hour: Number(wakeHour),
+        sleep_hour: Number(sleepHour),
+        emphasis,
+      }),
     });
+    if (!surveyRes.ok) {
+      const surveyErr = await surveyRes.json().catch(() => ({ error: "unknown" }));
+      setError(`Error al guardar encuesta: ${surveyErr.error || "intenta de nuevo"}`);
+      setLoading(false);
+      return;
+    }
 
     // Create initial progress entry as baseline
     await supabase.from("progress_entries").insert({
@@ -132,6 +146,7 @@ export default function EncuestaDirectaPage() {
       body: JSON.stringify({ userId, planSlug }),
     });
 
+    setLoading(false);
     setStep(needsGoal ? 6 : 5);
   };
 
