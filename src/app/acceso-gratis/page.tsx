@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Dumbbell, Gift, Check, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Dumbbell, Gift, Check, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 function AccesoGratisForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const code = searchParams.get("code") || "";
 
+  // Read code from URL without useSearchParams (fails in WhatsApp/Instagram browser)
+  const [code, setCode] = useState<string | null>(null);
   const [validating, setValidating] = useState(true);
   const [valid, setValid] = useState(false);
   const [planName, setPlanName] = useState("");
@@ -27,22 +26,41 @@ function AccesoGratisForm() {
   const [mode, setMode] = useState<"register" | "login">("register");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
+  // Read code from URL safely (compatible with in-app browsers: WhatsApp, Instagram, etc.)
   useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      setCode(params.get("code") || "");
+    } catch {
+      setCode("");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (code === null) return; // URL not read yet
     if (!code) {
       setValidating(false);
       return;
     }
+    // Safety timeout: if validation takes > 5s, stop loading
+    const timeout = setTimeout(() => setValidating(false), 5000);
     fetch(`/api/free-access?code=${code}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) { setValidating(false); clearTimeout(timeout); return null; }
+        return r.json();
+      })
       .then(data => {
+        if (!data) return;
         if (data.valid) {
           setValid(true);
           setPlanName(data.plan_slug.replace(/-/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()));
           setDuration(data.duration);
         }
         setValidating(false);
+        clearTimeout(timeout);
       })
-      .catch(() => setValidating(false));
+      .catch(() => { setValidating(false); clearTimeout(timeout); });
+    return () => clearTimeout(timeout);
   }, [code]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,22 +165,7 @@ function AccesoGratisForm() {
     );
   }
 
-  if (!valid) {
-    return (
-      <main className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
-            <Gift className="h-8 w-8 text-danger" />
-          </div>
-          <h1 className="text-2xl font-black mb-2">Código Inválido</h1>
-          <p className="text-muted mb-6">Este código de acceso no es válido o ya fue utilizado.</p>
-          <Link href="/planes" className="text-primary hover:underline">Ver planes disponibles</Link>
-        </div>
-      </main>
-    );
-  }
-
-  // Auto-redirect when success — use useEffect to avoid running in render
+  // Auto-redirect when success — must be before any conditional returns (React hooks rules)
   useEffect(() => {
     if (!success) return;
     let cancelled = false;
@@ -204,6 +207,21 @@ function AccesoGratisForm() {
     redirect();
     return () => { cancelled = true; };
   }, [success, router]);
+
+  if (!valid && !validating) {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
+            <Gift className="h-8 w-8 text-danger" />
+          </div>
+          <h1 className="text-2xl font-black mb-2">Código Inválido</h1>
+          <p className="text-muted mb-6">Este código de acceso no es válido o ya fue utilizado.</p>
+          <Link href="/planes" className="text-primary hover:underline">Ver planes disponibles</Link>
+        </div>
+      </main>
+    );
+  }
 
   if (success) {
     return (
@@ -313,9 +331,5 @@ function AccesoGratisForm() {
 }
 
 export default function AccesoGratisPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
-      <AccesoGratisForm />
-    </Suspense>
-  );
+  return <AccesoGratisForm />;
 }
