@@ -4,7 +4,7 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { PLANS } from "@/lib/plans-data";
 import { supabase } from "@/lib/supabase";
-import { Gift, Copy, Check, Plus, UserPlus } from "lucide-react";
+import { Gift, Copy, Check, Plus, UserPlus, AlertTriangle } from "lucide-react";
 import type { Duration } from "@/types";
 
 interface GeneratedCode {
@@ -23,63 +23,73 @@ export default function AccesoGratisPage() {
   const [generatedCodes, setGeneratedCodes] = useState<GeneratedCode[]>([]);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [genError, setGenError] = useState("");
 
   const getBaseUrl = () => {
     if (typeof window === "undefined") return "";
     return window.location.origin.split("/admin")[0];
   };
 
-  const generateDirectClientCode = async () => {
+  // Server-side code generation — bypasses RLS, guarantees the code is saved
+  const generateCode = async (type: "direct-client" | "free-plan") => {
     setGenerating(true);
-    const code = `CLIENT-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-    const url = `${getBaseUrl()}/cliente-directo?code=${code}`;
+    setGenError("");
 
     try {
-      await supabase.from("free_access_codes").insert({
-        code,
-        plan_slug: "direct-client",
-        duration: "custom",
-        used: false,
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setGenError("Sesión expirada. Recargá la página e intentá de nuevo.");
+        setGenerating(false);
+        return;
+      }
+
+      const plan = type === "free-plan" ? PLANS.find(p => p.slug === selectedPlan) : null;
+
+      const res = await fetch("/api/generate-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          type,
+          planSlug: type === "free-plan" ? selectedPlan : undefined,
+          duration: type === "free-plan" ? selectedDuration : undefined,
+        }),
       });
 
-      setGeneratedCodes([
-        { code, type: "direct-client", url },
-        ...generatedCodes,
-      ]);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setGenerating(false);
-    }
-  };
+      if (!res.ok) {
+        const errData = await res.json();
+        setGenError(errData.error || "Error al generar código");
+        setGenerating(false);
+        return;
+      }
 
-  const generateFreePlanCode = async () => {
-    setGenerating(true);
-    const code = `FREE-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-    const plan = PLANS.find(p => p.slug === selectedPlan);
-    const url = `${getBaseUrl()}/acceso-gratis?code=${code}`;
-
-    try {
-      await supabase.from("free_access_codes").insert({
-        code,
-        plan_slug: selectedPlan,
-        duration: selectedDuration,
-        used: false,
-      });
+      const data = await res.json();
+      const route = type === "direct-client" ? "cliente-directo" : "acceso-gratis";
+      const url = `${getBaseUrl()}/${route}?code=${data.code}`;
 
       setGeneratedCodes([
         {
-          code, type: "free-plan", planSlug: selectedPlan,
-          planName: plan?.name || "", duration: selectedDuration, url,
+          code: data.code,
+          type,
+          planSlug: type === "free-plan" ? selectedPlan : undefined,
+          planName: type === "free-plan" ? plan?.name || "" : undefined,
+          duration: data.duration,
+          url,
         },
         ...generatedCodes,
       ]);
     } catch (err) {
       console.error(err);
+      setGenError("Error de conexión. Intentá de nuevo.");
     } finally {
       setGenerating(false);
     }
   };
+
+  const generateDirectClientCode = () => generateCode("direct-client");
+  const generateFreePlanCode = () => generateCode("free-plan");
 
   const copyUrl = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -111,6 +121,13 @@ export default function AccesoGratisPage() {
           <Gift className="h-4 w-4" /> Plan Gratis
         </button>
       </div>
+
+      {genError && (
+        <div className="bg-danger/10 border border-danger/30 text-danger text-sm p-4 rounded-xl mb-6 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {genError}
+        </div>
+      )}
 
       {/* DIRECT CLIENT */}
       {tab === "direct-client" && (
