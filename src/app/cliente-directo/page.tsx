@@ -101,34 +101,52 @@ function ClienteDirectoForm() {
         email, password,
         options: { data: { full_name: fullName, phone } },
       });
-      if (authError) { setError(authError.message); setLoading(false); return; }
-      if (data.user) {
-        setUserId(data.user.id);
-        // Mark code as used
-        await supabase.from("free_access_codes")
-          .update({ used: true, used_by: data.user.id })
-          .eq("code", code);
-        // Mark as direct client (no prices)
-        await supabase.from("profiles")
-          .update({ phone, full_name: fullName })
-          .eq("id", data.user.id);
-        setStep(needsGoal ? stepGoalCD : stepDataCD);
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          setError("Este email ya esta registrado. Intenta iniciar sesion.");
+        } else {
+          setError(authError.message);
+        }
+        setLoading(false);
+        return;
       }
-    } catch { setError("Error inesperado."); }
+      if (!data.user) {
+        setError("No se pudo crear la cuenta. Intenta con otro email.");
+        setLoading(false);
+        return;
+      }
+      setUserId(data.user.id);
+      // Mark code as used via server-side API (bypasses RLS)
+      await fetch("/api/free-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, userId: data.user.id }),
+      });
+      // Update profile
+      await supabase.from("profiles")
+        .update({ phone, full_name: fullName })
+        .eq("id", data.user.id);
+      setStep(needsGoal ? stepGoalCD : stepDataCD);
+    } catch { setError("Error inesperado. Intenta de nuevo."); }
     finally { setLoading(false); }
   };
 
   const handleFinishSurvey = async () => {
     if (!userId || !sex || !activityLevel) return;
+    setLoading(true);
+    setError("");
+    try {
     const w = Number(weight), h = Number(height), a = Number(age);
     if (w < 30 || w > 300 || h < 100 || h > 250 || a < 14 || a > 100) {
       setError("Verifica que los datos de peso, altura y edad sean correctos.");
+      setLoading(false);
       return;
     }
     // BMI sanity check: reject physically impossible combinations
     const bmi = w / ((h / 100) ** 2);
     if (bmi < 10 || bmi > 70) {
       setError("La combinacion de peso y altura no parece correcta. Verifica los datos.");
+      setLoading(false);
       return;
     }
     const planSlug = (codePlanSlug || "direct-client") as PlanSlug;
@@ -185,6 +203,8 @@ function ClienteDirectoForm() {
     });
 
     setStep(stepFinCD);
+    } catch { setError("Error inesperado. Intenta de nuevo."); }
+    finally { setLoading(false); }
   };
 
   const toggleRestriction = (r: string) => {
@@ -539,13 +559,14 @@ function ClienteDirectoForm() {
               <p className="text-xs text-muted mt-1">Solo vos y tu entrenador pueden verlas.</p>
             </div>
 
-            <button onClick={handleFinishSurvey}
-              className="w-full gradient-primary text-black font-bold py-4 rounded-xl hover:opacity-90 flex items-center justify-center gap-2 mb-3">
-              Finalizar <Check className="h-5 w-5" />
+            {error && <div className="bg-danger/10 border border-danger/30 text-danger text-sm p-3 rounded-xl mb-4">{error}</div>}
+            <button onClick={handleFinishSurvey} disabled={loading}
+              className="w-full gradient-primary text-black font-bold py-4 rounded-xl hover:opacity-90 flex items-center justify-center gap-2 mb-3 disabled:opacity-50">
+              {loading ? "Generando tu plan..." : "Finalizar"} {!loading && <Check className="h-5 w-5" />}
             </button>
-            <button onClick={handleFinishSurvey}
-              className="w-full text-sm text-muted hover:text-white text-center py-2">
-              Saltar fotos por ahora
+            <button onClick={handleFinishSurvey} disabled={loading}
+              className="w-full text-sm text-muted hover:text-white text-center py-2 disabled:opacity-50">
+              {loading ? "Procesando..." : "Saltar fotos por ahora"}
             </button>
           </div>
         )}
