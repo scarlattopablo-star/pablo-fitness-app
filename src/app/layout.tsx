@@ -50,6 +50,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
+      suppressHydrationWarning
       className={`${inter.variable} ${outfit.variable} h-full antialiased`}
     >
       <head>
@@ -59,7 +60,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body suppressHydrationWarning className="min-h-full flex flex-col">
         {/* Logo watermark — subtle, fused with background on all pages */}
         <img
           src="/logo-pablo.jpg"
