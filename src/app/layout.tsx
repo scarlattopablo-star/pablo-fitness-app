@@ -79,20 +79,6 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){
-  // Detect in-app browsers (WhatsApp, Instagram, Facebook) and redirect to default browser
-  var ua=navigator.userAgent||'';
-  if(/WhatsApp|Instagram|FBAN|FBAV/i.test(ua)){
-    var url=location.href;
-    // Android: use intent to open in Chrome
-    if(/android/i.test(ua)){
-      location.href='intent:'+url+'#Intent;end';
-      return;
-    }
-    // iOS: can't force Safari, but try window.open
-    if(/iPhone|iPad/i.test(ua)){
-      window.open(url,'_system');
-    }
-  }
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js').catch(function(){});
   }

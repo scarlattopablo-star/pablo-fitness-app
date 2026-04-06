@@ -52,41 +52,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Timeout: if getSession takes too long (iOS standalone), stop loading
+    // Timeout: if getSession takes too long or fails, stop loading
     const timeout = setTimeout(() => {
       setLoading(false);
     }, 2000);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      clearTimeout(timeout);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchSubscription(session.user.id);
-        checkPlans(session.user.id);
-      }
-      setLoading(false);
-    }).catch(() => {
-      clearTimeout(timeout);
-      setLoading(false);
-    });
+    let authSub: { unsubscribe: () => void } | null = null;
 
-    const { data: { subscription: authSub } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    try {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        clearTimeout(timeout);
         setUser(session?.user ?? null);
         if (session?.user) {
           fetchProfile(session.user.id);
           fetchSubscription(session.user.id);
           checkPlans(session.user.id);
-        } else {
-          setProfile(null);
-          setSubscription(null);
-          setHasPlans(false);
         }
-      }
-    );
+        setLoading(false);
+      }).catch(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
 
-    return () => authSub.unsubscribe();
+      const { data } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            fetchProfile(session.user.id);
+            fetchSubscription(session.user.id);
+            checkPlans(session.user.id);
+          } else {
+            setProfile(null);
+            setSubscription(null);
+            setHasPlans(false);
+          }
+        }
+      );
+      authSub = data.subscription;
+    } catch {
+      // In-app browsers may crash on auth calls - gracefully degrade
+      clearTimeout(timeout);
+      setLoading(false);
+    }
+
+    return () => { if (authSub) authSub.unsubscribe(); };
   }, []);
 
   async function fetchProfile(userId: string) {
