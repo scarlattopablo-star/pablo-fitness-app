@@ -5,7 +5,7 @@ import { DURATION_LABELS } from "@/lib/plans-data";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { planName, planSlug, duration, price, email, name, userId } = body;
+    const { planName, planSlug, duration, price, email, name, userId, referralCode } = body;
 
     if (!planName || !duration || !price || !email) {
       return NextResponse.json(
@@ -17,13 +17,19 @@ export async function POST(request: NextRequest) {
     const durationLabel = DURATION_LABELS[duration] || duration;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
 
+    // Apply 15% referral discount if valid code
+    let finalPrice = Number(price);
+    if (referralCode) {
+      finalPrice = Math.round(finalPrice * 0.85);
+    }
+
     const preference = await createPreference({
       items: [
         {
-          title: `Plan ${planName} - ${durationLabel}`,
+          title: `Plan ${planName} - ${durationLabel}${referralCode ? " (15% OFF referido)" : ""}`,
           description: `Plan de entrenamiento y nutrición personalizado - Pablo Scarlatto Entrenamientos`,
           quantity: 1,
-          unit_price: Number(price),
+          unit_price: finalPrice,
           currency_id: "UYU",
         },
       ],
@@ -33,7 +39,8 @@ export async function POST(request: NextRequest) {
         failure: `${appUrl}/planes/${planSlug}?error=payment_failed`,
         pending: `${appUrl}/planes/${planSlug}?status=pending`,
       },
-      externalReference: `${planSlug}|${duration}|${userId || ""}|${Date.now()}`,
+      // Include referral code in external reference for webhook processing
+      externalReference: `${planSlug}|${duration}|${userId || ""}|${Date.now()}${referralCode ? `|ref:${referralCode}` : ""}`,
       notificationUrl: `${appUrl}/api/mercadopago/webhook`,
     });
 

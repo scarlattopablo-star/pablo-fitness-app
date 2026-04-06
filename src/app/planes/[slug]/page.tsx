@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
   Heart, Shield, RefreshCw, Users, Medal, Home,
@@ -25,6 +25,19 @@ export default function PlanDetailPage({
   const { slug } = use(params);
   const plan = getPlanBySlug(slug);
   const [selectedDuration, setSelectedDuration] = useState<Duration>("3-meses");
+  const [referralCode, setReferralCode] = useState("");
+  const [referrerName, setReferrerName] = useState("");
+
+  useEffect(() => {
+    const code = localStorage.getItem("referralCode");
+    if (code) {
+      setReferralCode(code);
+      fetch(`/api/referral?code=${code}`)
+        .then(r => r.json())
+        .then(d => { if (d.valid) setReferrerName(d.referrerName); })
+        .catch(() => {});
+    }
+  }, []);
 
   if (!plan) {
     return (
@@ -165,22 +178,46 @@ export default function PlanDetailPage({
                 </p>
               )}
 
+              {/* Referral discount banner */}
+              {referralCode && referrerName && (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 mb-4 flex items-center gap-3">
+                  <span className="text-xl">🎁</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-primary">15% OFF por invitacion de {referrerName}</p>
+                    <p className="text-[10px] text-muted">Descuento aplicado automaticamente</p>
+                  </div>
+                </div>
+              )}
+
               <div className="border-t border-card-border pt-4 mb-4">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-muted">Plan {plan.name}</span>
-                  <span className="font-bold">${formatPrice(price)}</span>
+                  {referralCode ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted line-through text-sm">${formatPrice(price)}</span>
+                      <span className="font-bold text-primary">${formatPrice(Math.round(price * 0.85))}</span>
+                    </div>
+                  ) : (
+                    <span className="font-bold">${formatPrice(price)}</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted">Duración</span>
                   <span>{DURATION_LABELS[selectedDuration]}</span>
                 </div>
+                {referralCode && (
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-primary text-sm font-medium">Descuento referido</span>
+                    <span className="text-primary text-sm font-bold">-${formatPrice(price - Math.round(price * 0.85))}</span>
+                  </div>
+                )}
               </div>
 
               <Link
-                href={`/encuesta?plan=${plan.slug}&duration=${selectedDuration}`}
+                href={`/encuesta?plan=${plan.slug}&duration=${selectedDuration}${referralCode ? `&ref=${referralCode}` : ""}`}
                 className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
               >
-                Comenzar Ahora <ArrowRight className="h-5 w-5" />
+                {referralCode ? "Comenzar con 15% OFF" : "Comenzar Ahora"} <ArrowRight className="h-5 w-5" />
               </Link>
 
               <p className="text-xs text-muted text-center mt-3">

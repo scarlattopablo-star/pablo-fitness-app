@@ -48,12 +48,16 @@ function calculateEndDate(duration: string): string {
 // Also supports legacy format: "planSlug_duration_timestamp"
 function parseExternalReference(ref: string) {
   if (ref.includes("|")) {
-    const [planSlug, duration, userId] = ref.split("|");
-    return { planSlug: planSlug || "", duration: duration || "1-mes", userId: userId || "" };
+    const parts = ref.split("|");
+    const [planSlug, duration, userId] = parts;
+    // Extract referral code if present (format: ref:CODE)
+    const refPart = parts.find(p => p.startsWith("ref:"));
+    const referralCode = refPart ? refPart.replace("ref:", "") : "";
+    return { planSlug: planSlug || "", duration: duration || "1-mes", userId: userId || "", referralCode };
   }
   // Legacy format: planSlug_duration_timestamp
   const parts = ref.split("_");
-  return { planSlug: parts[0] || "", duration: parts[1] || "1-mes", userId: "" };
+  return { planSlug: parts[0] || "", duration: parts[1] || "1-mes", userId: "", referralCode: "" };
 }
 
 function getAdminClient() {
@@ -121,8 +125,8 @@ export async function POST(request: NextRequest) {
 
     // Parse external_reference
     const ref = payment.external_reference || "";
-    const { planSlug, duration, userId: refUserId } = parseExternalReference(ref);
-    log("INFO", "Parsed external_reference", { ref, planSlug, duration, refUserId });
+    const { planSlug, duration, userId: refUserId, referralCode } = parseExternalReference(ref);
+    log("INFO", "Parsed external_reference", { ref, planSlug, duration, refUserId, referralCode });
 
     // Find user - try by userId first (most reliable), then by email
     let userId: string | null = null;
@@ -239,6 +243,54 @@ export async function POST(request: NextRequest) {
         mercadopagoId: payment.id,
         amount: payment.transaction_amount,
       });
+    }
+
+    // Process referral reward if applicable
+    if (referralCode && userId) {
+      try {
+        // Find referrer by code
+        const { data: referrer } = await adminClient
+          .from("profiles")
+          .select("id")
+          .eq("referral_code", referralCode)
+          .single();
+
+        if (referrer && referrer.id !== userId) {
+          // Create referral record
+          await adminClient.from("referrals").insert({
+            referrer_id: referrer.id,
+            referred_id: userId,
+            referred_email: payment.payer?.email || "",
+            status: "completed",
+            reward_applied: true,
+            days_rewarded: 7,
+          });
+
+          // Add 7 days to referrer's active subscription
+          const { data: referrerSub } = await adminClient
+            .from("subscriptions")
+            .select("id, end_date")
+            .eq("user_id", referrer.id)
+            .eq("status", "active")
+            .order("end_date", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (referrerSub) {
+            const currentEnd = new Date(referrerSub.end_date);
+            currentEnd.setDate(currentEnd.getDate() + 7);
+            await adminClient
+              .from("subscriptions")
+              .update({ end_date: currentEnd.toISOString().split("T")[0] })
+              .eq("id", referrerSub.id);
+            log("INFO", "Referral reward applied: +7 days", { referrerId: referrer.id, newEndDate: currentEnd.toISOString() });
+          } else {
+            log("INFO", "Referral recorded but referrer has no active subscription", { referrerId: referrer.id });
+          }
+        }
+      } catch (refErr) {
+        log("ERROR", "Referral processing failed (payment still OK)", { error: String(refErr) });
+      }
     }
 
     return NextResponse.json({ received: true, subscriptionId: subscription?.id });

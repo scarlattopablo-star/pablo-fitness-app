@@ -103,6 +103,9 @@ function RegistroForm() {
 
       // 3. Create MercadoPago preference and redirect to payment
       if (plan && price > 0) {
+        const referralCode = localStorage.getItem("referralCode") || "";
+        const finalPrice = referralCode ? Math.round(price * 0.85) : price;
+
         const response = await fetch("/api/mercadopago/create-preference", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -110,10 +113,11 @@ function RegistroForm() {
             planName: plan.name,
             planSlug: plan.slug,
             duration,
-            price,
+            price: finalPrice,
             email,
             name: fullName,
             userId: authData.user.id,
+            referralCode,
           }),
         });
 
