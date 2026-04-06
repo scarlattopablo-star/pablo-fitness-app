@@ -5,6 +5,7 @@ import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy, Heart,
   Shield, RefreshCw, Users, Medal, Home, ArrowRight, Star,
   ChevronRight, Zap, Target, BarChart3, Smartphone, UtensilsCrossed,
+  Gift, Share2, Clock,
 } from "lucide-react";
 import { PLANS, formatPrice } from "@/lib/plans-data";
 import { InstagramIcon } from "@/components/icons";
@@ -254,6 +255,74 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* REFERIDOS — banner destacado */}
+      <section className="py-24 px-4 relative overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute inset-0 bg-primary/[0.03]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/[0.06] rounded-full blur-[120px]" />
+
+        <div className="relative max-w-5xl mx-auto">
+          <div className="card-premium rounded-3xl p-8 sm:p-12 border-primary/20 relative overflow-hidden">
+            {/* Corner badge */}
+            <div className="absolute top-0 right-0 gradient-primary text-black font-black text-sm px-6 py-3 rounded-bl-3xl">
+              15% OFF
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+              {/* Left: Copy */}
+              <div>
+                <div className="badge-gold inline-flex items-center gap-2 mb-6">
+                  <Gift className="h-3 w-3" />
+                  Programa de Referidos
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-black mb-4 tracking-tight">
+                  Invita amigos,
+                  <br />
+                  <span className="text-gradient">gana dias gratis</span>
+                </h2>
+                <p className="text-muted mb-6 leading-relaxed">
+                  Compartí tu codigo con amigos. Ellos reciben <span className="text-primary font-bold">15% de descuento</span> en su primer plan y vos ganas <span className="text-primary font-bold">7 dias gratis</span> por cada amigo que se sume.
+                </p>
+                <Link href="/login" className="btn-shimmer inline-flex items-center gap-2 px-8 py-4 rounded-full text-base">
+                  Obtener mi codigo <ArrowRight className="h-5 w-5" />
+                </Link>
+              </div>
+
+              {/* Right: Visual */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-4 bg-card-bg/50 rounded-2xl p-5">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Share2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm mb-1">1. Compartí tu codigo</p>
+                    <p className="text-xs text-muted">Envialo por WhatsApp, Instagram o como quieras</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4 bg-card-bg/50 rounded-2xl p-5">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Gift className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm mb-1">2. Tu amigo recibe 15% OFF</p>
+                    <p className="text-xs text-muted">El descuento se aplica en su primer plan</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4 bg-card-bg/50 rounded-2xl p-5">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm mb-1">3. Vos ganas +7 dias gratis</p>
+                    <p className="text-xs text-muted">Se suman automaticamente a tu suscripcion</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
