@@ -891,6 +891,86 @@ export default function ClienteDetailPage({
         {/* Inline nutrition editing */}
         {expandNutrition && editingNutrition && (
           <div className="mt-4 space-y-4">
+            {/* Calorie adjustment controls */}
+            {(() => {
+              const currentCals = editNutritionData.reduce((s: number, m: any) => s + (m.approxCalories || 0), 0);
+              const adjustCalories = (delta: number) => {
+                if (currentCals <= 0) return;
+                const targetCals = Math.max(1200, currentCals + delta);
+                const ratio = targetCals / currentCals;
+                const adjusted = editNutritionData.map((meal: any) => {
+                  const newFoods = (meal.foods || []).map((food: string) => {
+                    const match = food.match(/^(\d+)\s*g\s+(.+)/i);
+                    if (match) {
+                      const newGrams = Math.round(parseInt(match[1]) * ratio);
+                      return `${newGrams}g ${match[2]}`;
+                    }
+                    return food;
+                  });
+                  const newFoodDetails = (meal.foodDetails || []).map((fd: any) => {
+                    const r = ratio;
+                    return {
+                      ...fd,
+                      grams: Math.round(fd.grams * r),
+                      calories: Math.round(fd.calories * r),
+                      protein: Math.round(fd.protein * r * 10) / 10,
+                      carbs: Math.round(fd.carbs * r * 10) / 10,
+                      fat: Math.round(fd.fat * r * 10) / 10,
+                    };
+                  });
+                  const newApproxCals = newFoodDetails.length > 0
+                    ? newFoodDetails.reduce((s: number, fd: any) => s + fd.calories, 0)
+                    : Math.round((meal.approxCalories || 0) * ratio);
+                  return {
+                    ...meal,
+                    foods: newFoods,
+                    foodDetails: newFoodDetails.length > 0 ? newFoodDetails : meal.foodDetails,
+                    approxCalories: newApproxCals,
+                    approxProtein: newFoodDetails.length > 0 ? Math.round(newFoodDetails.reduce((s: number, fd: any) => s + fd.protein, 0)) : Math.round((meal.approxProtein || 0) * ratio),
+                    approxCarbs: newFoodDetails.length > 0 ? Math.round(newFoodDetails.reduce((s: number, fd: any) => s + fd.carbs, 0)) : Math.round((meal.approxCarbs || 0) * ratio),
+                    approxFats: newFoodDetails.length > 0 ? Math.round(newFoodDetails.reduce((s: number, fd: any) => s + fd.fat, 0)) : Math.round((meal.approxFats || 0) * ratio),
+                  };
+                });
+                setEditNutritionData(adjusted);
+              };
+
+              return currentCals > 0 ? (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <p className="text-xs font-bold mb-3 flex items-center gap-2">
+                    ⚡ Ajustar Calorias del Plan
+                    <span className="text-primary font-black text-sm ml-auto">{currentCals} kcal</span>
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => adjustCalories(-100)}
+                      className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/30 transition-colors">
+                      -100
+                    </button>
+                    <button onClick={() => adjustCalories(-50)}
+                      className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-400 text-xs font-bold hover:bg-orange-500/30 transition-colors">
+                      -50
+                    </button>
+                    <div className="flex-1 text-center">
+                      <div className="w-full h-1.5 rounded-full bg-card-border overflow-hidden">
+                        <div className="h-full gradient-primary rounded-full transition-all" style={{ width: `${Math.min(100, Math.max(10, (currentCals / (survey?.tdee || 2500)) * 100))}%` }} />
+                      </div>
+                      <p className="text-[9px] text-muted mt-1">
+                        {survey?.tdee ? `${Math.round(((currentCals / survey.tdee) - 1) * 100)}% vs TDEE (${survey.tdee})` : ""}
+                      </p>
+                    </div>
+                    <button onClick={() => adjustCalories(50)}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-xs font-bold hover:bg-emerald-500/30 transition-colors">
+                      +50
+                    </button>
+                    <button onClick={() => adjustCalories(100)}
+                      className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-400 text-xs font-bold hover:bg-blue-500/30 transition-colors">
+                      +100
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-muted mt-2 text-center">Los gramos de cada alimento se ajustan proporcionalmente</p>
+                </div>
+              ) : null;
+            })()}
+
             {editNutritionData.map((meal: any, mealIdx: number) => (
               <div key={mealIdx} className="bg-card-bg rounded-xl p-3">
                 <div className="flex gap-2 mb-2">
