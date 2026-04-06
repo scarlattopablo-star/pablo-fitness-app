@@ -759,34 +759,17 @@ function PlanContent() {
             const dCarbs = tCarbs > 0 ? tCarbs : macros.carbs;
             const dFats = tFats > 0 ? tFats : macros.fats;
 
-            // Determine goal label
+            // Determine goal label comparing meal plan calories vs survey target
             let gLabel = ""; let gIcon = ""; let gColor = "";
-            const goalMap: Record<string, [string, string, string]> = {
-              "perder-grasa": ["Deficit calorico — Perdida de grasa", "🔥", "text-orange-400"],
-              "ganar-musculo": ["Superavit calorico — Ganancia muscular", "💪", "text-blue-400"],
-              "mantenimiento": ["Mantenimiento — Recomposicion corporal", "⚖️", "text-emerald-400"],
-            };
-            const objMap: Record<string, [string, string, string]> = {
-              "quema-grasa": ["Deficit calorico — Perdida de grasa", "🔥", "text-orange-400"],
-              "ganancia-muscular": ["Superavit calorico — Ganancia muscular", "💪", "text-blue-400"],
-              "tonificacion": ["Deficit moderado — Tonificacion", "✨", "text-purple-400"],
-              "recomposicion-corporal": ["Deficit moderado — Recomposicion corporal", "🔄", "text-cyan-400"],
-              "rendimiento-deportivo": ["Superavit moderado — Rendimiento deportivo", "⚡", "text-yellow-400"],
-              "fuerza-funcional": ["Superavit leve — Fuerza funcional", "🏋️", "text-yellow-400"],
-              "competicion": ["Deficit agresivo — Preparacion competitiva", "🏆", "text-red-400"],
-              "post-parto": ["Deficit moderado — Recuperacion post parto", "🌸", "text-pink-400"],
-            };
-            if (nutritionalGoal && goalMap[nutritionalGoal]) {
-              [gLabel, gIcon, gColor] = goalMap[nutritionalGoal];
-            } else if (objective && objMap[objective]) {
-              [gLabel, gIcon, gColor] = objMap[objective];
-            } else if (tdee > 0 && dCals > 0) {
-              const r = dCals / tdee;
-              if (r < 0.85) { gLabel = "Deficit calorico — Perdida de grasa"; gIcon = "🔥"; gColor = "text-orange-400"; }
-              else if (r < 0.95) { gLabel = "Deficit moderado — Tonificacion"; gIcon = "✨"; gColor = "text-purple-400"; }
-              else if (r <= 1.05) { gLabel = "Mantenimiento — Recomposicion corporal"; gIcon = "⚖️"; gColor = "text-emerald-400"; }
-              else if (r <= 1.15) { gLabel = "Superavit moderado — Ganancia muscular"; gIcon = "💪"; gColor = "text-blue-400"; }
-              else { gLabel = "Superavit calorico — Volumen"; gIcon = "💪"; gColor = "text-blue-400"; }
+            if (macros.calories > 0 && dCals > 0) {
+              const diff = dCals - macros.calories;
+              if (diff < -50) {
+                gLabel = "Deficit calorico"; gIcon = "🔥"; gColor = "text-orange-400";
+              } else if (diff > 50) {
+                gLabel = "Superavit calorico"; gIcon = "💪"; gColor = "text-blue-400";
+              } else {
+                gLabel = "Mantenimiento"; gIcon = "⚖️"; gColor = "text-emerald-400";
+              }
             } else {
               gLabel = "Plan personalizado"; gIcon = "🎯"; gColor = "text-primary";
             }

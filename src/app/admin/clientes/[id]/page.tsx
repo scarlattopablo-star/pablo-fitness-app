@@ -809,31 +809,14 @@ export default function ClienteDetailPage({
               const dF = tF > 0 ? tF : (survey?.fats || 0);
               const userTdee = survey?.tdee || 0;
 
+              // Determine goal label comparing meal plan calories vs survey target
               let gLabel = ""; let gIcon = ""; let gColor = "";
-              const gMap: Record<string, [string, string, string]> = {
-                "perder-grasa": ["Deficit — Perdida de grasa", "🔥", "text-orange-400"],
-                "ganar-musculo": ["Superavit — Ganancia muscular", "💪", "text-blue-400"],
-                "mantenimiento": ["Mantenimiento", "⚖️", "text-emerald-400"],
-              };
-              const oMap: Record<string, [string, string, string]> = {
-                "quema-grasa": ["Deficit — Perdida de grasa", "🔥", "text-orange-400"],
-                "ganancia-muscular": ["Superavit — Ganancia muscular", "💪", "text-blue-400"],
-                "tonificacion": ["Deficit moderado — Tonificacion", "✨", "text-purple-400"],
-                "recomposicion-corporal": ["Deficit moderado — Recomposicion", "🔄", "text-cyan-400"],
-                "rendimiento-deportivo": ["Superavit — Rendimiento", "⚡", "text-yellow-400"],
-                "fuerza-funcional": ["Superavit leve — Fuerza", "🏋️", "text-yellow-400"],
-                "competicion": ["Deficit agresivo — Competicion", "🏆", "text-red-400"],
-                "post-parto": ["Deficit moderado — Post parto", "🌸", "text-pink-400"],
-              };
-              const ng = survey?.nutritional_goal || "";
-              const obj = survey?.objective || "";
-              if (ng && gMap[ng]) [gLabel, gIcon, gColor] = gMap[ng];
-              else if (obj && oMap[obj]) [gLabel, gIcon, gColor] = oMap[obj];
-              else if (userTdee > 0 && dC > 0) {
-                const r = dC / userTdee;
-                if (r < 0.9) { gLabel = "Deficit"; gIcon = "🔥"; gColor = "text-orange-400"; }
-                else if (r <= 1.05) { gLabel = "Mantenimiento"; gIcon = "⚖️"; gColor = "text-emerald-400"; }
-                else { gLabel = "Superavit"; gIcon = "💪"; gColor = "text-blue-400"; }
+              const surveyTarget = survey?.target_calories || 0;
+              if (surveyTarget > 0 && dC > 0) {
+                const diff = dC - surveyTarget;
+                if (diff < -50) { gLabel = "Deficit calorico"; gIcon = "🔥"; gColor = "text-orange-400"; }
+                else if (diff > 50) { gLabel = "Superavit calorico"; gIcon = "💪"; gColor = "text-blue-400"; }
+                else { gLabel = "Mantenimiento"; gIcon = "⚖️"; gColor = "text-emerald-400"; }
               } else { gLabel = "Personalizado"; gIcon = "🎯"; gColor = "text-primary"; }
 
               const totMC = (dP * 4) + (dCb2 * 4) + (dF * 9);
