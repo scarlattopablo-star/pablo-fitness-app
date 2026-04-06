@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -596,10 +596,62 @@ function ClienteDirectoForm() {
   );
 }
 
+function PageErrorFallback() {
+  const openInBrowser = () => {
+    // Android: intent to open in default browser
+    const url = window.location.href;
+    try {
+      window.location.href = `intent:${url}#Intent;end`;
+    } catch {
+      window.open(url, "_blank");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
+          <UserPlus className="h-8 w-8 text-danger" />
+        </div>
+        <h2 className="text-xl font-black mb-2">Abri el link en tu navegador</h2>
+        <p className="text-muted text-sm mb-6">
+          Este enlace no funciona desde la camara. Copia el link y pegalo en Chrome o Safari.
+        </p>
+        <button onClick={openInBrowser}
+          className="gradient-primary text-black font-bold px-6 py-3 rounded-xl hover:opacity-90 mb-3 w-full">
+          Abrir en navegador
+        </button>
+        <button onClick={() => {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(window.location.href);
+          }
+        }}
+          className="text-primary text-sm hover:underline">
+          Copiar link
+        </button>
+      </div>
+    </div>
+  );
+}
+
+class PageBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return <PageErrorFallback />;
+    return this.props.children;
+  }
+}
+
 export default function ClienteDirectoPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
-      <ClienteDirectoForm />
-    </Suspense>
+    <PageBoundary>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
+        <ClienteDirectoForm />
+      </Suspense>
+    </PageBoundary>
   );
 }
