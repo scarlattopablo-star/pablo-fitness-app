@@ -79,17 +79,25 @@ function ClienteDirectoForm() {
 
   useEffect(() => {
     if (!code) { setValidating(false); return; }
+    // Safety timeout: if validation takes > 5s, stop loading
+    const timeout = setTimeout(() => setValidating(false), 5000);
     fetch(`/api/free-access?code=${code}`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) { setValidating(false); clearTimeout(timeout); return null; }
+        return r.json();
+      })
       .then(data => {
+        if (!data) return;
         if (data.valid || data.plan_slug === "direct-client") {
           setValid(true);
           if (data.duration && data.duration !== "custom") setCodeDuration(data.duration);
           if (data.plan_slug) setCodePlanSlug(data.plan_slug);
         }
         setValidating(false);
+        clearTimeout(timeout);
       })
-      .catch(() => setValidating(false));
+      .catch(() => { setValidating(false); clearTimeout(timeout); });
+    return () => clearTimeout(timeout);
   }, [code]);
 
   const handleRegister = async (e: React.FormEvent) => {
