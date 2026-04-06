@@ -175,7 +175,7 @@ function ClienteDirectoForm() {
     });
 
     if (surveyError) {
-      setError("Error al guardar la encuesta. Intenta de nuevo.");
+      setError(`Error al guardar encuesta: ${surveyError.message}`);
       setLoading(false);
       return;
     }
@@ -187,16 +187,24 @@ function ClienteDirectoForm() {
       body: JSON.stringify({ userId, duration: codeDuration, amountPaid: 0, currency: "UYU" }),
     });
     if (!subRes.ok) {
-      const subErr = await subRes.json();
-      console.error("Error creating subscription:", subErr);
+      const subErr = await subRes.json().catch(() => ({ error: "unknown" }));
+      setError(`Error al crear suscripcion: ${subErr.error || "intenta de nuevo"}`);
+      setLoading(false);
+      return;
     }
 
     // Auto-generate training + nutrition plans based on survey data
-    await fetch("/api/generate-plans", {
+    const planRes = await fetch("/api/generate-plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, planSlug }),
     });
+    if (!planRes.ok) {
+      const planErr = await planRes.json().catch(() => ({ error: "unknown" }));
+      setError(`Error al generar planes: ${planErr.error || "intenta de nuevo"}`);
+      setLoading(false);
+      return;
+    }
 
     // Create initial progress entry as baseline
     await supabase.from("progress_entries").insert({
@@ -211,7 +219,7 @@ function ClienteDirectoForm() {
     });
 
     setStep(stepFinCD);
-    } catch { setError("Error inesperado. Intenta de nuevo."); }
+    } catch (err) { setError(`Error: ${err instanceof Error ? err.message : "intenta de nuevo"}`); }
     finally { setLoading(false); }
   };
 
