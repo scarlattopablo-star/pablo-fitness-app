@@ -13,10 +13,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Render children immediately with minimal wrapper during SSR
-  // Full providers only mount on client to avoid hydration mismatch in in-app browsers
+  // Show nothing until client mounts to avoid hydration mismatch in in-app browsers
   if (!mounted) {
-    return <>{children}</>;
+    return <div style={{ minHeight: "100vh" }} />;
   }
 
   return (
