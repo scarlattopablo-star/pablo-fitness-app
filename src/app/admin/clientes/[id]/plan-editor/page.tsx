@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, Trash2, Save, Dumbbell, UtensilsCrossed,
@@ -69,6 +69,60 @@ export default function PlanEditorPage({
     "NO AZÚCAR, ENDULZAR CON EDULCORANTE",
     "NO ALCOHOL",
   ]);
+
+  // Load existing plans on mount
+  const [loadingPlan, setLoadingPlan] = useState(true);
+  useEffect(() => {
+    const loadExisting = async () => {
+      try {
+        // Load existing training plan
+        const { data: trainingData } = await supabase
+          .from("training_plans")
+          .select("data")
+          .eq("user_id", clientId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (trainingData && trainingData.data?.days?.length > 0) {
+          setTrainingDays(trainingData.data.days);
+        }
+
+        // Load existing nutrition plan
+        const { data: nutritionData } = await supabase
+          .from("nutrition_plans")
+          .select("data, important_notes")
+          .eq("user_id", clientId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (nutritionData && nutritionData.data?.meals?.length > 0) {
+          // Convert meals: if they have foodDetails, build foods strings from them
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const loadedMeals: Meal[] = nutritionData.data.meals.map((m: any) => ({
+            name: m.name || "",
+            time: m.time || "",
+            foods: m.foodDetails && m.foodDetails.length > 0
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ? m.foodDetails.map((fd: any) => fd.grams > 0 ? `${fd.grams}g ${fd.name}` : fd.name)
+              : m.foods || [""],
+          }));
+          setMeals(loadedMeals);
+        }
+
+        if (nutritionData && nutritionData.important_notes?.length > 0) {
+          setNutritionNotes(nutritionData.important_notes);
+        } else if (nutritionData && nutritionData.data?.importantNotes?.length > 0) {
+          setNutritionNotes(nutritionData.data.importantNotes);
+        }
+      } catch {
+        // Keep defaults if load fails
+      }
+      setLoadingPlan(false);
+    };
+    loadExisting();
+  }, [clientId]);
 
   // Training handlers
   const addDay = () => {
@@ -208,7 +262,16 @@ export default function PlanEditorPage({
       </Link>
 
       <h1 className="text-2xl font-black mb-2">Editor de Plan</h1>
-      <p className="text-muted mb-6">Creá el plan personalizado para este cliente</p>
+      <p className="text-muted mb-6">{loadingPlan ? "Cargando plan existente..." : "Editá el plan personalizado para este cliente"}</p>
+
+      {loadingPlan && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
+
+      {!loadingPlan && (<>
+      {/* Rest of editor renders only after plan loads */}
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6">
@@ -413,6 +476,7 @@ export default function PlanEditorPage({
           )}
         </button>
       </div>
+    </>)}
     </div>
   );
 }
