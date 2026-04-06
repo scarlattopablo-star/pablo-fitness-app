@@ -24,13 +24,13 @@ export async function POST(request: NextRequest) {
       if (!user) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });
       }
-      // Check admin status
+      // Check admin status via is_admin column
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("is_admin")
         .eq("id", user.id)
         .single();
-      if (!profile || profile.role !== "admin") {
+      if (!profile || !profile.is_admin) {
         return NextResponse.json({ error: "Solo admin puede generar códigos" }, { status: 403 });
       }
     } else {
