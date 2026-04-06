@@ -9,7 +9,8 @@ export type PlanSlug =
   | 'recomposicion-corporal'
   | 'plan-pareja'
   | 'competicion'
-  | 'entrenamiento-casa';
+  | 'entrenamiento-casa'
+  | 'direct-client';
 
 export type Duration = '1-mes' | '3-meses' | '6-meses' | '1-ano';
 

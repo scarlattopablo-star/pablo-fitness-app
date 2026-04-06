@@ -34,6 +34,7 @@ export const PLANS_NEEDING_GOAL: PlanSlug[] = [
   'post-parto',
   'principiante-total',
   'plan-pareja',
+  'direct-client',
 ];
 
 export function calculateTMB(sex: Sex, weight: number, height: number, age: number): number {
