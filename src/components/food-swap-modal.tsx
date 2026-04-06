@@ -249,10 +249,25 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
                 </div>
                 <div className="text-center">
                   <p className="text-muted">Dif.</p>
-                  <p className={`font-bold ${Math.abs(preview.calories - currentFood.calories) > 30 ? "text-warning" : "text-primary"}`}>
+                  <p className={`font-bold ${Math.abs(preview.calories - currentFood.calories) > 20 ? "text-warning" : "text-primary"}`}>
                     {preview.calories - currentFood.calories > 0 ? "+" : ""}
                     {preview.calories - currentFood.calories}
                   </p>
+                </div>
+              </div>
+              {/* Macro comparison */}
+              <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-white/5">
+                <div className="text-center">
+                  <p className="text-[10px] text-red-400">Proteina</p>
+                  <p className="text-[11px] font-bold">{currentFood.protein}g <span className="text-muted">&rarr;</span> {preview.protein}g</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-yellow-400">Carbos</p>
+                  <p className="text-[11px] font-bold">{currentFood.carbs}g <span className="text-muted">&rarr;</span> {preview.carbs}g</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-blue-400">Grasas</p>
+                  <p className="text-[11px] font-bold">{currentFood.fat}g <span className="text-muted">&rarr;</span> {preview.fat}g</p>
                 </div>
               </div>
             </div>
