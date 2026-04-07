@@ -5,7 +5,7 @@ const PUBLIC_PAGES = [
   { path: "/", title: "Pablo Scarlatto" },
   { path: "/login", text: "Iniciar Sesión" },
   { path: "/registro", text: "Crear Cuenta" },
-  { path: "/planes", text: "NUESTROS PLANES" },
+  { path: "/planes", text: "Quema Grasa" },
   { path: "/planes/quema-grasa", text: "Quema Grasa" },
   { path: "/terminos", text: "Términos" },
   { path: "/privacidad", text: "Privacidad" },
