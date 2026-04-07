@@ -47,13 +47,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Error borrando plan: ${delErr.message}` }, { status: 500 });
       }
 
-      // Insert new training plan
+      // Insert new training plan (plan_approved: true so client shows it)
       const { error: insErr } = await supabase
         .from("training_plans")
         .insert({
           user_id: clientId,
           week_number: 1,
           data: data.days ? { days: data.days } : data,
+          plan_approved: true,
         });
       if (insErr) {
         return NextResponse.json({ error: `Error guardando: ${insErr.message}` }, { status: 500 });
@@ -68,13 +69,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: `Error borrando plan: ${delErr.message}` }, { status: 500 });
       }
 
-      // Insert new nutrition plan
+      // Insert new nutrition plan (plan_approved: true so client shows it)
       const { error: insErr } = await supabase
         .from("nutrition_plans")
         .insert({
           user_id: clientId,
           data: { meals: data.meals },
           important_notes: data.importantNotes || [],
+          plan_approved: true,
         });
       if (insErr) {
         return NextResponse.json({ error: `Error guardando: ${insErr.message}` }, { status: 500 });
