@@ -13,6 +13,7 @@ interface Client {
   phone: string;
   created_at: string;
   isDirectClient?: boolean;
+  isFreeClient?: boolean;
   planApproved?: boolean;
 }
 
@@ -48,6 +49,9 @@ export default function ClientesPage() {
       const directClientIds = new Set(
         qrCodes?.filter(c => c.plan_slug === "direct-client").map(c => c.used_by) || []
       );
+      const freeClientIds = new Set(
+        qrCodes?.filter(c => c.plan_slug !== "direct-client").map(c => c.used_by) || []
+      );
 
       const approvedMap = new Map<string, boolean>();
       plans?.forEach(p => approvedMap.set(p.user_id, p.plan_approved));
@@ -56,6 +60,7 @@ export default function ClientesPage() {
         setClients(data.map(c => ({
           ...c,
           isDirectClient: directClientIds.has(c.id),
+          isFreeClient: freeClientIds.has(c.id) && !directClientIds.has(c.id),
           planApproved: approvedMap.get(c.id),
         })));
       }
@@ -69,7 +74,8 @@ export default function ClientesPage() {
   });
 
   const directClients = allFiltered.filter(c => c.isDirectClient);
-  const otherClients = allFiltered.filter(c => !c.isDirectClient);
+  const freeClients = allFiltered.filter(c => c.isFreeClient);
+  const paidClients = allFiltered.filter(c => !c.isDirectClient && !c.isFreeClient);
 
   const ClientTable = ({ list, emptyMsg }: { list: Client[]; emptyMsg: string }) => (
     list.length === 0 ? (
@@ -151,26 +157,38 @@ export default function ClientesPage() {
         </div>
       ) : (
         <>
-          {/* Clientes Directos (QR) */}
+          {/* QR Cliente Directo */}
           {directClients.length > 0 && (
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-3">
                 <QrCode className="h-5 w-5 text-blue-400" />
-                <h2 className="text-lg font-bold">Clientes Directos</h2>
+                <h2 className="text-lg font-bold">QR Cliente Directo</h2>
                 <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full font-bold">{directClients.length}</span>
               </div>
               <ClientTable list={directClients} emptyMsg="No hay clientes directos" />
             </div>
           )}
 
-          {/* Todos los demas clientes */}
+          {/* QR Plan Gratis */}
+          {freeClients.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <QrCode className="h-5 w-5 text-emerald-400" />
+                <h2 className="text-lg font-bold">QR Plan Gratis</h2>
+                <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">{freeClients.length}</span>
+              </div>
+              <ClientTable list={freeClients} emptyMsg="No hay clientes con plan gratis" />
+            </div>
+          )}
+
+          {/* Clientes de Pago */}
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Users className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-bold">{directClients.length > 0 ? "Clientes de Pago" : "Clientes"}</h2>
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{otherClients.length}</span>
+              <h2 className="text-lg font-bold">Clientes de Pago</h2>
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{paidClients.length}</span>
             </div>
-            <ClientTable list={otherClients} emptyMsg="No hay clientes de pago todavia" />
+            <ClientTable list={paidClients} emptyMsg="No hay clientes de pago todavia" />
           </div>
         </>
       )}
