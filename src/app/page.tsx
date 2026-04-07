@@ -242,23 +242,17 @@ export default function HomePage() {
             </h2>
           </div>
 
-          {/* Before/After transformations */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-16">
+          {/* Before/After transformations — real client photos */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {[
-              { before: "/images/transf-mujer-lateral.jpg", after: "/images/transf-mujer-frontal.jpg", result: "4 meses de entrenamiento" },
-              { before: "/images/transf-mujer2-lateral.jpg", after: "/images/transf-mujer2-frontal.jpg", result: "6 meses de transformacion" },
+              { src: "/images/transf-mujer-lateral.jpg", result: "4 meses — perfil" },
+              { src: "/images/transf-mujer-frontal.jpg", result: "4 meses — frente" },
+              { src: "/images/transf-4.jpg", result: "4 meses — espalda" },
+              { src: "/images/transf-mujer2-lateral.jpg", result: "6 meses — perfil" },
+              { src: "/images/transf-mujer2-frontal.jpg", result: "6 meses — frente" },
             ].map((t, i) => (
               <div key={i} className="card-premium rounded-2xl overflow-hidden">
-                <div className="grid grid-cols-2">
-                  <div className="relative">
-                    <img src={t.before} alt="Antes" className="w-full aspect-[3/4] object-cover" loading="lazy" />
-                    <span className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] font-bold px-3 py-1 rounded-full backdrop-blur-sm uppercase tracking-wider">Antes</span>
-                  </div>
-                  <div className="relative">
-                    <img src={t.after} alt="Despues" className="w-full aspect-[3/4] object-cover" loading="lazy" />
-                    <span className="absolute bottom-3 right-3 gradient-primary text-black text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Despues</span>
-                  </div>
-                </div>
+                <img src={t.src} alt="Transformacion antes y despues" className="w-full object-cover" loading="lazy" />
                 <div className="p-4 text-center">
                   <p className="text-primary font-bold text-sm">{t.result}</p>
                 </div>
