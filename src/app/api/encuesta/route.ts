@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
     );
 
     // Ensure profile exists before inserting survey (FK constraint)
-    // profiles.id references auth.users(id), so auth user must exist first.
-    // After signUp there's a race condition — the auth user may not be committed yet.
     const ensureProfile = async () => {
       const { data: profile } = await supabase
         .from("profiles")
@@ -27,7 +25,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (profile) {
-        // If profile was soft-deleted, restore it
         if (profile.deleted_at) {
           await supabase.from("profiles").update({
             deleted_at: null,
@@ -38,21 +35,48 @@ export async function POST(request: NextRequest) {
         return;
       }
 
-      // Retry profile upsert with increasing delays (auth user may not be committed yet)
-      for (let i = 0; i < 6; i++) {
-        await new Promise(r => setTimeout(r, 1000 * (i + 1))); // 1s, 2s, 3s, 4s, 5s, 6s
-        const { error: upsertErr } = await supabase.from("profiles").upsert({
+      // Profile doesn't exist — try to create it
+      // First attempt: maybe auth user exists but trigger didn't fire
+      const { error: firstTry } = await supabase.from("profiles").upsert({
+        id: userId,
+        full_name: full_name || "",
+        email: email || "",
+      }, { onConflict: "id" });
+
+      if (!firstTry) return;
+
+      // FK violation — auth user doesn't exist yet
+      // Wait and retry a few times (signUp propagation)
+      for (let i = 0; i < 5; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+        const { error } = await supabase.from("profiles").upsert({
           id: userId,
           full_name: full_name || "",
           email: email || "",
         }, { onConflict: "id" });
-        if (!upsertErr) return; // Success
-        if (!upsertErr.message.includes("foreign key")) {
-          throw new Error(`Error creando perfil: ${upsertErr.message}`);
+        if (!error) return;
+        if (!error.message.includes("foreign key")) {
+          throw new Error(`Error creando perfil: ${error.message}`);
         }
-        // FK violation = auth user not ready yet, retry
       }
-      throw new Error("El usuario aun no esta listo. Intenta de nuevo en unos segundos.");
+
+      // Last resort: check if the auth user actually exists
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      if (!authUser?.user) {
+        // Auth user truly doesn't exist — this shouldn't happen normally
+        // The signUp must have failed or the userId is wrong
+        throw new Error("No se pudo verificar tu cuenta. Intenta registrarte de nuevo.");
+      }
+
+      // Auth user exists but profile still won't insert — one more try
+      const { error: lastErr } = await supabase.from("profiles").upsert({
+        id: userId,
+        full_name: full_name || authUser.user.user_metadata?.full_name || "",
+        email: email || authUser.user.email || "",
+      }, { onConflict: "id" });
+      if (lastErr) {
+        throw new Error(`Error creando perfil: ${lastErr.message}`);
+      }
     };
 
     await ensureProfile();
@@ -67,12 +91,10 @@ export async function POST(request: NextRequest) {
 
     let error;
     if (existing) {
-      // Update existing survey
       ({ error } = await supabase.from("surveys")
         .update(surveyData)
         .eq("id", existing.id));
     } else {
-      // Insert new survey
       ({ error } = await supabase.from("surveys").insert({
         user_id: userId,
         ...surveyData,

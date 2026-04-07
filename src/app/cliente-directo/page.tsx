@@ -114,16 +114,39 @@ function ClienteDirectoForm() {
     setLoading(true);
     setError("");
     try {
+      // Check if user was previously deleted/banned — restore if so
+      await fetch("/api/restore-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      }).catch(() => {});
+
       const { data, error: authError } = await supabase.auth.signUp({
         email, password,
         options: { data: { full_name: fullName, phone } },
       });
       if (authError) {
         if (authError.message.includes("already registered")) {
-          setError("Este email ya esta registrado. Intenta iniciar sesion.");
-        } else {
-          setError(authError.message);
+          // Try logging in instead (user was restored)
+          const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+          if (loginErr) {
+            setError("Este email ya esta registrado. Intenta iniciar sesion desde /login.");
+            setLoading(false);
+            return;
+          }
+          if (loginData.user) {
+            setUserId(loginData.user.id);
+            await fetch("/api/free-access", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code, userId: loginData.user.id }),
+            }).catch(() => {});
+            setStep(needsGoal ? stepGoalCD : stepDataCD);
+            setLoading(false);
+            return;
+          }
         }
+        setError(authError.message);
         setLoading(false);
         return;
       }
