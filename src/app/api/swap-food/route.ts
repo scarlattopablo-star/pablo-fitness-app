@@ -36,15 +36,15 @@ export async function POST(request: NextRequest) {
   }
 
   // Get user's nutrition plan
-  const { data: plan, error: planError } = await adminClient
+  const { data: plan } = await adminClient
     .from("nutrition_plans")
-    .select("id, data, original_data")
+    .select("id, data, original_data, plan_approved")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (planError || !plan) {
+  if (!plan) {
     return NextResponse.json({ error: "Plan no encontrado" }, { status: 404 });
   }
 
@@ -117,14 +117,14 @@ export async function POST(request: NextRequest) {
     meal.foodDetails.reduce((sum: number, f: { calories: number }) => sum + f.calories, 0)
   );
   meal.approxProtein = Math.round(
-    meal.foodDetails.reduce((sum: number, f: { protein: number }) => sum + f.protein, 0) * 10
-  ) / 10;
+    meal.foodDetails.reduce((sum: number, f: { protein: number }) => sum + f.protein, 0)
+  );
   meal.approxCarbs = Math.round(
-    meal.foodDetails.reduce((sum: number, f: { carbs: number }) => sum + f.carbs, 0) * 10
-  ) / 10;
+    meal.foodDetails.reduce((sum: number, f: { carbs: number }) => sum + f.carbs, 0)
+  );
   meal.approxFats = Math.round(
-    meal.foodDetails.reduce((sum: number, f: { fat: number }) => sum + f.fat, 0) * 10
-  ) / 10;
+    meal.foodDetails.reduce((sum: number, f: { fat: number }) => sum + f.fat, 0)
+  );
 
   // Save updated plan
   meals[mealIndex] = meal;
