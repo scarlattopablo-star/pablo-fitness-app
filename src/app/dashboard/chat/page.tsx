@@ -10,6 +10,7 @@ import {
   getOrCreateConversation,
   getUnreadCount,
   checkUserBlocked,
+  searchUsers,
 } from "@/lib/chat-helpers";
 import {
   requestPushPermission,
@@ -32,6 +33,7 @@ export default function ChatPage() {
   const { user, profile } = useAuth();
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [allUsers, setAllUsers] = useState<{ id: string; full_name: string; email: string; avatar_url: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [blocked, setBlocked] = useState(false);
   const [pushState, setPushState] = useState<string>("default");
@@ -41,18 +43,25 @@ export default function ChatPage() {
   const loadConversations = useCallback(async () => {
     if (!user) return;
     try {
-      const convs = await fetchConversations(user.id);
+      const [convs, unreadRes, usersRes] = await Promise.all([
+        fetchConversations(user.id),
+        supabase.from("messages").select("conversation_id")
+          .neq("sender_id", user.id).is("read_at", null),
+        supabase.from("profiles").select("id, full_name, email, avatar_url")
+          .neq("id", user.id).eq("is_admin", false).is("deleted_at", null)
+          .order("full_name"),
+      ]);
+
       setConversations(convs);
 
-      // Check which conversations have unread messages
-      const { data: unreadMsgs } = await supabase
-        .from("messages")
-        .select("conversation_id")
-        .neq("sender_id", user.id)
-        .is("read_at", null);
+      if (unreadRes.data) {
+        setUnreadConvIds(new Set(unreadRes.data.map((m) => m.conversation_id)));
+      }
 
-      if (unreadMsgs) {
-        setUnreadConvIds(new Set(unreadMsgs.map((m) => m.conversation_id)));
+      if (usersRes.data) {
+        // Exclude users that already have a conversation
+        const convUserIds = new Set(convs.map((c: Conversation) => c.otherUser.id));
+        setAllUsers(usersRes.data.filter(u => !convUserIds.has(u.id)));
       }
     } catch {
       // Ignore
@@ -203,6 +212,40 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* All users list */}
+      {!loading && allUsers.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs text-muted font-bold uppercase tracking-wider mb-2 px-1">
+            Otros usuarios ({allUsers.length})
+          </p>
+          <div className="glass-card rounded-2xl overflow-hidden divide-y divide-card-border">
+            {allUsers.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => handleStartChat(u.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left"
+              >
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                    {u.full_name?.charAt(0)?.toUpperCase() || "?"}
+                  </div>
+                  {isUserOnline(u.id) && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-card-bg" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{u.full_name}</p>
+                  <p className="text-xs text-muted truncate">
+                    {isUserOnline(u.id) ? "En linea" : "Desconectado"}
+                  </p>
+                </div>
+                <MessageCircle className="h-4 w-4 text-primary shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
