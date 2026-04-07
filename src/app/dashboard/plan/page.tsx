@@ -225,6 +225,13 @@ function PlanContent() {
       }));
     }
 
+    // Record gamification: XP + streak + achievements
+    fetch("/api/gamification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, action: "session_logged" }),
+    }).catch(() => {});
+
     setSavingSession(false);
     setSessionSaved(true);
     // Clear persisted session data after successful save
