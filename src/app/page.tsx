@@ -245,11 +245,15 @@ export default function HomePage() {
           {/* Before/After transformations — real client photos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {[
-              { src: "/images/transf-mujer-lateral.jpg", result: "4 meses — perfil" },
-              { src: "/images/transf-mujer-frontal.jpg", result: "4 meses — frente" },
-              { src: "/images/transf-4.jpg", result: "4 meses — espalda" },
-              { src: "/images/transf-mujer2-lateral.jpg", result: "6 meses — perfil" },
-              { src: "/images/transf-mujer2-frontal.jpg", result: "6 meses — frente" },
+              { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
+              { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
+              { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
+              { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion corporal" },
+              { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
+              { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
+              { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
+              { src: "/images/transf-mujer4-perfil.jpg", result: "Tonificacion" },
+              { src: "/images/transf-mujer3-perfil.jpg", result: "Quema de grasa" },
             ].map((t, i) => (
               <div key={i} className="card-premium rounded-2xl overflow-hidden">
                 <img src={t.src} alt="Transformacion antes y despues" className="w-full object-cover" loading="lazy" />
