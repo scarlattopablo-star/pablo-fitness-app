@@ -115,10 +115,22 @@ function PlanContent() {
   const [tdee, setTdee] = useState(0);
   const [macros, setMacros] = useState({ calories: 0, protein: 0, carbs: 0, fats: 0 });
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weight: number; reps: number; date: string; prevWeight?: number }>>({});
-  const [activeSession, setActiveSession] = useState<string | null>(null); // day name
-  const [sessionData, setSessionData] = useState<Record<string, { set: number; weight: number; reps: number }[]>>({});
+  const [activeSession, setActiveSession] = useState<string | null>(() => {
+    try { return JSON.parse(localStorage.getItem("active_session_day") || "null"); } catch { return null; }
+  });
+  const [sessionData, setSessionData] = useState<Record<string, { set: number; weight: number; reps: number }[]>>(() => {
+    try { return JSON.parse(localStorage.getItem("active_session_data") || "{}"); } catch { return {}; }
+  });
   const [savingSession, setSavingSession] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
+
+  // Persist session data to localStorage so it survives navigation and app close
+  useEffect(() => {
+    if (activeSession && Object.keys(sessionData).length > 0) {
+      localStorage.setItem("active_session_day", JSON.stringify(activeSession));
+      localStorage.setItem("active_session_data", JSON.stringify(sessionData));
+    }
+  }, [activeSession, sessionData]);
   const [hasSurvey, setHasSurvey] = useState(true);
   const [planPending, setPlanPending] = useState(false);
   const [expandedGif, setExpandedGif] = useState<{ src: string; name: string } | null>(null);
@@ -215,6 +227,9 @@ function PlanContent() {
 
     setSavingSession(false);
     setSessionSaved(true);
+    // Clear persisted session data after successful save
+    localStorage.removeItem("active_session_day");
+    localStorage.removeItem("active_session_data");
     setTimeout(() => {
       setActiveSession(null);
       setSessionData({});
