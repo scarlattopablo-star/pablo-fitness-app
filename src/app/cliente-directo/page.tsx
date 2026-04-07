@@ -123,7 +123,10 @@ function ClienteDirectoForm() {
 
       const { data, error: authError } = await supabase.auth.signUp({
         email, password,
-        options: { data: { full_name: fullName, phone } },
+        options: {
+          data: { full_name: fullName, phone },
+          emailRedirectTo: `${window.location.origin}/encuesta-directa`,
+        },
       });
       if (authError) {
         if (authError.message.includes("already registered")) {
