@@ -7,6 +7,7 @@ import {
   TrendingUp, User, Smartphone, HelpCircle, LogIn, LayoutDashboard,
   BookOpen, Target, Scale, Camera, RefreshCw, Search, Play, Save,
   Plus, BarChart3, Apple, Download, MessageCircle, Bell, Users,
+  Trophy, Flame, Gift, Star,
 } from "lucide-react";
 
 interface SectionProps {
@@ -259,8 +260,8 @@ export default function ManualPage() {
             <p>Manda mensajes directos a otros miembros.</p>
             <div className="space-y-2 mt-2">
               <Step number={1} title="Toca 'Privado'" desc="En la pantalla de Gym Bro, selecciona la pestaña Privado." />
-              <Step number={2} title="Busca un usuario" desc="Usa el buscador para encontrar a un compañero de gym por nombre." />
-              <Step number={3} title="Chatea" desc="Los mensajes son privados entre vos y la otra persona." />
+              <Step number={2} title="Elegi a quien escribir" desc="Arriba ves tus conversaciones existentes. Abajo aparece la lista completa de todos los usuarios para iniciar un chat nuevo." />
+              <Step number={3} title="Chatea" desc="Los mensajes son privados entre vos y la otra persona. Ves cuando estan en linea." />
             </div>
 
             <Tip>El chat tiene moderacion automatica. El uso de lenguaje inapropiado genera advertencias y puede resultar en suspension del chat.</Tip>
@@ -309,7 +310,65 @@ export default function ManualPage() {
             <Tip>Una vez instalada, la app funciona incluso sin conexion a internet. Tus datos se sincronizan cuando vuelvas a tener señal.</Tip>
           </Section>
 
-          {/* 10. FAQ */}
+          {/* 10. RANKING Y LOGROS */}
+          <Section
+            icon={<Trophy className="h-5 w-5 text-black" />}
+            title="Ranking y Logros"
+          >
+            <p>Competi con otros usuarios y desbloquea logros para ganar XP y subir de nivel.</p>
+
+            <p className="text-foreground font-semibold mt-2 flex items-center gap-2"><Star className="h-4 w-4 text-primary" /> Sistema de XP y Niveles</p>
+            <p>Cada accion te da puntos de experiencia (XP). A medida que acumulas XP, subis de nivel:</p>
+            <ul className="list-disc pl-5 space-y-1 text-xs mt-2">
+              <li><span className="text-primary font-bold">Novato</span> — 0 XP</li>
+              <li><span className="text-primary font-bold">Iniciado</span> — 200 XP</li>
+              <li><span className="text-primary font-bold">Intermedio</span> — 500 XP</li>
+              <li><span className="text-primary font-bold">Avanzado</span> — 1.200 XP</li>
+              <li><span className="text-primary font-bold">Experto</span> — 2.500 XP</li>
+              <li><span className="text-primary font-bold">Elite</span> — 5.000 XP</li>
+              <li><span className="text-primary font-bold">Leyenda</span> — 10.000 XP</li>
+            </ul>
+
+            <p className="text-foreground font-semibold mt-3 flex items-center gap-2"><Flame className="h-4 w-4 text-primary" /> Rachas</p>
+            <p>Cada dia que entrenas se suma a tu racha. Si dejas de entrenar un dia, la racha se reinicia a 0. Mantene la racha para ganar XP extra cada dia.</p>
+
+            <p className="text-foreground font-semibold mt-3">Como ganar XP</p>
+            <ul className="list-disc pl-5 space-y-1 text-xs mt-1">
+              <li>Guardar sesion de entrenamiento: +30 XP</li>
+              <li>Marca personal (superar tu mejor peso): +50 XP</li>
+              <li>Foto de progreso: +20 XP</li>
+              <li>Racha diaria (bonus): +10 XP</li>
+              <li>Cambiar alimento en dieta: +5 XP</li>
+              <li>Mensaje en el chat: +2 XP</li>
+            </ul>
+
+            <p className="text-foreground font-semibold mt-3">Logros (Badges)</p>
+            <p>Hay 17 logros para desbloquear en 5 categorias: entrenamiento, rachas, nutricion, social y hitos. Cada logro te da XP bonus. Anda a la seccion Ranking para ver todos los logros y cuales ya desbloqueaste.</p>
+
+            <p className="text-foreground font-semibold mt-3">Ranking Semanal y General</p>
+            <p>En la seccion Ranking ves dos tablas: el ranking de la semana (se reinicia cada lunes) y el ranking general por XP total. Competi con otros usuarios para estar en el top!</p>
+
+            <Tip>Vas a recibir notificaciones cuando tu racha este en riesgo o cuando alguien te supere en el ranking. Usa eso como motivacion para no faltar!</Tip>
+          </Section>
+
+          {/* 11. REFERIDOS */}
+          <Section
+            icon={<Gift className="h-5 w-5 text-black" />}
+            title="Programa de Referidos"
+          >
+            <p>Invita amigos y ambos ganan.</p>
+
+            <div className="space-y-2">
+              <Step number={1} title="Obtene tu codigo" desc="Anda a la seccion 'Invitar' en el menu. Ahi ves tu codigo unico de referido." />
+              <Step number={2} title="Compartilo" desc="Envialo por WhatsApp, Instagram o como quieras. Tu amigo lo usa al registrarse." />
+              <Step number={3} title="Tu amigo recibe 15% OFF" desc="El descuento se aplica automaticamente en su primer plan." />
+              <Step number={4} title="Vos ganas +7 dias gratis" desc="Por cada amigo que se registre con tu codigo, se suman 7 dias a tu suscripcion." />
+            </div>
+
+            <Tip>No hay limite de referidos. Cuantos mas amigos invites, mas dias gratis ganas!</Tip>
+          </Section>
+
+          {/* 12. FAQ */}
           <Section
             icon={<HelpCircle className="h-5 w-5 text-black" />}
             title="Preguntas Frecuentes"
@@ -350,6 +409,22 @@ export default function ManualPage() {
               <div>
                 <p className="font-bold text-foreground text-xs">Que es el Chat General?</p>
                 <p className="text-xs mt-1">Es una sala de chat abierta donde todos los miembros del gym pueden escribir. Ideal para compartir tips, motivarse y hacer consultas a la comunidad.</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-xs">Si salgo de la sesion de entrenamiento pierdo los datos?</p>
+                <p className="text-xs mt-1">No. Los pesos y repeticiones que vayas cargando se guardan automaticamente. Podes salir de la pagina, cerrar la app y volver — tus datos siguen ahi hasta que guardes la sesion.</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-xs">Como funciona el ranking?</p>
+                <p className="text-xs mt-1">El ranking semanal se reinicia cada lunes. Ganas XP entrenando, registrando progreso y siendo activo en la app. El ranking general muestra tu XP total acumulado.</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-xs">Que pasa si pierdo mi racha?</p>
+                <p className="text-xs mt-1">La racha se reinicia a 0, pero tu racha maxima queda guardada. Recibiras una notificacion cuando tu racha este en riesgo para que no te olvides de entrenar.</p>
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-xs">Como invito a un amigo?</p>
+                <p className="text-xs mt-1">Anda a la seccion &quot;Invitar&quot; en el menu. Ahi encontras tu codigo unico y un boton para compartirlo por WhatsApp. Tu amigo recibe 15% de descuento y vos ganas 7 dias gratis.</p>
               </div>
             </div>
           </Section>
