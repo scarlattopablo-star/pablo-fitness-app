@@ -232,7 +232,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TESTIMONIOS — offset layout with large quotes */}
+      {/* TESTIMONIOS + TRANSFORMACIONES */}
       <section id="testimonios" className="py-24 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
@@ -241,6 +241,32 @@ export default function HomePage() {
               {t("testimonials.title1")} <span className="text-gradient">{t("testimonials.title2")}</span>
             </h2>
           </div>
+
+          {/* Before/After transformations */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-16">
+            {[
+              { before: "/images/transf-mujer-lateral.jpg", after: "/images/transf-mujer-frontal.jpg", result: "4 meses de entrenamiento" },
+              { before: "/images/transf-mujer2-lateral.jpg", after: "/images/transf-mujer2-frontal.jpg", result: "6 meses de transformacion" },
+            ].map((t, i) => (
+              <div key={i} className="card-premium rounded-2xl overflow-hidden">
+                <div className="grid grid-cols-2">
+                  <div className="relative">
+                    <img src={t.before} alt="Antes" className="w-full aspect-[3/4] object-cover" loading="lazy" />
+                    <span className="absolute bottom-3 left-3 bg-black/70 text-white text-[10px] font-bold px-3 py-1 rounded-full backdrop-blur-sm uppercase tracking-wider">Antes</span>
+                  </div>
+                  <div className="relative">
+                    <img src={t.after} alt="Despues" className="w-full aspect-[3/4] object-cover" loading="lazy" />
+                    <span className="absolute bottom-3 right-3 gradient-primary text-black text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">Despues</span>
+                  </div>
+                </div>
+                <div className="p-4 text-center">
+                  <p className="text-primary font-bold text-sm">{t.result}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Testimonial quotes */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { name: "Manuela G.", result: "Perdio 12kg en 6 meses", text: "El plan de quema grasa cambio mi vida. Las comidas son faciles de preparar y el entrenamiento es desafiante pero alcanzable." },
@@ -248,7 +274,6 @@ export default function HomePage() {
               { name: "Paulina B.", result: "Mejoro su rendimiento deportivo", text: "La nutricion con timing para mis carreras fue clave. Baje mis tiempos y me siento con mas energia que nunca." },
             ].map((item, i) => (
               <div key={item.name} className={`card-premium rounded-2xl p-6 ${i === 1 ? "md:-translate-y-4" : ""}`}>
-                {/* Large quote mark */}
                 <span className="text-5xl font-black text-primary/15 leading-none block mb-2">&ldquo;</span>
                 <p className="text-sm text-muted mb-6 leading-relaxed">{item.text}</p>
                 <div className="flex items-center gap-3">
