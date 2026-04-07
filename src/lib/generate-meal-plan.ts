@@ -82,9 +82,9 @@ function gramsFor(food: FoodItem, target: number, macro: "protein" | "carbs" | "
 function sumMacros(foods: MealFood[]) {
   return {
     calories: foods.reduce((s, f) => s + f.calories, 0),
-    protein: Math.round(foods.reduce((s, f) => s + f.protein, 0) * 10) / 10,
-    carbs: Math.round(foods.reduce((s, f) => s + f.carbs, 0) * 10) / 10,
-    fat: Math.round(foods.reduce((s, f) => s + f.fat, 0) * 10) / 10,
+    protein: Math.round(foods.reduce((s, f) => s + f.protein, 0)),
+    carbs: Math.round(foods.reduce((s, f) => s + f.carbs, 0)),
+    fat: Math.round(foods.reduce((s, f) => s + f.fat, 0)),
   };
 }
 

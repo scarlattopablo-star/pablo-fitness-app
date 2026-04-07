@@ -153,9 +153,9 @@ export function calculateFoodMacros(food: FoodItem, grams: number) {
   const factor = grams / 100;
   return {
     calories: Math.round(food.calories * factor),
-    protein: Math.round(food.protein * factor * 10) / 10,
-    carbs: Math.round(food.carbs * factor * 10) / 10,
-    fat: Math.round(food.fat * factor * 10) / 10,
+    protein: Math.round(food.protein * factor),
+    carbs: Math.round(food.carbs * factor),
+    fat: Math.round(food.fat * factor),
   };
 }
 

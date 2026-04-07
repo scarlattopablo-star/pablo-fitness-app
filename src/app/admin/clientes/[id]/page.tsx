@@ -937,9 +937,9 @@ export default function ClienteDetailPage({
                       ...fd,
                       grams: Math.round(fd.grams * r),
                       calories: Math.round(fd.calories * r),
-                      protein: Math.round(fd.protein * r * 10) / 10,
-                      carbs: Math.round(fd.carbs * r * 10) / 10,
-                      fat: Math.round(fd.fat * r * 10) / 10,
+                      protein: Math.round(fd.protein * r),
+                      carbs: Math.round(fd.carbs * r),
+                      fat: Math.round(fd.fat * r),
                     };
                   });
                   const newApproxCals = newFoodDetails.length > 0

@@ -77,9 +77,9 @@ function enrichMealWithFoodDetails(meal: MealPlanMeal): MealPlanMeal {
     ...meal,
     foodDetails,
     approxCalories: meal.approxCalories || Math.round(totals.calories),
-    approxProtein: meal.approxProtein || Math.round(totals.protein * 10) / 10,
-    approxCarbs: meal.approxCarbs || Math.round(totals.carbs * 10) / 10,
-    approxFats: meal.approxFats || Math.round(totals.fat * 10) / 10,
+    approxProtein: meal.approxProtein || Math.round(totals.protein),
+    approxCarbs: meal.approxCarbs || Math.round(totals.carbs),
+    approxFats: meal.approxFats || Math.round(totals.fat),
   };
 }
 

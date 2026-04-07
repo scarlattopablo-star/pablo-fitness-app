@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Error al guardar encuesta" }, { status: 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error desconocido";
+    return NextResponse.json({ error: `Error al guardar encuesta: ${msg}` }, { status: 500 });
   }
 }
