@@ -195,6 +195,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Send push notifications for achievements and level ups (fire and forget)
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://pabloscarlattoentrenamientos.com";
+    if (results.levelUp && results.newLevel) {
+      fetch(`${baseUrl}/api/push/achievement`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, type: "level_up", data: { level: results.newLevel, levelName: results.newLevel } }),
+      }).catch(() => {});
+    }
+    for (const achievementId of results.newAchievements) {
+      const ach = (await supabase.from("achievements").select("name, xp_reward").eq("id", achievementId).single()).data;
+      if (ach) {
+        fetch(`${baseUrl}/api/push/achievement`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, type: "new_badge", data: { badge: ach.name, xp: ach.xp_reward } }),
+        }).catch(() => {});
+      }
+    }
+
     return NextResponse.json(results);
   } catch (err) {
     return NextResponse.json({ error: `Error: ${err}` }, { status: 500 });
