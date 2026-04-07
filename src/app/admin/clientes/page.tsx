@@ -32,28 +32,22 @@ export default function ClientesPage() {
 
   const loadClients = async () => {
     try {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("is_admin", false)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const [profilesRes, qrRes, plansRes] = await Promise.all([
+        supabase.from("profiles").select("*")
+          .eq("is_admin", false).is("deleted_at", null)
+          .order("created_at", { ascending: false }),
+        supabase.from("free_access_codes").select("used_by, plan_slug")
+          .eq("used", true).not("used_by", "is", null),
+        supabase.from("training_plans").select("user_id, plan_approved"),
+      ]);
 
-      // Get QR codes with plan_slug to differentiate direct vs free
-      const { data: qrCodes } = await supabase
-        .from("free_access_codes")
-        .select("used_by, plan_slug")
-        .eq("used", true)
-        .not("used_by", "is", null);
+      const data = profilesRes.data;
+      const qrCodes = qrRes.data;
+      const plans = plansRes.data;
 
       const directClientIds = new Set(
         qrCodes?.filter(c => c.plan_slug === "direct-client").map(c => c.used_by) || []
       );
-
-      // Get plan approval status
-      const { data: plans } = await supabase
-        .from("training_plans")
-        .select("user_id, plan_approved");
 
       const approvedMap = new Map<string, boolean>();
       plans?.forEach(p => approvedMap.set(p.user_id, p.plan_approved));

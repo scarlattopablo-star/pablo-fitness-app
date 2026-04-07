@@ -113,64 +113,27 @@ export default function ClienteDetailPage({
   }, [id, authLoading, user]);
 
   const loadClient = async () => {
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", id)
-      .single();
-    if (profileData) setClient(profileData);
+    // Load profile, survey, subscription, and plans in parallel
+    const { data: { session } } = await supabase.auth.getSession();
 
-    const { data: surveyData } = await supabase
-      .from("surveys")
-      .select("*")
-      .eq("user_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (surveyData) setSurvey(surveyData);
+    const [profileRes, surveyRes, subRes, plansRes] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", id).single(),
+      supabase.from("surveys").select("*").eq("user_id", id)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("subscriptions").select("*").eq("user_id", id)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      session?.access_token
+        ? fetch(`/api/admin/client-plans?clientId=${id}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).then(r => r.ok ? r.json() : null).catch(() => null)
+        : Promise.resolve(null),
+    ]);
 
-    const { data: subData } = await supabase
-      .from("subscriptions")
-      .select("*")
-      .eq("user_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (subData) setSubscription(subData);
-
-    // Load plans via server-side API (bypasses RLS)
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        const plansRes = await fetch(`/api/admin/client-plans?clientId=${id}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (plansRes.ok) {
-          const plans = await plansRes.json();
-          if (plans.trainingPlan) setTrainingPlan(plans.trainingPlan);
-          if (plans.nutritionPlan) setNutritionPlan(plans.nutritionPlan);
-        }
-      }
-    } catch {
-      // Fallback to direct query
-      const { data: tpData } = await supabase
-        .from("training_plans")
-        .select("*")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (tpData) setTrainingPlan(tpData);
-
-      const { data: npData } = await supabase
-        .from("nutrition_plans")
-        .select("*")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (npData) setNutritionPlan(npData);
-    }
+    if (profileRes.data) setClient(profileRes.data);
+    if (surveyRes.data) setSurvey(surveyRes.data);
+    if (subRes.data) setSubscription(subRes.data);
+    if (plansRes?.trainingPlan) setTrainingPlan(plansRes.trainingPlan);
+    if (plansRes?.nutritionPlan) setNutritionPlan(plansRes.nutritionPlan);
 
     // Load progress entries
     const { data: progressData } = await supabase

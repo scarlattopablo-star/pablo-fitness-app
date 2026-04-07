@@ -43,20 +43,21 @@ export default function DashboardPage() {
   const loadData = async () => {
     if (!user) return;
     try {
-      const { data: surveyData } = await supabase
-        .from("surveys").select("*").eq("user_id", user.id)
-        .order("created_at", { ascending: false }).limit(1).single();
+      const [surveyRes, progressRes] = await Promise.all([
+        supabase.from("surveys").select("*").eq("user_id", user.id)
+          .order("created_at", { ascending: false }).limit(1).single(),
+        supabase.from("progress_entries").select("weight, date, created_at")
+          .eq("user_id", user.id).order("date", { ascending: false }).limit(1),
+      ]);
 
+      const surveyData = surveyRes.data;
       if (surveyData) {
         setSurvey(surveyData);
         setDaysActive(Math.floor((Date.now() - new Date(surveyData.created_at).getTime()) / 86400000));
         cacheData("dashboard", { survey: surveyData });
       }
 
-      const { data: progressEntries } = await supabase
-        .from("progress_entries").select("weight, date, created_at")
-        .eq("user_id", user.id).order("date", { ascending: false }).limit(1);
-
+      const progressEntries = progressRes.data;
       if (progressEntries?.length && progressEntries[0].weight) {
         setCurrentWeight(progressEntries[0].weight);
         if (surveyData?.weight) setWeightLost(Number((surveyData.weight - progressEntries[0].weight).toFixed(1)));

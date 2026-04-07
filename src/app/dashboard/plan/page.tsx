@@ -12,7 +12,8 @@ import { supabase } from "@/lib/supabase";
 import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 import { OfflineBanner } from "@/components/offline-banner";
 import { cacheData, getCachedData } from "@/lib/offline-cache";
-import { FoodSwapModal } from "@/components/food-swap-modal";
+import dynamic from "next/dynamic";
+const FoodSwapModal = dynamic(() => import("@/components/food-swap-modal").then(m => m.FoodSwapModal));
 import { findFoodByName, calculateFoodMacros } from "@/lib/food-database";
 import { PLANS } from "@/lib/plans-data";
 import { ArrowLeft } from "lucide-react";
@@ -273,14 +274,22 @@ function PlanContent() {
     if (!user) return;
 
     try {
-      // Load survey data for macros display
-      const { data } = await supabase
-        .from("surveys")
-        .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+      // Load all data in parallel
+      const [surveyRes, trainingRes, nutritionRes] = await Promise.all([
+        supabase.from("surveys")
+          .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).single(),
+        supabase.from("training_plans")
+          .select("data, plan_approved")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("nutrition_plans")
+          .select("data, important_notes, plan_approved")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+
+      const data = surveyRes.data;
+      const dbTraining = trainingRes.data;
+      const dbNutrition = nutritionRes.data;
 
       if (data && data.target_calories) {
         setMacros({ calories: data.target_calories, protein: data.protein, carbs: data.carbs, fats: data.fats });
@@ -293,23 +302,6 @@ function PlanContent() {
         setHasSurvey(false);
         setMacros({ calories: 2100, protein: 150, carbs: 220, fats: 70 });
       }
-
-      // Try to load plans from DB first (admin-edited or auto-generated)
-      const { data: dbTraining } = await supabase
-        .from("training_plans")
-        .select("data, plan_approved")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const { data: dbNutrition } = await supabase
-        .from("nutrition_plans")
-        .select("data, important_notes, plan_approved")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
 
       // Check if plan exists but is pending admin approval
       if (dbTraining && dbTraining.data?.days?.length > 0 && dbTraining.plan_approved === false) {
