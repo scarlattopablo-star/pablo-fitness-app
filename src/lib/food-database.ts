@@ -246,8 +246,12 @@ export function getSwapAlternatives(currentFoodId: string, mealName: string): Fo
   );
 }
 
+// Minimum realistic portions per food category (sports nutrition standards)
+const MIN_SWAP_GRAMS: Record<string, number> = {
+  protein: 80, carb: 50, fat: 5, dairy: 100, fruit: 50, vegetable: 50, snack: 20,
+};
+
 // Calculate grams of new food to match the original food's calories.
-// Uses direct calorie matching for accuracy, rounded to 1g.
 export function calculateSwapGrams(
   originalFood: FoodItem,
   originalGrams: number,
@@ -260,10 +264,14 @@ export function calculateSwapGrams(
   // Match calories directly
   let grams = Math.round((orig.calories / newFood.calories) * 100);
 
+  // Apply category-specific minimums
+  const minGrams = MIN_SWAP_GRAMS[newFood.category] || 20;
+  grams = Math.max(minGrams, grams);
+
   // Cap vegetables at 300g
-  if (originalFood.category === "vegetable") {
+  if (newFood.category === "vegetable") {
     grams = Math.min(grams, 300);
   }
 
-  return Math.max(20, Math.min(grams, 500));
+  return Math.min(grams, 500);
 }

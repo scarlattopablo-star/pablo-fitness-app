@@ -43,12 +43,25 @@ function getFood(id: string): FoodItem {
 }
 
 function round5(n: number): number {
-  return Math.max(20, Math.round(n / 5) * 5);
+  return Math.round(n / 5) * 5;
 }
+
+// Minimum realistic portions per food category (based on sports nutrition guidelines)
+// Sources: ISSA, NIDDK, sports nutrition standards (20-40g protein per meal = 80-130g meat)
+const MIN_GRAMS: Record<string, number> = {
+  protein: 80,    // 80g minimum for meat/fish/poultry (yields ~20g protein)
+  carb: 50,       // 50g minimum for rice/pasta/potato
+  fat: 5,         // 5g minimum for oils (1 cucharadita)
+  dairy: 100,     // 100g minimum for yogurt/milk/cheese
+  fruit: 50,      // 50g minimum for fruits
+  vegetable: 50,  // 50g minimum for vegetables
+  snack: 20,      // 20g minimum for snacks
+};
 
 function buildFood(foodId: string, grams: number): MealFood {
   const food = getFood(foodId);
-  const g = Math.max(20, grams);
+  const minGrams = MIN_GRAMS[food.category] || 20;
+  const g = Math.max(minGrams, round5(grams));
   const macros = calculateFoodMacros(food, g);
   return { name: food.name, grams: g, unit: food.unit, ...macros };
 }
