@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, ...surveyData } = body;
+    const { userId, full_name, email, ...surveyData } = body;
     if (!userId) {
       return NextResponse.json({ error: "userId requerido" }, { status: 400 });
     }
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Ensure profile exists before inserting survey (FK constraint)
-    // The auth trigger should create it, but race conditions can cause it to be missing
+    // The auth trigger may not have fired yet (race condition after signUp)
     const ensureProfile = async () => {
       const { data: profile } = await supabase
         .from("profiles")
@@ -26,19 +26,23 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (!profile) {
-        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-        if (!authUser?.user) {
-          throw new Error("Usuario no encontrado en auth");
+        // Try to get user data from auth, with retries for propagation delay
+        let authUser = null;
+        for (let i = 0; i < 5; i++) {
+          const { data } = await supabase.auth.admin.getUserById(userId);
+          if (data?.user) { authUser = data.user; break; }
+          await new Promise(r => setTimeout(r, 500 * (i + 1)));
         }
+
+        // Create profile with whatever data we have
         const { error: upsertErr } = await supabase.from("profiles").upsert({
           id: userId,
-          full_name: authUser.user.user_metadata?.full_name || "",
-          email: authUser.user.email || "",
+          full_name: full_name || authUser?.user_metadata?.full_name || "",
+          email: email || authUser?.email || "",
         }, { onConflict: "id" });
         if (upsertErr) {
           throw new Error(`Error creando perfil: ${upsertErr.message}`);
         }
-        // Small delay to ensure profile is committed
         await new Promise(r => setTimeout(r, 300));
       }
     };
@@ -53,8 +57,7 @@ export async function POST(request: NextRequest) {
       });
       error = result.error;
       if (!error) break;
-      if (!error.message.includes("foreign key")) break; // Different error, don't retry
-      // Wait before retry
+      if (!error.message.includes("foreign key")) break;
       await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
     }
 

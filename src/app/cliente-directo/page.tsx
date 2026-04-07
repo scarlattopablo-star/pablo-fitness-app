@@ -176,6 +176,7 @@ function ClienteDirectoForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
+        full_name: fullName, email,
         age: Number(age), sex, weight: Number(weight), height: Number(height),
         activity_level: activityLevel, dietary_restrictions: restrictions,
         objective: planSlug,
