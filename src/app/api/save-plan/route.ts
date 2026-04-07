@@ -38,55 +38,86 @@ export async function POST(request: NextRequest) {
     }
 
     if (type === "training") {
-      // Delete existing training plans for this client
-      const { error: delErr } = await supabase
+      // Check if existing plan exists
+      const { data: existing } = await supabase
         .from("training_plans")
-        .delete()
-        .eq("user_id", clientId);
-      if (delErr) {
-        return NextResponse.json({ error: `Error borrando plan: ${delErr.message}` }, { status: 500 });
-      }
+        .select("id")
+        .eq("user_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      // Insert new training plan (plan_approved: true so client shows it)
-      const { error: insErr } = await supabase
-        .from("training_plans")
-        .insert({
-          user_id: clientId,
-          week_number: 1,
-          data: data.days ? { days: data.days } : data,
-          plan_approved: true,
-        });
-      if (insErr) {
-        return NextResponse.json({ error: `Error guardando: ${insErr.message}` }, { status: 500 });
+      const planData = data.days ? { days: data.days } : data;
+
+      if (existing) {
+        // Update existing plan
+        const { error: updErr } = await supabase
+          .from("training_plans")
+          .update({
+            data: planData,
+            plan_approved: true,
+          })
+          .eq("id", existing.id);
+        if (updErr) {
+          return NextResponse.json({ error: `Error actualizando: ${updErr.message}` }, { status: 500 });
+        }
+      } else {
+        // Insert new training plan
+        const { error: insErr } = await supabase
+          .from("training_plans")
+          .insert({
+            user_id: clientId,
+            week_number: 1,
+            data: planData,
+            plan_approved: true,
+          });
+        if (insErr) {
+          return NextResponse.json({ error: `Error guardando: ${insErr.message}` }, { status: 500 });
+        }
       }
     } else if (type === "nutrition") {
-      // Delete existing nutrition plans for this client
-      const { error: delErr } = await supabase
+      // Check if existing plan exists
+      const { data: existing } = await supabase
         .from("nutrition_plans")
-        .delete()
-        .eq("user_id", clientId);
-      if (delErr) {
-        return NextResponse.json({ error: `Error borrando plan: ${delErr.message}` }, { status: 500 });
-      }
+        .select("id")
+        .eq("user_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      // Insert new nutrition plan (plan_approved: true so client shows it)
-      const { error: insErr } = await supabase
-        .from("nutrition_plans")
-        .insert({
-          user_id: clientId,
-          data: { meals: data.meals },
-          important_notes: data.importantNotes || [],
-          plan_approved: true,
-        });
-      if (insErr) {
-        return NextResponse.json({ error: `Error guardando: ${insErr.message}` }, { status: 500 });
+      if (existing) {
+        // Update existing plan
+        const { error: updErr } = await supabase
+          .from("nutrition_plans")
+          .update({
+            data: { meals: data.meals },
+            important_notes: data.importantNotes || [],
+            plan_approved: true,
+          })
+          .eq("id", existing.id);
+        if (updErr) {
+          return NextResponse.json({ error: `Error actualizando: ${updErr.message}` }, { status: 500 });
+        }
+      } else {
+        // Insert new nutrition plan
+        const { error: insErr } = await supabase
+          .from("nutrition_plans")
+          .insert({
+            user_id: clientId,
+            data: { meals: data.meals },
+            important_notes: data.importantNotes || [],
+            plan_approved: true,
+          });
+        if (insErr) {
+          return NextResponse.json({ error: `Error guardando: ${insErr.message}` }, { status: 500 });
+        }
       }
     } else {
       return NextResponse.json({ error: "Tipo invalido" }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Error inesperado" }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json({ error: `Error inesperado: ${err}` }, { status: 500 });
   }
 }

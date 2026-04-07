@@ -75,27 +75,25 @@ export default function PlanEditorPage({
   useEffect(() => {
     const loadExisting = async () => {
       try {
-        // Load existing training plan
-        const { data: trainingData } = await supabase
-          .from("training_plans")
-          .select("data")
-          .eq("user_id", clientId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
+        // Load plans via server-side API (bypasses RLS)
+        const { data: { session } } = await supabase.auth.getSession();
+        let trainingData = null;
+        let nutritionData = null;
+
+        if (session?.access_token) {
+          const res = await fetch(`/api/admin/client-plans?clientId=${clientId}`, {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (res.ok) {
+            const plans = await res.json();
+            trainingData = plans.trainingPlan;
+            nutritionData = plans.nutritionPlan;
+          }
+        }
 
         if (trainingData && trainingData.data?.days?.length > 0) {
           setTrainingDays(trainingData.data.days);
         }
-
-        // Load existing nutrition plan
-        const { data: nutritionData } = await supabase
-          .from("nutrition_plans")
-          .select("data, important_notes")
-          .eq("user_id", clientId)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
 
         if (nutritionData && nutritionData.data?.meals?.length > 0) {
           // Convert meals: if they have foodDetails, build foods strings from them

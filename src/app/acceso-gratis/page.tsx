@@ -157,15 +157,7 @@ function AccesoGratisForm() {
     }
   };
 
-  if (validating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Dumbbell className="h-8 w-8 text-primary animate-pulse" />
-      </div>
-    );
-  }
-
-  // Auto-redirect when success — must be before any conditional returns (React hooks rules)
+  // Auto-redirect when success — must be BEFORE any conditional returns (React hooks rules)
   useEffect(() => {
     if (!success) return;
     let cancelled = false;
@@ -207,6 +199,14 @@ function AccesoGratisForm() {
     redirect();
     return () => { cancelled = true; };
   }, [success, router]);
+
+  if (validating) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Dumbbell className="h-8 w-8 text-primary animate-pulse" />
+      </div>
+    );
+  }
 
   if (!valid && !validating) {
     return (

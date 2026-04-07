@@ -138,23 +138,39 @@ export default function ClienteDetailPage({
       .maybeSingle();
     if (subData) setSubscription(subData);
 
-    const { data: tpData } = await supabase
-      .from("training_plans")
-      .select("*")
-      .eq("user_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (tpData) setTrainingPlan(tpData);
+    // Load plans via server-side API (bypasses RLS)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const plansRes = await fetch(`/api/admin/client-plans?clientId=${id}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (plansRes.ok) {
+          const plans = await plansRes.json();
+          if (plans.trainingPlan) setTrainingPlan(plans.trainingPlan);
+          if (plans.nutritionPlan) setNutritionPlan(plans.nutritionPlan);
+        }
+      }
+    } catch {
+      // Fallback to direct query
+      const { data: tpData } = await supabase
+        .from("training_plans")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (tpData) setTrainingPlan(tpData);
 
-    const { data: npData } = await supabase
-      .from("nutrition_plans")
-      .select("*")
-      .eq("user_id", id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (npData) setNutritionPlan(npData);
+      const { data: npData } = await supabase
+        .from("nutrition_plans")
+        .select("*")
+        .eq("user_id", id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (npData) setNutritionPlan(npData);
+    }
 
     // Load progress entries
     const { data: progressData } = await supabase
@@ -709,14 +725,39 @@ export default function ClienteDetailPage({
               <button
                 onClick={async () => {
                   setSavingTraining(true);
-                  const trainingData = { days: editTrainingData, admin_updated_at: new Date().toISOString() };
-                  await supabase
-                    .from("training_plans")
-                    .update({ data: trainingData })
-                    .eq("user_id", id);
-                  setTrainingPlan({ ...trainingPlan, data: trainingData });
-                  setEditingTraining(false);
-                  setSavingTraining(false);
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.access_token) {
+                      alert("Sesión expirada. Recarga la página.");
+                      setSavingTraining(false);
+                      return;
+                    }
+                    const res = await fetch("/api/save-plan", {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        clientId: id,
+                        type: "training",
+                        data: { days: editTrainingData },
+                      }),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+                      alert(err.error || "Error al guardar");
+                      setSavingTraining(false);
+                      return;
+                    }
+                    const trainingData = { days: editTrainingData, admin_updated_at: new Date().toISOString() };
+                    setTrainingPlan({ ...trainingPlan, data: trainingData });
+                    setEditingTraining(false);
+                  } catch (err) {
+                    alert(`Error inesperado: ${err}`);
+                  } finally {
+                    setSavingTraining(false);
+                  }
                 }}
                 disabled={savingTraining}
                 className="flex-1 flex items-center justify-center gap-2 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl hover:opacity-90 disabled:opacity-50"
@@ -1132,14 +1173,106 @@ export default function ClienteDetailPage({
               <button
                 onClick={async () => {
                   setSavingNutrition(true);
-                  const nutritionData = { meals: editNutritionData, admin_updated_at: new Date().toISOString() };
-                  await supabase
-                    .from("nutrition_plans")
-                    .update({ data: nutritionData })
-                    .eq("user_id", id);
-                  setNutritionPlan({ ...nutritionPlan, data: nutritionData });
-                  setEditingNutrition(false);
-                  setSavingNutrition(false);
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.access_token) {
+                      alert("Sesión expirada. Recarga la página.");
+                      setSavingNutrition(false);
+                      return;
+                    }
+                    const res = await fetch("/api/save-plan", {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        clientId: id,
+                        type: "nutrition",
+                        data: {
+                          meals: editNutritionData.map((meal: any) => {
+                            // Rebuild foodDetails from edited foods strings
+                            const newFoodDetails = (meal.foods || []).map((foodStr: string) => {
+                              const gramsMatch = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+                              const unitsMatch = foodStr.match(/^(\d+)\s+(.+)/i);
+                              if (gramsMatch) {
+                                const grams = parseInt(gramsMatch[1]);
+                                const name = gramsMatch[2].trim();
+                                const dbFood = findFoodByName(name);
+                                if (dbFood) {
+                                  const macros = calculateFoodMacros(dbFood, grams);
+                                  return { name: dbFood.name, grams, unit: "g", ...macros };
+                                }
+                                return { name, grams, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+                              } else if (unitsMatch) {
+                                const units = parseInt(unitsMatch[1]);
+                                const name = unitsMatch[2].trim();
+                                const dbFood = findFoodByName(name);
+                                if (dbFood) {
+                                  const defaultGrams = units * 50;
+                                  const macros = calculateFoodMacros(dbFood, defaultGrams);
+                                  return { name: dbFood.name, grams: defaultGrams, unit: "u", ...macros };
+                                }
+                                return { name, grams: 0, unit: "u", calories: 0, protein: 0, carbs: 0, fat: 0 };
+                              }
+                              return { name: foodStr, grams: 0, unit: "", calories: 0, protein: 0, carbs: 0, fat: 0 };
+                            });
+                            const approxCalories = newFoodDetails.reduce((s: number, fd: any) => s + (fd.calories || 0), 0);
+                            const approxProtein = newFoodDetails.reduce((s: number, fd: any) => s + (fd.protein || 0), 0);
+                            const approxCarbs = newFoodDetails.reduce((s: number, fd: any) => s + (fd.carbs || 0), 0);
+                            const approxFats = newFoodDetails.reduce((s: number, fd: any) => s + (fd.fat || 0), 0);
+                            return {
+                              ...meal,
+                              foodDetails: newFoodDetails,
+                              approxCalories,
+                              approxProtein,
+                              approxCarbs,
+                              approxFats,
+                            };
+                          }),
+                          importantNotes: nutritionNotes,
+                        },
+                      }),
+                    });
+                    if (!res.ok) {
+                      const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+                      alert(err.error || "Error al guardar");
+                      setSavingNutrition(false);
+                      return;
+                    }
+                    // Rebuild local state with synced foodDetails
+                    const savedMeals = editNutritionData.map((meal: any) => {
+                      const newFoodDetails = (meal.foods || []).map((foodStr: string) => {
+                        const gramsMatch = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+                        if (gramsMatch) {
+                          const grams = parseInt(gramsMatch[1]);
+                          const name = gramsMatch[2].trim();
+                          const dbFood = findFoodByName(name);
+                          if (dbFood) {
+                            const macros = calculateFoodMacros(dbFood, grams);
+                            return { name: dbFood.name, grams, unit: "g", ...macros };
+                          }
+                          return { name, grams, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+                        }
+                        return { name: foodStr, grams: 0, unit: "", calories: 0, protein: 0, carbs: 0, fat: 0 };
+                      });
+                      return {
+                        ...meal,
+                        foodDetails: newFoodDetails,
+                        approxCalories: newFoodDetails.reduce((s: number, fd: any) => s + (fd.calories || 0), 0),
+                        approxProtein: newFoodDetails.reduce((s: number, fd: any) => s + (fd.protein || 0), 0),
+                        approxCarbs: newFoodDetails.reduce((s: number, fd: any) => s + (fd.carbs || 0), 0),
+                        approxFats: newFoodDetails.reduce((s: number, fd: any) => s + (fd.fat || 0), 0),
+                      };
+                    });
+                    const nutritionData = { meals: savedMeals, admin_updated_at: new Date().toISOString() };
+                    setNutritionPlan({ ...nutritionPlan, data: nutritionData, important_notes: nutritionNotes });
+                    setEditingNutrition(false);
+                  } catch (err) {
+                    alert(`Error inesperado: ${err}`);
+                  } finally {
+                    setSavingNutrition(false);
+                  }
                 }}
                 disabled={savingNutrition}
                 className="flex-1 flex items-center justify-center gap-2 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl hover:opacity-90 disabled:opacity-50"
