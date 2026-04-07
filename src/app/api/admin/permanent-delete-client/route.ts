@@ -56,8 +56,15 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  // Delete related data first
-  const tables = [
+  // Delete related data first (order matters for FK constraints)
+  const userIdTables = [
+    "weekly_rankings",
+    "user_achievements",
+    "user_streaks",
+    "user_xp",
+    "push_subscriptions",
+    "chat_blocks",
+    "general_messages",
     "exercise_logs",
     "progress_entries",
     "nutrition_plans",
@@ -66,9 +73,16 @@ export async function DELETE(request: NextRequest) {
     "surveys",
   ];
 
-  for (const table of tables) {
+  for (const table of userIdTables) {
     await adminClient.from(table).delete().eq("user_id", clientId);
   }
+
+  // Delete messages and conversations (user can be sender or participant)
+  await adminClient.from("messages").delete().eq("sender_id", clientId);
+  await adminClient.from("conversations").delete().or(`user1_id.eq.${clientId},user2_id.eq.${clientId}`);
+
+  // Delete free access code usage
+  await adminClient.from("free_access_codes").update({ used: false, used_by: null }).eq("used_by", clientId);
 
   // Delete profile
   await adminClient.from("profiles").delete().eq("id", clientId);
