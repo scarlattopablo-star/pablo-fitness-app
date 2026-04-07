@@ -549,6 +549,30 @@ export function generateTrainingPlan(
     }
   }
 
+  // For women: reduce chest volume (max 2 chest exercises per session)
+  if (sex === "mujer") {
+    const pool = isHome ? HOME_EXERCISES : GYM_EXERCISES;
+    const chestIds = new Set([...pool.pecho.compound, ...pool.pecho.isolation].map(e => e.id));
+    plan = plan.map(day => {
+      const chestExercises = day.exercises.filter(e => chestIds.has(e.id));
+      if (chestExercises.length > 2) {
+        const keep = new Set(chestExercises.slice(0, 2).map(e => e.id));
+        return { ...day, exercises: day.exercises.filter(e => !chestIds.has(e.id) || keep.has(e.id)) };
+      }
+      return day;
+    });
+  }
+
+  // Cap exercises per session at 9 (excluding cardio)
+  plan = plan.map(day => {
+    const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
+    const cardio = day.exercises.filter(e => CARDIO_IDS_SET.has(e.id));
+    if (nonCardio.length > 9) {
+      return { ...day, exercises: [...nonCardio.slice(0, 9), ...cardio] };
+    }
+    return day;
+  });
+
   // Add cardio finisher to every session
   const cardioPool = isHome ? HOME_CARDIO : GYM_CARDIO;
   plan = addCardioFinisher(plan, cardioPool, p);
