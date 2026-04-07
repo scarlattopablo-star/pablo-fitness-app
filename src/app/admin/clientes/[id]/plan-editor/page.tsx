@@ -205,46 +205,41 @@ export default function PlanEditorPage({
   };
   const removeNote = (idx: number) => setNutritionNotes(nutritionNotes.filter((_, i) => i !== idx));
 
-  // Save
+  // Save via server-side API (bypasses RLS)
   const handleSave = async () => {
     setSaving(true);
     setSaveError("");
     try {
-      if (tab === "entrenamiento") {
-        const { error: delErr } = await supabase.from("training_plans").delete().eq("user_id", clientId);
-        if (delErr) {
-          setSaveError(`Error borrando plan anterior: ${delErr.message}`);
-          setSaving(false);
-          return;
-        }
-        const { error: insErr } = await supabase.from("training_plans").insert({
-          user_id: clientId,
-          week_number: 1,
-          data: { days: trainingDays },
-        });
-        if (insErr) {
-          setSaveError(`Error guardando entrenamiento: ${insErr.message}`);
-          setSaving(false);
-          return;
-        }
-      } else {
-        const { error: delErr } = await supabase.from("nutrition_plans").delete().eq("user_id", clientId);
-        if (delErr) {
-          setSaveError(`Error borrando plan anterior: ${delErr.message}`);
-          setSaving(false);
-          return;
-        }
-        const { error: insErr } = await supabase.from("nutrition_plans").insert({
-          user_id: clientId,
-          data: { meals },
-          important_notes: nutritionNotes,
-        });
-        if (insErr) {
-          setSaveError(`Error guardando nutricion: ${insErr.message}`);
-          setSaving(false);
-          return;
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setSaveError("Sesion expirada. Recarga la pagina.");
+        setSaving(false);
+        return;
       }
+
+      const isTraining = tab === "entrenamiento";
+      const res = await fetch("/api/save-plan", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clientId,
+          type: isTraining ? "training" : "nutrition",
+          data: isTraining
+            ? { days: trainingDays }
+            : { meals, importantNotes: nutritionNotes },
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+        setSaveError(err.error || "Error al guardar");
+        setSaving(false);
+        return;
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
