@@ -1006,14 +1006,34 @@ export default function ClienteDetailPage({
                       return { sameCategory: [], otherCategory: filtered };
                     };
 
+                    // Calculate live macros for this food
+                    const liveMacros = originalDbFood ? calculateFoodMacros(originalDbFood, originalGrams) : null;
+
                     return (
-                    <div key={foodIdx} className="flex items-center gap-2">
+                    <div key={foodIdx} className="flex items-center gap-1.5">
+                      {/* Grams input */}
+                      <input
+                        type="number"
+                        value={originalGrams}
+                        onChange={(e) => {
+                          const newGrams = Math.max(0, parseInt(e.target.value) || 0);
+                          const updated = [...editNutritionData];
+                          const foods = [...(updated[mealIdx].foods || [])];
+                          foods[foodIdx] = `${newGrams}g ${originalName}`;
+                          updated[mealIdx] = { ...meal, foods };
+                          setEditNutritionData(updated);
+                        }}
+                        className="w-14 bg-card-border/20 rounded px-1.5 py-1.5 text-xs text-center font-bold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        min={0}
+                        step={5}
+                      />
+                      <span className="text-[10px] text-muted">g</span>
                       <div className="flex-1 relative">
                         <button
                           onClick={() => setFoodSearch(isActive ? null : { mealIdx, foodIdx, query: "" })}
-                          className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary hover:bg-card-border/30 transition-colors"
+                          className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary hover:bg-card-border/30 transition-colors truncate"
                         >
-                          {food || <span className="text-muted">Seleccionar alimento...</span>}
+                          {originalName || <span className="text-muted">Seleccionar...</span>}
                         </button>
                         {isActive && (
                           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card-bg border border-card-border rounded-xl max-h-64 overflow-y-auto shadow-xl">
@@ -1093,6 +1113,12 @@ export default function ClienteDetailPage({
                           </div>
                         )}
                       </div>
+                      {/* Live macros */}
+                      {liveMacros && (
+                        <span className="text-[9px] text-muted whitespace-nowrap hidden sm:inline">
+                          {liveMacros.calories}kcal
+                        </span>
+                      )}
                       <button
                         onClick={() => {
                           const updated = [...editNutritionData];
@@ -1119,9 +1145,74 @@ export default function ClienteDetailPage({
                   >
                     <Plus className="h-3 w-3" /> Agregar alimento
                   </button>
+                  {/* Live meal macros summary */}
+                  {(() => {
+                    const mealTotals = (meal.foods || []).reduce((acc: { cal: number; p: number; c: number; f: number }, foodStr: string) => {
+                      const m = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+                      if (m) {
+                        const db = findFoodByName(m[2]);
+                        if (db) {
+                          const mc = calculateFoodMacros(db, parseInt(m[1]));
+                          return { cal: acc.cal + mc.calories, p: acc.p + mc.protein, c: acc.c + mc.carbs, f: acc.f + mc.fat };
+                        }
+                      }
+                      return acc;
+                    }, { cal: 0, p: 0, c: 0, f: 0 });
+                    return mealTotals.cal > 0 ? (
+                      <div className="flex gap-2 mt-2 pt-2 border-t border-card-border/30">
+                        <span className="text-[10px] font-bold text-primary">{mealTotals.cal} kcal</span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-red-500/10 text-red-400 rounded">P:{mealTotals.p}g</span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C:{mealTotals.c}g</span>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 text-blue-400 rounded">G:{mealTotals.f}g</span>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
               </div>
             ))}
+
+            {/* Total plan macros */}
+            {(() => {
+              const totals = editNutritionData.reduce((acc: { cal: number; p: number; c: number; f: number }, meal: { foods?: string[] }) => {
+                (meal.foods || []).forEach((foodStr: string) => {
+                  const m = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+                  if (m) {
+                    const db = findFoodByName(m[2]);
+                    if (db) {
+                      const mc = calculateFoodMacros(db, parseInt(m[1]));
+                      acc.cal += mc.calories;
+                      acc.p += mc.protein;
+                      acc.c += mc.carbs;
+                      acc.f += mc.fat;
+                    }
+                  }
+                });
+                return acc;
+              }, { cal: 0, p: 0, c: 0, f: 0 });
+              return totals.cal > 0 ? (
+                <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
+                  <p className="text-xs font-bold mb-2">Resumen del Plan (en vivo)</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="text-center p-2 rounded-lg bg-primary/10">
+                      <p className="text-sm font-black text-primary">{totals.cal}</p>
+                      <p className="text-[9px] text-muted">kcal</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-red-500/10">
+                      <p className="text-sm font-black text-red-400">{totals.p}g</p>
+                      <p className="text-[9px] text-muted">Prot</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-yellow-500/10">
+                      <p className="text-sm font-black text-yellow-400">{totals.c}g</p>
+                      <p className="text-[9px] text-muted">Carbs</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-blue-500/10">
+                      <p className="text-sm font-black text-blue-400">{totals.f}g</p>
+                      <p className="text-[9px] text-muted">Grasas</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             <button
               onClick={() => {
