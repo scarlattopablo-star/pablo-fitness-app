@@ -79,6 +79,25 @@ const EXERCISE_GIFS: Record<string, string> = {
   'wall-sit': gif('sentadilla-cuerpo'),
   'elevacion-pantorrillas': gif('elevacion-pantorrillas'),
 
+  // PIERNAS / GLUTEOS — nuevos
+  'patada-gluteo': gif('patada-gluteo'),
+  'extension-cadera-polea': gif('extension-cadera-polea'),
+  'abduccion-cadera': gif('abduccion-cadera'),
+  'aduccion-cadera': gif('aduccion-cadera'),
+  'aduccion-cable': gif('aduccion-cable'),
+  'donkey-kicks': gif('donkey-kicks'),
+  'fire-hydrants': gif('fire-hydrants'),
+  'abduccion-cuerpo': gif('abduccion-cuerpo'),
+  'sentadilla-smith': gif('sentadilla-smith'),
+  'sentadilla-frontal': gif('sentadilla-frontal'),
+  'curl-femoral-pie': gif('curl-femoral-pie'),
+  'peso-muerto-sumo': gif('peso-muerto-sumo'),
+  'zancadas-caminando': gif('zancadas-caminando'),
+  'hip-thrust-barbell': gif('hip-thrust-barbell'),
+  'hip-thrust-banda': gif('hip-thrust-banda'),
+  'peso-muerto-mancuerna': gif('peso-muerto-mancuerna'),
+  'elevacion-cadera-banco': gif('elevacion-cadera-banco'),
+
   // ABDOMEN
   'plancha': gif('plancha'),
   'plancha-lateral': gif('plancha-lateral'),
