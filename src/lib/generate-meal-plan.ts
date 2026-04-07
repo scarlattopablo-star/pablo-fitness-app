@@ -43,12 +43,12 @@ function getFood(id: string): FoodItem {
 }
 
 function round5(n: number): number {
-  return Math.max(10, Math.round(n / 5) * 5);
+  return Math.max(20, Math.round(n / 5) * 5);
 }
 
 function buildFood(foodId: string, grams: number): MealFood {
   const food = getFood(foodId);
-  const g = Math.max(10, grams);
+  const g = Math.max(20, grams);
   const macros = calculateFoodMacros(food, g);
   return { name: food.name, grams: g, unit: food.unit, ...macros };
 }

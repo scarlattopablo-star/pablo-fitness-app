@@ -246,10 +246,8 @@ export function getSwapAlternatives(currentFoodId: string, mealName: string): Fo
   );
 }
 
-// Calculate grams of new food to best match the original food's macros.
-// Uses a weighted scoring system that considers ALL macros, not just one.
-// Weights prioritize the primary macro for the category but still penalize
-// big deviations in calories and secondary macros.
+// Calculate grams of new food to match the original food's calories.
+// Uses direct calorie matching for accuracy, rounded to 1g.
 export function calculateSwapGrams(
   originalFood: FoodItem,
   originalGrams: number,
@@ -257,53 +255,15 @@ export function calculateSwapGrams(
 ): number {
   const orig = calculateFoodMacros(originalFood, originalGrams);
 
-  // Determine category-specific weights for scoring
-  // [calories, protein, carbs, fat]
-  let weights: [number, number, number, number];
-  switch (originalFood.category) {
-    case "protein":
-    case "dairy":
-      weights = [0.3, 0.5, 0.05, 0.15]; // protein most important, then cal, then fat
-      break;
-    case "carb":
-    case "fruit":
-      weights = [0.3, 0.05, 0.5, 0.15]; // carbs most important, then cal
-      break;
-    case "fat":
-      weights = [0.3, 0.05, 0.15, 0.5]; // fat most important, then cal
-      break;
-    case "vegetable":
-      weights = [0.4, 0.1, 0.4, 0.1]; // cal + carbs
-      break;
-    default:
-      weights = [0.5, 0.2, 0.15, 0.15]; // default: prioritize calories
-  }
+  if (newFood.calories <= 0) return originalGrams;
 
-  // Test grams from 10 to 500 in steps of 5, find the best score
-  let bestGrams = originalGrams;
-  let bestScore = Infinity;
-
-  for (let g = 10; g <= 500; g += 5) {
-    const test = calculateFoodMacros(newFood, g);
-
-    // Calculate weighted error (lower is better)
-    const calErr = orig.calories > 0 ? Math.abs(test.calories - orig.calories) / Math.max(orig.calories, 1) : 0;
-    const proErr = orig.protein > 0 ? Math.abs(test.protein - orig.protein) / Math.max(orig.protein, 1) : 0;
-    const carErr = orig.carbs > 0 ? Math.abs(test.carbs - orig.carbs) / Math.max(orig.carbs, 1) : 0;
-    const fatErr = orig.fat > 0 ? Math.abs(test.fat - orig.fat) / Math.max(orig.fat, 1) : 0;
-
-    const score = weights[0] * calErr + weights[1] * proErr + weights[2] * carErr + weights[3] * fatErr;
-
-    if (score < bestScore) {
-      bestScore = score;
-      bestGrams = g;
-    }
-  }
+  // Match calories directly
+  let grams = Math.round((orig.calories / newFood.calories) * 100);
 
   // Cap vegetables at 300g
   if (originalFood.category === "vegetable") {
-    bestGrams = Math.min(bestGrams, 300);
+    grams = Math.min(grams, 300);
   }
 
-  return bestGrams;
+  return Math.max(20, Math.min(grams, 500));
 }
