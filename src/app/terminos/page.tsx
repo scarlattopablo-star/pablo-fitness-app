@@ -109,9 +109,18 @@ export default function TerminosPage() {
 
             <h3 className="text-white font-semibold mt-4 mb-2">Nutrición y Metabolismo</h3>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li><strong className="text-white">Harris JA, Benedict FG (1918)</strong> — A Biometric Study of Human Basal Metabolism. <em>Proceedings of the National Academy of Sciences</em>, 4(12), 370-373. Ecuación utilizada para el cálculo de la Tasa Metabólica Basal (TMB) y el Gasto Energético Diario Total (TDEE).</li>
-              <li><strong className="text-white">USDA FoodData Central</strong> — Base de datos de composición de alimentos del Departamento de Agricultura de los Estados Unidos. Todos los valores nutricionales (calorías, proteínas, carbohidratos, grasas, fibra) provienen de esta fuente.</li>
-              <li><strong className="text-white">ACSM/AND/DC Joint Position Statement</strong> — Nutrition and Athletic Performance (2016). Guías de timing nutricional y distribución de macronutrientes para deportistas.</li>
+              <li><strong className="text-white">Harris JA, Benedict FG (1918)</strong> — A Biometric Study of Human Basal Metabolism. <em>Proceedings of the National Academy of Sciences</em>, 4(12), 370-373. Ecuacion utilizada para el calculo de la Tasa Metabolica Basal (TMB) y el Gasto Energetico Diario Total (TDEE).</li>
+              <li><strong className="text-white">USDA FoodData Central</strong> — Base de datos de composicion de alimentos del Departamento de Agricultura de los Estados Unidos. Todos los valores nutricionales (calorias, proteinas, carbohidratos, grasas, fibra) provienen de esta fuente.</li>
+              <li><strong className="text-white">ACSM/AND/DC Joint Position Statement</strong> — Nutrition and Athletic Performance (2016). Guias de timing nutricional y distribucion de macronutrientes para deportistas.</li>
+              <li><strong className="text-white">ISSN (International Society of Sports Nutrition)</strong> — Position Stand: Protein and Exercise (Jager et al., 2017). <em>Journal of the International Society of Sports Nutrition</em>, 14(20). Ingesta de 1.4-2.0 g/kg/dia de proteina y 20-40g de proteina por comida para deportistas.</li>
+              <li><strong className="text-white">ISSA (International Sports Sciences Association)</strong> — Guias de distribucion de macronutrientes para desarrollo muscular y perdida de grasa. Porciones minimas recomendadas: 80-150g de proteina animal por comida (para alcanzar 20-40g de proteina), 50-200g de carbohidratos complejos por comida.</li>
+            </ul>
+
+            <h3 className="text-white font-semibold mt-4 mb-2">Porciones y Sustitucion de Alimentos</h3>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li><strong className="text-white">NIDDK (National Institute of Diabetes and Digestive and Kidney Diseases)</strong> — Porciones de los alimentos: como escoger justo lo suficiente. Guias de tamano de porcion por grupo alimentario.</li>
+              <li><strong className="text-white">Equivalencia calorica</strong> — Las sustituciones de alimentos dentro de la plataforma se calculan manteniendo las calorias totales y el perfil de macronutrientes de la comida original, con porciones minimas realistas por categoria: proteinas (min. 80g), carbohidratos (min. 50g), lacteos (min. 100g), frutas y vegetales (min. 50g), grasas (min. 5g).</li>
+              <li><strong className="text-white">Morton RW et al. (2018)</strong> — A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults. <em>British Journal of Sports Medicine</em>, 52(6), 376-384. Base para la distribucion de proteina en 4-6 comidas diarias.</li>
             </ul>
 
             <h3 className="text-white font-semibold mt-4 mb-2">Restricciones Alimentarias</h3>
