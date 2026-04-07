@@ -22,11 +22,21 @@ export async function POST(request: NextRequest) {
     const ensureProfile = async () => {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, deleted_at")
         .eq("id", userId)
         .single();
 
-      if (profile) return; // Profile already exists
+      if (profile) {
+        // If profile was soft-deleted, restore it
+        if (profile.deleted_at) {
+          await supabase.from("profiles").update({
+            deleted_at: null,
+            full_name: full_name || "",
+            email: email || "",
+          }).eq("id", userId);
+        }
+        return;
+      }
 
       // Retry profile upsert with increasing delays (auth user may not be committed yet)
       for (let i = 0; i < 6; i++) {
@@ -47,10 +57,27 @@ export async function POST(request: NextRequest) {
 
     await ensureProfile();
 
-    const { error } = await supabase.from("surveys").insert({
-      user_id: userId,
-      ...surveyData,
-    });
+    // Check if survey already exists (retry scenario)
+    const { data: existing } = await supabase
+      .from("surveys")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    let error;
+    if (existing) {
+      // Update existing survey
+      ({ error } = await supabase.from("surveys")
+        .update(surveyData)
+        .eq("id", existing.id));
+    } else {
+      // Insert new survey
+      ({ error } = await supabase.from("surveys").insert({
+        user_id: userId,
+        ...surveyData,
+      }));
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

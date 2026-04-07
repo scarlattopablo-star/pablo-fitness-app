@@ -45,6 +45,24 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    // Check for existing active subscription (avoid duplicates on retry)
+    const { data: existing } = await supabase.from("subscriptions")
+      .select("id").eq("user_id", userId).eq("status", "active").maybeSingle();
+
+    if (existing) {
+      // Update existing subscription
+      const { data, error } = await supabase.from("subscriptions")
+        .update({
+          duration,
+          amount_paid: amountPaid || 0,
+          currency: currency || "UYU",
+          start_date: startDate.toISOString().split("T")[0],
+          end_date: endDate.toISOString().split("T")[0],
+        }).eq("id", existing.id).select().single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ success: true, subscription: data });
+    }
+
     const { data, error } = await supabase.from("subscriptions").insert({
       user_id: userId,
       duration,

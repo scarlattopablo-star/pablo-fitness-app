@@ -84,32 +84,50 @@ export async function POST(request: NextRequest) {
     // All other QR plans (free access with specific plan_slug) auto-approve
     const needsApproval = objective === "direct-client";
 
-    // Delete existing plans for this user (same pattern as plan-editor)
-    await supabase.from("training_plans").delete().eq("user_id", userId);
-    await supabase.from("nutrition_plans").delete().eq("user_id", userId);
+    // Check if plans already exist (don't overwrite admin-edited plans on retry)
+    const { data: existingTP } = await supabase.from("training_plans")
+      .select("id").eq("user_id", userId).limit(1).maybeSingle();
+    const { data: existingNP } = await supabase.from("nutrition_plans")
+      .select("id").eq("user_id", userId).limit(1).maybeSingle();
 
-    // Insert training plan
-    const { error: tpError } = await supabase.from("training_plans").insert({
-      user_id: userId,
-      week_number: 1,
-      data: { days: training },
-      plan_approved: !needsApproval,
-    });
-
-    if (tpError) {
-      return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
+    if (existingTP) {
+      // Update existing training plan
+      const { error: tpError } = await supabase.from("training_plans")
+        .update({ data: { days: training }, plan_approved: !needsApproval })
+        .eq("id", existingTP.id);
+      if (tpError) {
+        return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
+      }
+    } else {
+      const { error: tpError } = await supabase.from("training_plans").insert({
+        user_id: userId,
+        week_number: 1,
+        data: { days: training },
+        plan_approved: !needsApproval,
+      });
+      if (tpError) {
+        return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
+      }
     }
 
-    // Insert nutrition plan
-    const { error: npError } = await supabase.from("nutrition_plans").insert({
-      user_id: userId,
-      data: { meals: nutrition.meals },
-      important_notes: nutrition.importantNotes,
-      plan_approved: !needsApproval,
-    });
-
-    if (npError) {
-      return NextResponse.json({ error: `Error guardando nutricion: ${npError.message}` }, { status: 500 });
+    if (existingNP) {
+      // Update existing nutrition plan
+      const { error: npError } = await supabase.from("nutrition_plans")
+        .update({ data: { meals: nutrition.meals }, important_notes: nutrition.importantNotes, plan_approved: !needsApproval })
+        .eq("id", existingNP.id);
+      if (npError) {
+        return NextResponse.json({ error: `Error guardando nutricion: ${npError.message}` }, { status: 500 });
+      }
+    } else {
+      const { error: npError } = await supabase.from("nutrition_plans").insert({
+        user_id: userId,
+        data: { meals: nutrition.meals },
+        important_notes: nutrition.importantNotes,
+        plan_approved: !needsApproval,
+      });
+      if (npError) {
+        return NextResponse.json({ error: `Error guardando nutricion: ${npError.message}` }, { status: 500 });
+      }
     }
 
     return NextResponse.json({
