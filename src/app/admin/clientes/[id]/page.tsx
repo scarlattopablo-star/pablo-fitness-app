@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
 import { EXERCISES, MUSCLE_GROUP_LABELS } from "@/lib/exercises-data";
+import { PLANS } from "@/lib/plans-data";
 import { getExerciseGif } from "@/lib/exercise-images";
 import { FOOD_DATABASE, findFoodByName, calculateSwapGrams, calculateFoodMacros } from "@/lib/food-database";
 import {
@@ -29,6 +30,7 @@ interface ClientData {
 }
 
 interface SurveyData {
+  id: string;
   age: number;
   sex: string;
   weight: number;
@@ -90,6 +92,10 @@ export default function ClienteDetailPage({
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [changingObjective, setChangingObjective] = useState(false);
+  const [newObjective, setNewObjective] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenerateMsg, setRegenerateMsg] = useState("");
   const [expandTraining, setExpandTraining] = useState(false);
   const [expandNutrition, setExpandNutrition] = useState(false);
   const [expandProgress, setExpandProgress] = useState(true);
@@ -306,7 +312,7 @@ export default function ClienteDetailPage({
             </div>
           )}
 
-          <div className="flex gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-3">
             <Link
               href={`/admin/clientes/${id}/plan-editor`}
               className="inline-flex items-center gap-2 gradient-primary text-black font-semibold text-sm px-4 py-2 rounded-xl hover:opacity-90 transition-opacity"
@@ -314,12 +320,96 @@ export default function ClienteDetailPage({
               <Edit className="h-4 w-4" /> Crear/Editar Plan
             </Link>
             <button
+              onClick={() => { setChangingObjective(!changingObjective); setNewObjective(survey?.objective || ""); setRegenerateMsg(""); }}
+              className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-400 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-500/20 transition-colors"
+            >
+              <Target className="h-4 w-4" /> Cambiar Objetivo
+            </button>
+            <button
               onClick={() => setShowDeleteConfirm(true)}
               className="inline-flex items-center gap-2 bg-danger/10 text-danger font-semibold text-sm px-4 py-2 rounded-xl hover:bg-danger/20 transition-colors"
             >
               <Trash2 className="h-4 w-4" /> Eliminar
             </button>
           </div>
+
+          {/* Change objective & regenerate plan */}
+          {changingObjective && (
+            <div className="mt-3 glass-card rounded-xl p-4">
+              <p className="font-bold text-sm mb-3">Cambiar objetivo del cliente</p>
+              <p className="text-xs text-muted mb-3">Objetivo actual: <span className="text-primary font-bold">{survey?.objective?.replace(/-/g, " ") || "No definido"}</span></p>
+              <select
+                value={newObjective}
+                onChange={e => setNewObjective(e.target.value)}
+                className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-2.5 text-sm mb-3 focus:outline-none focus:border-primary"
+              >
+                <option value="">Seleccionar nuevo objetivo...</option>
+                {PLANS.map(plan => (
+                  <option key={plan.slug} value={plan.slug}>{plan.name}</option>
+                ))}
+                <option value="direct-client">Cliente Directo (mantenimiento)</option>
+              </select>
+              {regenerateMsg && (
+                <div className={`text-xs p-2 rounded-lg mb-3 ${regenerateMsg.includes("Error") ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+                  {regenerateMsg}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    if (!newObjective) return;
+                    setRegenerating(true);
+                    setRegenerateMsg("");
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.access_token) { setRegenerateMsg("Error: sesion expirada"); setRegenerating(false); return; }
+
+                      // Update survey objective
+                      if (survey?.id) {
+                        await supabase.from("surveys").update({ objective: newObjective }).eq("id", survey.id);
+                        setSurvey({ ...survey, objective: newObjective });
+                      }
+
+                      // Regenerate plans
+                      const res = await fetch("/api/generate-plans", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: id, planSlug: newObjective }),
+                      });
+
+                      if (res.ok) {
+                        setRegenerateMsg("Plan regenerado con exito!");
+                        // Reload plans
+                        const plansRes = await fetch(`/api/admin/client-plans?clientId=${id}`, {
+                          headers: { Authorization: `Bearer ${session.access_token}` },
+                        }).then(r => r.ok ? r.json() : null);
+                        if (plansRes?.trainingPlan) setTrainingPlan(plansRes.trainingPlan);
+                        if (plansRes?.nutritionPlan) setNutritionPlan(plansRes.nutritionPlan);
+                        setTimeout(() => setChangingObjective(false), 1500);
+                      } else {
+                        const err = await res.json().catch(() => ({ error: "Error desconocido" }));
+                        setRegenerateMsg(`Error: ${err.error}`);
+                      }
+                    } catch (err) {
+                      setRegenerateMsg(`Error: ${err}`);
+                    }
+                    setRegenerating(false);
+                  }}
+                  disabled={regenerating || !newObjective}
+                  className="flex-1 flex items-center justify-center gap-2 gradient-primary text-black font-bold text-sm py-2.5 rounded-xl hover:opacity-90 disabled:opacity-50"
+                >
+                  {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Target className="h-4 w-4" />}
+                  {regenerating ? "Regenerando..." : "Regenerar Plan"}
+                </button>
+                <button
+                  onClick={() => setChangingObjective(false)}
+                  className="px-4 py-2.5 text-sm text-muted border border-card-border rounded-xl hover:bg-card-border/20"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
 
           {showDeleteConfirm && (
             <div className="mt-3 bg-danger/10 border border-danger/30 rounded-xl p-4">
