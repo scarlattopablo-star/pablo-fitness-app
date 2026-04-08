@@ -8,8 +8,11 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Install dependencies
+      - name: Install Node 20 and dependencies
         script: |
+          nvm install 20
+          nvm use 20
+          node --version
           npm ci
           npx cap sync ios
       - name: Install CocoaPods
