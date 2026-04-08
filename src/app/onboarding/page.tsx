@@ -129,10 +129,15 @@ const SWIPE_THRESHOLD = 50;
 
 export default function OnboardingPage() {
   const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenBefore, setHasSeenBefore] = useState(false);
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
   const router = useRouter();
   const isLast = current === SLIDES.length - 1;
+
+  useEffect(() => {
+    setHasSeenBefore(localStorage.getItem("hasSeenOnboarding") === "true");
+  }, []);
 
   const go = useCallback(
     (next: number) => {
@@ -166,9 +171,19 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-[100dvh] bg-background flex flex-col relative overflow-hidden">
-      {/* SPLASH SCREEN — fades out after 3.5s */}
+      {/* SPLASH SCREEN — always shows, fades out after 3.5s */}
+      {/* If user already saw carousel, splash redirects to /planes after fade */}
       <AnimatePresence>
-        {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+        {showSplash && (
+          <SplashScreen
+            onFinish={() => {
+              setShowSplash(false);
+              if (hasSeenBefore) {
+                router.push("/planes");
+              }
+            }}
+          />
+        )}
       </AnimatePresence>
 
       {/* Background gradient */}
