@@ -23,11 +23,12 @@ function SplashScreen({ onFinish }: { onFinish: () => void }) {
       {/* Background photo of Pablo with overlay */}
       <div className="absolute inset-0">
         <img
-          src="/images/gym-bg.png"
+          src="/images/gym-bg-fullscreen.png"
           alt=""
-          className="w-full h-full object-cover object-center opacity-70"
+          className="w-full h-full object-cover object-top"
+          style={{ filter: "brightness(1.2) contrast(1.1)" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background from-15% via-background/40 via-50% to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background from-10% via-background/30 via-50% to-black/20" />
       </div>
 
       {/* Content */}
