@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
     const startDate = new Date();
     const endDate = new Date();
     switch (duration) {
+      case "7-dias":
+        endDate.setDate(endDate.getDate() + 7);
+        break;
       case "1-mes":
         endDate.setMonth(endDate.getMonth() + 1);
         break;

@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+
+# Android signing
+android/keystore.properties
+android/app/*.jks
+android/app/*.keystore
+
+# iOS signing
+ios/App/ExportOptions.plist
+
+# Capacitor assets source
+/assets/

@@ -1,6 +1,137 @@
 workflows:
-  ios-build:
-    name: iOS Build
+  # ============================================
+  # iOS - Build & Publish to App Store Connect
+  # ============================================
+  ios-release:
+    name: iOS Release
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Pablo Scarlatto ASC
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.pabloscarlattoentrenamientos.app
+      node: 20
+      xcode: latest
+      cocoapods: default
+      vars:
+        APP_STORE_APPLE_ID: "REPLACE_WITH_APPLE_ID"
+    scripts:
+      - name: Install dependencies
+        script: |
+          nvm install 20
+          nvm use 20
+          node --version
+          npm ci
+
+      - name: Sync Capacitor iOS
+        script: |
+          npx cap sync ios
+
+      - name: Install CocoaPods
+        script: |
+          cd ios/App && pod install
+
+      - name: Set version number
+        script: |
+          cd ios/App
+          agvtool new-marketing-version 1.0.0
+          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0) + 1))
+
+      - name: Build iOS
+        script: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination generic/platform=iOS \
+            -archivePath build/App.xcarchive \
+            archive \
+            CODE_SIGN_IDENTITY="iPhone Distribution" \
+            DEVELOPMENT_TEAM="$XCODE_TEAM_ID" \
+            PROVISIONING_PROFILE_SPECIFIER="$XCODE_PROVISIONING_PROFILE"
+
+      - name: Export IPA
+        script: |
+          cd ios/App
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ios/App/ExportOptions.plist
+
+    artifacts:
+      - ios/App/build/export/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      email:
+        recipients:
+          - pablo@pabloscarlattoentrenamientos.com
+        notify:
+          success: true
+          failure: true
+
+  # ============================================
+  # Android - Build & Publish to Google Play
+  # ============================================
+  android-release:
+    name: Android Release
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      android_signing:
+        - pablo_keystore
+      node: 20
+      java: 17
+      groups:
+        - google_play
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+
+      - name: Sync Capacitor Android
+        script: |
+          npx cap sync android
+
+      - name: Set version code
+        script: |
+          cd android
+          LATEST_BUILD=$(google-play get-latest-build-number --package-name "com.pabloscarlattoentrenamientos.app" || echo 0)
+          NEW_BUILD=$((LATEST_BUILD + 1))
+          sed -i "s/versionCode [0-9]*/versionCode $NEW_BUILD/" app/build.gradle
+          echo "Set versionCode to $NEW_BUILD"
+
+      - name: Build AAB (Android App Bundle)
+        script: |
+          cd android
+          ./gradlew bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+      email:
+        recipients:
+          - pablo@pabloscarlattoentrenamientos.com
+        notify:
+          success: true
+          failure: true
+
+  # ============================================
+  # Debug builds (for testing)
+  # ============================================
+  ios-debug:
+    name: iOS Debug
     max_build_duration: 30
     instance_type: mac_mini_m2
     environment:
@@ -8,17 +139,18 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Install Node 20 and dependencies
+      - name: Install dependencies
         script: |
           nvm install 20
           nvm use 20
-          node --version
           npm ci
           npx cap sync ios
+
       - name: Install CocoaPods
         script: |
           cd ios/App && pod install
-      - name: Build iOS
+
+      - name: Build iOS Simulator
         script: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
@@ -32,8 +164,8 @@ workflows:
     artifacts:
       - ios/App/build/**/*.xcarchive
 
-  android-build:
-    name: Android Build
+  android-debug:
+    name: Android Debug
     max_build_duration: 30
     instance_type: linux_x2
     environment:
@@ -43,12 +175,14 @@ workflows:
       - name: Install dependencies
         script: |
           npm ci
+
       - name: Sync Capacitor Android
         script: |
           npx cap sync android
-      - name: Build APK
+
+      - name: Build Debug APK
         script: |
           cd android
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.apk

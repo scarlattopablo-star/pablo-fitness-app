@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, ClipboardList, TrendingUp,
-  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle, Gift, Trophy,
+  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle, Gift, Trophy, Clock, Crown,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { InstagramIcon } from "@/components/icons";
@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, profile, loading, signOut, hasActiveSubscription } = useAuth();
+  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
@@ -347,6 +347,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* MAIN */}
       <main className="flex-1 md:ml-60 pt-14 md:pt-0">
+        {/* Trial banner */}
+        {isTrial && (
+          <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-3">
+            <div className="max-w-4xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Clock className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                <p className="text-sm truncate">
+                  <span className="font-semibold">Prueba gratuita</span>
+                  <span className="text-muted"> — {trialDaysLeft} {trialDaysLeft === 1 ? "día" : "días"} restantes</span>
+                </p>
+              </div>
+              <Link
+                href="/planes"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-black hover:bg-emerald-400 transition-colors flex-shrink-0"
+              >
+                <Crown className="h-3 w-3" />
+                Elegir Plan
+              </Link>
+            </div>
+          </div>
+        )}
         <PresenceProvider userId={user?.id || ""} fullName={profile?.full_name || ""}>
           <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">{children}</div>
         </PresenceProvider>

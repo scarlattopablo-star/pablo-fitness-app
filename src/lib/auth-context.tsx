@@ -31,6 +31,8 @@ interface AuthContextType {
   loading: boolean;
   hasActiveSubscription: boolean;
   isExpired: boolean;
+  isTrial: boolean;
+  trialDaysLeft: number;
   signOut: () => Promise<void>;
 }
 
@@ -41,6 +43,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   hasActiveSubscription: false,
   isExpired: false,
+  isTrial: false,
+  trialDaysLeft: 0,
   signOut: async () => {},
 });
 
@@ -182,8 +186,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     !!endDate &&
     endDate < today;
 
+  const isTrial =
+    hasActiveSubscription &&
+    !!subscription &&
+    subscription.duration === "7-dias";
+
+  const trialDaysLeft =
+    isTrial && endDate
+      ? Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+      : 0;
+
   return (
-    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, signOut }}>
+    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, signOut }}>
       {children}
     </AuthContext.Provider>
   );

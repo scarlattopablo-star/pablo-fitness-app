@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
   Heart, Shield, RefreshCw, Users, Medal, Home,
-  ArrowLeft, ChevronRight, Check,
+  ArrowLeft, ChevronRight, Check, Gift,
 } from "lucide-react";
 import { PLANS, DURATION_LABELS, DURATION_DESCRIPTIONS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
 import { useState } from "react";
@@ -79,6 +79,32 @@ export default function PlanesPage() {
         <p className="text-center text-sm text-muted mb-8">
           {DURATION_DESCRIPTIONS[selectedDuration]}
         </p>
+
+        {/* FREE TRIAL CARD */}
+        <div className="max-w-lg mx-auto mb-10">
+          <Link
+            href="/registro-gratis"
+            className="block glass-card rounded-2xl p-5 border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                <Gift className="h-6 w-6 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="font-bold">Prueba Gratuita</h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-black">
+                    GRATIS
+                  </span>
+                </div>
+                <p className="text-sm text-muted">
+                  7 días para explorar la app. Sin tarjeta de crédito.
+                </p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+            </div>
+          </Link>
+        </div>
 
         {/* PLANS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

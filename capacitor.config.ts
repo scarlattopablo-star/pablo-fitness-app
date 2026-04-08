@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.pabloscarlattoentrenamientos.app',
-  appName: 'GymRat by Pablo Scarlatto',
+  appName: 'GymRat by Pablo Scarlatto Entrenamientos',
   webDir: 'out',
   server: {
     url: 'https://pabloscarlattoentrenamientos.com',
