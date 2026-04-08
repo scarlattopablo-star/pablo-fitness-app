@@ -620,15 +620,16 @@ function PlanContent() {
                         {day.exercises.map((ex, i) => {
                           const log = exerciseLogs[ex.id];
                           const sets = sessionData[ex.id] || [];
+                          const isCardioEx = ["hiit-cinta", "hiit-casa", "burpees", "jumping-jacks", "high-knees", "saltar-cuerda"].includes(ex.id);
                           return (
                             <div key={i} className="bg-card-bg rounded-xl p-3">
                               <div className="flex items-center justify-between mb-2">
                                 <div>
                                   <p className="font-bold text-sm">{ex.name}</p>
-                                  <p className="text-[10px] text-muted">{ex.sets}x{ex.reps} | {ex.rest}</p>
+                                  <p className="text-[10px] text-muted">{isCardioEx ? ex.reps : `${ex.sets}x${ex.reps} | ${ex.rest}`}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {log && (
+                                  {!isCardioEx && log && (
                                     <span className="text-[10px] text-muted">Anterior: {log.weight}kg</span>
                                   )}
                                   <button onClick={() => setSelectedExercise(ex.id)} className="text-primary">
@@ -636,6 +637,11 @@ function PlanContent() {
                                   </button>
                                 </div>
                               </div>
+                              {isCardioEx ? (
+                                <div className="flex items-center gap-2 text-xs text-primary font-medium py-1">
+                                  <span>Sin peso — solo tiempo</span>
+                                </div>
+                              ) : (
                               <div className="space-y-1.5">
                                 {sets.map((s, si) => (
                                   <div key={si} className="flex items-center gap-2">
@@ -660,6 +666,7 @@ function PlanContent() {
                                   </div>
                                 ))}
                               </div>
+                              )}
                             </div>
                           );
                         })}

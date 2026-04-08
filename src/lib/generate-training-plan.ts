@@ -563,6 +563,19 @@ export function generateTrainingPlan(
     });
   }
 
+  // Remove duplicate exercises within each session
+  plan = plan.map(day => {
+    const seen = new Set<string>();
+    return {
+      ...day,
+      exercises: day.exercises.filter(e => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      }),
+    };
+  });
+
   // Cap exercises per session at 9 (excluding cardio)
   plan = plan.map(day => {
     const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
@@ -576,6 +589,14 @@ export function generateTrainingPlan(
   // Add cardio finisher to every session
   const cardioPool = isHome ? HOME_CARDIO : GYM_CARDIO;
   plan = addCardioFinisher(plan, cardioPool, p);
+
+  // Cardio/HIIT exercises: no weight, just time
+  plan = plan.map(day => ({
+    ...day,
+    exercises: day.exercises.map(e =>
+      CARDIO_IDS_SET.has(e.id) ? { ...e, sets: 1, reps: "15 min", rest: "-" } : e
+    ),
+  }));
 
   // Estimate calories burned per session (Compendium of Physical Activities - Ainsworth 2011)
   return plan.map(day => ({
