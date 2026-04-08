@@ -25,10 +25,9 @@ function SplashScreen({ onFinish }: { onFinish: () => void }) {
         <img
           src="/images/gym-bg.png"
           alt=""
-          className="w-full h-full object-cover object-center opacity-40"
+          className="w-full h-full object-cover object-center opacity-70"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background from-20% via-background/70 via-60% to-background/30" />
-        <div className="absolute inset-0 bg-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background from-15% via-background/40 via-50% to-transparent" />
       </div>
 
       {/* Content */}
