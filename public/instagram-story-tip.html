@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
+  body {
+    width: 1080px; height: 1920px;
+    font-family: 'Outfit', sans-serif;
+    background: #09090b;
+    color: white;
+    overflow: hidden;
+    position: relative;
+  }
+  .content {
+    height: 100%;
+    display: flex; flex-direction: column;
+    padding: 80px 60px;
+    position: relative;
+  }
+  /* Decorative elements */
+  .glow-1 {
+    position: absolute; top: 200px; right: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0,230,118,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .glow-2 {
+    position: absolute; bottom: 300px; left: -150px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,230,118,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .line-accent {
+    position: absolute; top: 0; left: 60px;
+    width: 4px; height: 100%;
+    background: linear-gradient(to bottom, transparent, #00e676 30%, #00e676 70%, transparent);
+    opacity: 0.15;
+  }
+  /* Top */
+  .top {
+    display: flex; align-items: center; gap: 16px;
+    position: relative; z-index: 2;
+  }
+  .logo-text {
+    font-size: 24px; font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: rgba(0,230,118,0.15);
+    border: 2px solid rgba(0,230,118,0.3);
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-size: 24px; font-weight: 700;
+    color: #00e676;
+  }
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    gap: 50px;
+    position: relative; z-index: 2;
+  }
+  .category {
+    font-size: 28px; font-weight: 800;
+    color: #00e676;
+    text-transform: uppercase;
+    letter-spacing: 6px;
+  }
+  .title {
+    font-size: 82px; font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -2px;
+  }
+  .divider {
+    width: 120px; height: 6px;
+    background: linear-gradient(90deg, #00e676, transparent);
+    border-radius: 3px;
+  }
+  /* Tips */
+  .tips {
+    display: flex; flex-direction: column; gap: 32px;
+  }
+  .tip {
+    display: flex; align-items: flex-start; gap: 24px;
+  }
+  .tip-num {
+    width: 60px; height: 60px;
+    background: linear-gradient(135deg, #00e676, #00c853);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 900;
+    color: #09090b;
+    flex-shrink: 0;
+  }
+  .tip-text {
+    font-size: 34px; font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.35;
+    padding-top: 8px;
+  }
+  .tip-text strong {
+    color: #00e676;
+    font-weight: 800;
+  }
+  /* Bottom */
+  .bottom {
+    position: relative; z-index: 2;
+    text-align: center;
+    padding-bottom: 40px;
+  }
+  .cta-text {
+    font-size: 30px; font-weight: 700;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+  }
+  .handle {
+    font-size: 32px; font-weight: 800;
+    color: #00e676;
+  }
+</style>
+</head>
+<body>
+  <div class="content">
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <div class="line-accent"></div>
+
+    <div class="top">
+      <div class="badge">TIP DEL DIA</div>
+    </div>
+
+    <div class="main">
+      <div class="category">Entrenamiento</div>
+      <div class="title">
+        5 ERRORES<br>
+        QUE FRENAN<br>
+        TU PROGRESO
+      </div>
+      <div class="divider"></div>
+
+      <div class="tips">
+        <div class="tip">
+          <div class="tip-num">1</div>
+          <div class="tip-text">Saltear el <strong>calentamiento</strong> — 5 min bastan para prevenir lesiones</div>
+        </div>
+        <div class="tip">
+          <div class="tip-num">2</div>
+          <div class="tip-text">Usar <strong>siempre el mismo peso</strong> — si no subis, no creces</div>
+        </div>
+        <div class="tip">
+          <div class="tip-num">3</div>
+          <div class="tip-text">No <strong>controlar las repeticiones</strong> — la fase negativa es clave</div>
+        </div>
+        <div class="tip">
+          <div class="tip-num">4</div>
+          <div class="tip-text">Descansar <strong>demasiado entre series</strong> — 60-90 seg es ideal</div>
+        </div>
+        <div class="tip">
+          <div class="tip-num">5</div>
+          <div class="tip-text">Ignorar las <strong>piernas</strong> — son el 60% de tu masa muscular</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="cta-text">Seguime para mas tips</div>
+      <div class="handle">@pabloscarlattoentrenamientos</div>
+    </div>
+  </div>
+</body>
+</html>

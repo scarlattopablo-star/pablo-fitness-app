@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Instagram Story - Transformación</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1920px;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden; background: #0a0a0a;
+    position: relative;
+  }
+
+  .bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(34,197,94,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .orb { position: absolute; border-radius: 50%; filter: blur(100px); }
+  .orb-1 { width: 500px; height: 500px; background: rgba(34,197,94,0.12); top: -100px; left: -100px; }
+  .orb-2 { width: 400px; height: 400px; background: rgba(34,197,94,0.08); bottom: 300px; right: -80px; }
+
+  .content {
+    position: relative; z-index: 10;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    padding: 50px;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 30px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 50px; padding: 10px 24px;
+  }
+  .brand .dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 10px #22c55e; }
+  .brand span { color: #22c55e; font-size: 20px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .badge {
+    background: #22c55e; color: #000;
+    font-size: 16px; font-weight: 900;
+    padding: 8px 22px; border-radius: 50px; letter-spacing: 1px;
+  }
+
+  /* Pre-title */
+  .pre-title {
+    color: #22c55e; font-size: 24px; font-weight: 700;
+    letter-spacing: 6px; text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  /* Title */
+  .title {
+    font-size: 72px; font-weight: 900; color: #fff;
+    line-height: 1; margin-bottom: 8px;
+  }
+  .title .green { color: #22c55e; text-shadow: 0 0 40px rgba(34,197,94,0.4); }
+
+  .subtitle {
+    font-size: 28px; color: rgba(255,255,255,0.4); font-weight: 600;
+    margin-bottom: 30px;
+  }
+
+  /* Photos grid - 3 before/after pairs stacked */
+  .photos-section {
+    flex: 1; display: flex; flex-direction: column; gap: 14px;
+  }
+  .photo-row {
+    flex: 1; display: flex; gap: 14px; position: relative;
+  }
+  .photo-card {
+    flex: 1; border-radius: 16px; overflow: hidden; position: relative;
+    border: 2px solid rgba(255,255,255,0.06);
+  }
+  .photo-card.after { border-color: rgba(34,197,94,0.2); }
+  .photo-card .placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.12); font-size: 28px; font-weight: 900;
+    text-align: center; line-height: 1.2;
+  }
+  .photo-card .tag {
+    position: absolute; top: 12px; left: 12px;
+    font-size: 14px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    padding: 6px 16px; border-radius: 50px;
+  }
+  .photo-card .tag.before {
+    background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+  }
+  .photo-card .tag.after-tag {
+    background: #22c55e; color: #000;
+  }
+  .photo-card .view-label {
+    position: absolute; bottom: 10px; right: 12px;
+    font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    color: rgba(255,255,255,0.3); text-transform: uppercase;
+  }
+
+  /* Arrow between photos */
+  .arrow-divider {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(34,197,94,0.9); color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 900; z-index: 5;
+    box-shadow: 0 0 20px rgba(34,197,94,0.4);
+  }
+
+  /* Features */
+  .features-row {
+    display: flex; gap: 12px; margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .pill {
+    background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.15);
+    color: rgba(255,255,255,0.7); padding: 14px 22px; border-radius: 50px;
+    font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* CTA */
+  .cta-section { margin-top: auto; }
+  .cta-btn {
+    width: 100%; padding: 32px; border-radius: 22px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    text-align: center; font-size: 32px; font-weight: 900;
+    color: #000; letter-spacing: 2px; text-transform: uppercase;
+    box-shadow: 0 8px 40px rgba(34,197,94,0.3);
+    margin-bottom: 14px;
+  }
+  .cta-sub {
+    text-align: center; color: rgba(255,255,255,0.3);
+    font-size: 20px; font-weight: 600; margin-bottom: 16px;
+  }
+  .app-row {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 14px 24px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+  }
+  .app-row .icon { font-size: 24px; }
+  .app-row .text { color: rgba(255,255,255,0.5); font-size: 18px; font-weight: 600; }
+  .app-row .text strong { color: #22c55e; }
+
+  .swipe-up {
+    text-align: center; margin-top: 20px;
+  }
+  .swipe-arrow {
+    display: inline-block; width: 30px; height: 30px;
+    border-left: 3px solid rgba(255,255,255,0.25);
+    border-top: 3px solid rgba(255,255,255,0.25);
+    transform: rotate(45deg); margin-bottom: -8px;
+  }
+  .swipe-text {
+    color: rgba(255,255,255,0.25); font-size: 16px; font-weight: 600;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="content">
+  <!-- Top -->
+  <div class="top-bar">
+    <div class="brand"><div class="dot"></div><span>Pablo Scarlatto</span></div>
+    <div class="badge">RESULTADOS</div>
+  </div>
+
+  <!-- Title -->
+  <div class="pre-title">/// transformación real</div>
+  <div class="title">ANTES Y <span class="green">DESPUÉS</span></div>
+  <div class="subtitle">Entrenamiento + Nutrición personalizada</div>
+
+  <!-- Photos -->
+  <div class="photos-section">
+    <!-- Row 1: Back -->
+    <div class="photo-row">
+      <div class="photo-card">
+        <div class="placeholder">ESPALDA<br>ANTES</div>
+        <div class="tag before">ANTES</div>
+        <div class="view-label">Espalda</div>
+      </div>
+      <div class="arrow-divider">→</div>
+      <div class="photo-card after">
+        <div class="placeholder">ESPALDA<br>DESPUÉS</div>
+        <div class="tag after-tag">DESPUÉS</div>
+      </div>
+    </div>
+    <!-- Row 2: Side -->
+    <div class="photo-row">
+      <div class="photo-card">
+        <div class="placeholder">PERFIL<br>ANTES</div>
+        <div class="tag before">ANTES</div>
+        <div class="view-label">Perfil</div>
+      </div>
+      <div class="arrow-divider">→</div>
+      <div class="photo-card after">
+        <div class="placeholder">PERFIL<br>DESPUÉS</div>
+        <div class="tag after-tag">DESPUÉS</div>
+      </div>
+    </div>
+    <!-- Row 3: Front -->
+    <div class="photo-row">
+      <div class="photo-card">
+        <div class="placeholder">FRENTE<br>ANTES</div>
+        <div class="tag before">ANTES</div>
+        <div class="view-label">Frente</div>
+      </div>
+      <div class="arrow-divider">→</div>
+      <div class="photo-card after">
+        <div class="placeholder">FRENTE<br>DESPUÉS</div>
+        <div class="tag after-tag">DESPUÉS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features-row">
+    <div class="pill">💪 Entrenamiento</div>
+    <div class="pill">🥗 Nutrición</div>
+    <div class="pill">📱 App exclusiva</div>
+    <div class="pill">💬 Chat directo</div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <div class="cta-btn">EMPEZÁ TU CAMBIO</div>
+    <div class="cta-sub">Escribime por DM o link en bio</div>
+    <div class="app-row">
+      <div class="icon">📱</div>
+      <div class="text">Descargá la app <strong>Pablo Fitness</strong></div>
+    </div>
+  </div>
+
+  <div class="swipe-up">
+    <div class="swipe-arrow"></div>
+    <div class="swipe-text">Deslizá</div>
+  </div>
+</div>
+
+</body>
+</html>

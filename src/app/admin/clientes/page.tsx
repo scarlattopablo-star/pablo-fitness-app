@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, Eye, Users, Loader2, QrCode } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -153,7 +154,7 @@ export default function ClientesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <RatLoader size={64} />
         </div>
       ) : (
         <>

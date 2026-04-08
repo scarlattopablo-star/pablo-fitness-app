@@ -5,6 +5,7 @@ import {
   Camera, Plus, TrendingDown, Scale, Ruler,
   Calendar, X, Check, Loader2, Image,
 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { uploadProgressPhoto, getPhotoUrl } from "@/lib/upload-photo";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -219,7 +220,7 @@ export default function ProgresoPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <RatLoader size={64} />
       </div>
     );
   }

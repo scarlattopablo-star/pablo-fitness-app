@@ -8,6 +8,7 @@ import {
   Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
   ChevronDown, ChevronUp, Ruler, Image, Save, Plus, X, Check,
 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
@@ -209,7 +210,7 @@ export default function ClienteDetailPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <RatLoader size={64} />
       </div>
     );
   }

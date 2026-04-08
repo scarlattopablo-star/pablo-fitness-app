@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { getExerciseGif } from "@/lib/exercise-images";
 import { generateMealPlan, type MealPlanMeal } from "@/lib/generate-meal-plan";
@@ -399,7 +400,7 @@ function PlanContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <RatLoader size={64} />
       </div>
     );
   }
@@ -412,7 +413,7 @@ function PlanContent() {
         <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mb-6">
           <Dumbbell className="h-8 w-8 text-black" />
         </div>
-        <Loader2 className="h-10 w-10 text-primary animate-spin mb-6" />
+        <RatLoader size={64} className="mb-6" />
         <h2 className="text-xl font-black mb-2">Pablo Scarlatto tu entrenador esta creando tu rutina</h2>
         <p className="text-muted text-sm max-w-sm">Pronto tendras tu plan personalizado de entrenamiento y nutricion. Te notificaremos cuando este listo.</p>
       </div>
@@ -940,7 +941,7 @@ function PlanContent() {
 
 export default function PlanPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><RatLoader size={64} /></div>}>
       <PlanContent />
     </Suspense>
   );

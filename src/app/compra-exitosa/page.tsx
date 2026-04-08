@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, ArrowRight, Dumbbell, Smartphone, Loader2 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 
 export default function CompraExitosaPage() {
@@ -74,7 +75,7 @@ export default function CompraExitosaPage() {
 
         {checking ? (
           <div className="flex justify-center mb-4">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            <RatLoader size={48} />
           </div>
         ) : countdown > 0 ? (
           <button
@@ -100,7 +101,7 @@ export default function CompraExitosaPage() {
           </button>
         ) : (
           <div className="flex justify-center mb-4">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            <RatLoader size={48} />
           </div>
         )}
 

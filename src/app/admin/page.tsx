@@ -1,6 +1,7 @@
 "use client";
 
 import { Users, Eye, Loader2, AlertTriangle } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
@@ -132,7 +133,7 @@ export default function AdminDashboard() {
         </div>
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            <RatLoader size={48} />
           </div>
         ) : clients.length === 0 ? (
           <div className="text-center py-10">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Gift, Copy, Check, Share2, Users, Clock, Loader2 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 
@@ -70,7 +71,7 @@ export default function ReferidosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <RatLoader size={64} />
       </div>
     );
   }

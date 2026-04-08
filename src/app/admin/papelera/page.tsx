@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Trash2, RotateCcw, Loader2, XCircle } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -118,7 +119,7 @@ export default function PapeleraPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <RatLoader size={64} />
       </div>
     );
   }

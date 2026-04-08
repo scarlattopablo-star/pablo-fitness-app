@@ -4,12 +4,13 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, Eye, EyeOff } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
 
 export default function RegistroPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><RatLoader size={64} /></div>}>
       <RegistroForm />
     </Suspense>
   );

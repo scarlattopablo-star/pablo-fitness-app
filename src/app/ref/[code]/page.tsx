@@ -3,6 +3,7 @@
 import { useState, useEffect, use, Suspense } from "react";
 import Link from "next/link";
 import { Dumbbell, Gift, ArrowRight, Loader2, Percent } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 
 function RefContent({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
@@ -28,7 +29,7 @@ function RefContent({ params }: { params: Promise<{ code: string }> }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+        <RatLoader size={64} />
       </div>
     );
   }
@@ -114,7 +115,7 @@ function RefContent({ params }: { params: Promise<{ code: string }> }) {
 
 export default function RefPage({ params }: { params: Promise<{ code: string }> }) {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><RatLoader size={64} /></div>}>
       <RefContent params={params} />
     </Suspense>
   );

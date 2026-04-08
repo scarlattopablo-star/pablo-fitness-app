@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { User, Mail, Phone, Save, Shield, Loader2, Check, Camera } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { uploadProfilePhoto, getPhotoUrl } from "@/lib/upload-photo";
@@ -74,7 +75,7 @@ export default function PerfilPage() {
   const displayName = profile?.full_name?.split(" ")[0] || "U";
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;
+    return <div className="flex items-center justify-center py-20"><RatLoader size={64} /></div>;
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Dumbbell, Eye, EyeOff, Check, Loader2 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 
 export default function ResetPasswordPage() {
@@ -80,7 +81,7 @@ export default function ResetPasswordPage() {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto mb-4" />
+          <RatLoader size={64} className="mb-4" />
           <p className="text-muted">Verificando enlace...</p>
         </div>
       </main>

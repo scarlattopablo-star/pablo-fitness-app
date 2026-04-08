@@ -6,6 +6,7 @@ import {
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
   Loader2, ChevronRight, Zap,
 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
 import { getPhotoUrl } from "@/lib/upload-photo";
@@ -82,7 +83,7 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Buenos dias" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
-  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 text-primary animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-20"><RatLoader size={64} /></div>;
 
   return (
     <div>

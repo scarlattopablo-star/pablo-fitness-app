@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Instagram Carousel - Pablo Scarlatto</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #111; display: flex; flex-wrap: wrap; gap: 20px; padding: 20px; justify-content: center; }
+
+  .slide {
+    width: 1080px; height: 1080px;
+    position: relative; overflow: hidden;
+    background: #0a0a0a;
+    flex-shrink: 0;
+  }
+
+  /* Shared elements */
+  .bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(34,197,94,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .orb { position: absolute; border-radius: 50%; filter: blur(100px); }
+  .orb-tl { width: 500px; height: 500px; background: rgba(34,197,94,0.1); top: -150px; left: -150px; }
+  .orb-br { width: 400px; height: 400px; background: rgba(34,197,94,0.08); bottom: -100px; right: -100px; }
+  .orb-center { width: 600px; height: 600px; background: rgba(34,197,94,0.05); top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+  .content { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; }
+
+  .brand-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 40px 50px 0;
+  }
+  .brand-logo {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 50px; padding: 10px 24px;
+  }
+  .brand-logo .dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 10px #22c55e; }
+  .brand-logo span { color: #22c55e; font-size: 18px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .slide-counter {
+    color: rgba(255,255,255,0.3); font-size: 16px; font-weight: 700;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 50px; padding: 8px 20px;
+  }
+
+  .green-line {
+    width: 60px; height: 4px; background: #22c55e; border-radius: 2px;
+    box-shadow: 0 0 12px rgba(34,197,94,0.4);
+  }
+
+  /* ====== SLIDE 1: COVER ====== */
+  .slide-1 .content { justify-content: center; align-items: center; text-align: center; padding: 60px; }
+  .slide-1 .pre-title {
+    color: #22c55e; font-size: 22px; font-weight: 700;
+    letter-spacing: 8px; text-transform: uppercase; margin-bottom: 30px;
+  }
+  .slide-1 .title {
+    font-size: 88px; font-weight: 900; color: #fff; line-height: 1;
+    letter-spacing: -2px; margin-bottom: 10px;
+  }
+  .slide-1 .title .green { color: #22c55e; text-shadow: 0 0 40px rgba(34,197,94,0.4); }
+  .slide-1 .sub {
+    font-size: 28px; color: rgba(255,255,255,0.5); font-weight: 600;
+    margin-top: 20px; margin-bottom: 40px;
+  }
+  .slide-1 .tagline {
+    font-size: 20px; color: rgba(255,255,255,0.35);
+    border-top: 1px solid rgba(255,255,255,0.08); padding-top: 30px; margin-top: 20px;
+    letter-spacing: 3px; text-transform: uppercase; font-weight: 600;
+  }
+  .slide-1 .swipe {
+    position: absolute; bottom: 50px; right: 50px;
+    color: rgba(255,255,255,0.25); font-size: 16px; font-weight: 600;
+    letter-spacing: 2px; display: flex; align-items: center; gap: 8px;
+  }
+  .slide-1 .swipe .arrow { font-size: 24px; }
+
+  /* ====== SLIDES 2-4: BEFORE/AFTER ====== */
+  .ba-slide .content { padding: 40px 50px; }
+  .ba-slide .ba-label {
+    font-size: 18px; font-weight: 700; letter-spacing: 6px;
+    text-transform: uppercase; color: #22c55e; margin-top: 20px; margin-bottom: 16px;
+  }
+  .ba-slide .ba-title {
+    font-size: 52px; font-weight: 900; color: #fff; line-height: 1.1; margin-bottom: 24px;
+  }
+  .ba-slide .ba-photos {
+    flex: 1; display: flex; gap: 16px; margin-bottom: 20px;
+  }
+  .ba-slide .ba-photo {
+    flex: 1; border-radius: 20px; overflow: hidden; position: relative;
+    border: 2px solid rgba(255,255,255,0.06);
+  }
+  .ba-slide .ba-photo img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .ba-slide .ba-photo .label {
+    position: absolute; bottom: 16px; left: 16px;
+    font-size: 16px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    padding: 8px 20px; border-radius: 50px;
+  }
+  .ba-slide .ba-photo .label.before {
+    background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+  }
+  .ba-slide .ba-photo .label.after {
+    background: #22c55e; color: #000;
+  }
+  .ba-slide .ba-desc {
+    font-size: 20px; color: rgba(255,255,255,0.5); font-weight: 500;
+    line-height: 1.4; padding-bottom: 10px;
+  }
+
+  /* ====== SLIDE 5: CTA ====== */
+  .slide-5 .content {
+    justify-content: center; padding: 60px;
+  }
+  .slide-5 .cta-pre {
+    color: #22c55e; font-size: 20px; font-weight: 700;
+    letter-spacing: 6px; text-transform: uppercase; margin-bottom: 24px;
+  }
+  .slide-5 .cta-title {
+    font-size: 64px; font-weight: 900; color: #fff; line-height: 1.05;
+    margin-bottom: 40px;
+  }
+  .slide-5 .cta-title .green { color: #22c55e; }
+  .slide-5 .features {
+    display: flex; flex-direction: column; gap: 18px; margin-bottom: 50px;
+  }
+  .slide-5 .feature {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 24px; color: rgba(255,255,255,0.8); font-weight: 600;
+  }
+  .slide-5 .feature .check {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3);
+    display: flex; align-items: center; justify-content: center;
+    color: #22c55e; font-size: 20px; font-weight: 900; flex-shrink: 0;
+  }
+  .slide-5 .cta-btn {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #000; font-size: 28px; font-weight: 900;
+    padding: 28px 50px; border-radius: 20px; text-align: center;
+    letter-spacing: 2px; text-transform: uppercase;
+    box-shadow: 0 8px 40px rgba(34,197,94,0.3);
+    margin-bottom: 20px;
+  }
+  .slide-5 .cta-sub {
+    text-align: center; color: rgba(255,255,255,0.3);
+    font-size: 18px; font-weight: 600;
+  }
+  .slide-5 .app-badge {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin-top: 30px; padding: 16px 28px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; align-self: center;
+  }
+  .slide-5 .app-badge .icon { font-size: 28px; }
+  .slide-5 .app-badge .text { color: rgba(255,255,255,0.6); font-size: 18px; font-weight: 600; }
+  .slide-5 .app-badge .text strong { color: #22c55e; }
+
+  /* Helper for placeholder images */
+  .placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.15); font-size: 48px; font-weight: 900;
+    text-align: center; line-height: 1.2;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SLIDE 1: COVER ===== -->
+<div class="slide slide-1">
+  <div class="bg-grid"></div>
+  <div class="orb orb-tl"></div>
+  <div class="orb orb-br"></div>
+  <div class="content">
+    <div class="brand-top" style="position:absolute;top:0;left:0;right:0;">
+      <div class="brand-logo"><div class="dot"></div><span>Pablo Scarlatto</span></div>
+      <div class="slide-counter">1 / 5</div>
+    </div>
+    <div class="pre-title">/// transformación real</div>
+    <div class="green-line" style="margin: 0 auto 30px;"></div>
+    <div class="title">RESULTADOS<br><span class="green">REALES</span></div>
+    <div class="sub">Entrenamiento y Nutrición Personalizada</div>
+    <div class="green-line" style="margin: 0 auto;"></div>
+    <div class="tagline">Deslizá para ver el cambio →</div>
+  </div>
+  <div class="swipe">DESLIZÁ <span class="arrow">→</span></div>
+</div>
+
+<!-- ===== SLIDE 2: BACK VIEW ===== -->
+<div class="slide ba-slide">
+  <div class="bg-grid"></div>
+  <div class="orb orb-center"></div>
+  <div class="content">
+    <div class="brand-top">
+      <div class="ba-label">/// espalda</div>
+      <div class="slide-counter">2 / 5</div>
+    </div>
+    <div class="ba-title">TRANSFORMACIÓN<br>TOTAL</div>
+    <div class="ba-photos">
+      <div class="ba-photo">
+        <div class="placeholder">FOTO<br>ANTES<br>ESPALDA</div>
+        <div class="label before">ANTES</div>
+      </div>
+      <div class="ba-photo" style="border-color: rgba(34,197,94,0.2);">
+        <div class="placeholder" style="background: linear-gradient(135deg, #0d1a0d 0%, #0a0a0a 100%);">FOTO<br>DESPUÉS<br>ESPALDA</div>
+        <div class="label after">DESPUÉS</div>
+      </div>
+    </div>
+    <div class="ba-desc">Cambio de composición corporal visible desde todos los ángulos</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3: SIDE VIEW ===== -->
+<div class="slide ba-slide">
+  <div class="bg-grid"></div>
+  <div class="orb orb-center"></div>
+  <div class="content">
+    <div class="brand-top">
+      <div class="ba-label">/// perfil</div>
+      <div class="slide-counter">3 / 5</div>
+    </div>
+    <div class="ba-title">MENOS GRASA<br>MÁS FUERZA</div>
+    <div class="ba-photos">
+      <div class="ba-photo">
+        <div class="placeholder">FOTO<br>ANTES<br>PERFIL</div>
+        <div class="label before">ANTES</div>
+      </div>
+      <div class="ba-photo" style="border-color: rgba(34,197,94,0.2);">
+        <div class="placeholder" style="background: linear-gradient(135deg, #0d1a0d 0%, #0a0a0a 100%);">FOTO<br>DESPUÉS<br>PERFIL</div>
+        <div class="label after">DESPUÉS</div>
+      </div>
+    </div>
+    <div class="ba-desc">Reducción de grasa abdominal y mejora postural notable</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4: FRONT VIEW ===== -->
+<div class="slide ba-slide">
+  <div class="bg-grid"></div>
+  <div class="orb orb-center"></div>
+  <div class="content">
+    <div class="brand-top">
+      <div class="ba-label">/// frente</div>
+      <div class="slide-counter">4 / 5</div>
+    </div>
+    <div class="ba-title">TU MEJOR<br>VERSIÓN</div>
+    <div class="ba-photos">
+      <div class="ba-photo">
+        <div class="placeholder">FOTO<br>ANTES<br>FRENTE</div>
+        <div class="label before">ANTES</div>
+      </div>
+      <div class="ba-photo" style="border-color: rgba(34,197,94,0.2);">
+        <div class="placeholder" style="background: linear-gradient(135deg, #0d1a0d 0%, #0a0a0a 100%);">FOTO<br>DESPUÉS<br>FRENTE</div>
+        <div class="label after">DESPUÉS</div>
+      </div>
+    </div>
+    <div class="ba-desc">Cada día más cerca de la mejor versión de vos mismo</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5: CTA ===== -->
+<div class="slide slide-5">
+  <div class="bg-grid"></div>
+  <div class="orb orb-tl"></div>
+  <div class="orb orb-br"></div>
+  <div class="content">
+    <div class="brand-top" style="position:absolute;top:0;left:0;right:0;">
+      <div class="brand-logo"><div class="dot"></div><span>Pablo Scarlatto</span></div>
+      <div class="slide-counter">5 / 5</div>
+    </div>
+    <div style="margin-top: 80px;"></div>
+    <div class="cta-pre">/// tu turno</div>
+    <div class="cta-title">TU CAMBIO<br>EMPIEZA <span class="green">HOY</span></div>
+    <div class="features">
+      <div class="feature"><div class="check">✓</div> Plan de entrenamiento personalizado</div>
+      <div class="feature"><div class="check">✓</div> Plan nutricional a tu medida</div>
+      <div class="feature"><div class="check">✓</div> Seguimiento semanal</div>
+      <div class="feature"><div class="check">✓</div> Chat directo conmigo</div>
+      <div class="feature"><div class="check">✓</div> App exclusiva para clientes</div>
+    </div>
+    <div class="cta-btn">ESCRIBIME POR DM</div>
+    <div class="cta-sub">o descargá la app desde el link en bio</div>
+    <div class="app-badge">
+      <div class="icon">📱</div>
+      <div class="text">Descargá la app <strong>Pablo Fitness</strong></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

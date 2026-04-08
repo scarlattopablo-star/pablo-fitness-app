@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, height=1920">
+<title>Instagram Story - Gym Bro Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1920px;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    background: #0a0a0a;
+    position: relative;
+  }
+
+  /* Animated gradient background */
+  .bg-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 80%, rgba(34,197,94,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(34,197,94,0.1) 0%, transparent 50%),
+      radial-gradient(ellipse 100% 100% at 50% 50%, rgba(10,10,10,1) 0%, #0a0a0a 100%);
+  }
+
+  /* Grid pattern overlay */
+  .grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(34,197,94,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+  }
+  .orb-1 {
+    width: 500px; height: 500px;
+    background: rgba(34,197,94,0.12);
+    top: -100px; left: -150px;
+  }
+  .orb-2 {
+    width: 400px; height: 400px;
+    background: rgba(34,197,94,0.08);
+    bottom: 200px; right: -100px;
+  }
+  .orb-3 {
+    width: 300px; height: 300px;
+    background: rgba(16,185,129,0.06);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .content {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 60px 50px;
+  }
+
+  /* Top section */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 60px;
+  }
+
+  .logo-badge {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 50px;
+    padding: 12px 28px;
+  }
+
+  .logo-badge .dot {
+    width: 12px; height: 12px;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 12px #22c55e;
+  }
+
+  .logo-badge span {
+    color: #22c55e;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .live-badge {
+    background: #22c55e;
+    color: #000;
+    font-size: 18px;
+    font-weight: 900;
+    padding: 10px 24px;
+    border-radius: 50px;
+    letter-spacing: 1px;
+  }
+
+  /* Hero section */
+  .hero {
+    flex: 0 0 auto;
+    margin-top: 40px;
+  }
+
+  .pre-title {
+    color: #22c55e;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .title {
+    font-size: 96px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 12px;
+  }
+
+  .title .highlight {
+    color: #22c55e;
+    text-shadow: 0 0 40px rgba(34,197,94,0.4);
+  }
+
+  .subtitle {
+    font-size: 38px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    margin-top: 16px;
+    line-height: 1.3;
+  }
+
+  /* Chat mockup */
+  .chat-mockup {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+    margin: 50px 0;
+  }
+
+  .chat-bubble {
+    max-width: 75%;
+    padding: 28px 36px;
+    border-radius: 28px;
+    font-size: 28px;
+    line-height: 1.4;
+    position: relative;
+  }
+
+  .chat-bubble.left {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #fff;
+    border-bottom-left-radius: 8px;
+  }
+
+  .chat-bubble.right {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #000;
+    border-bottom-right-radius: 8px;
+    font-weight: 600;
+  }
+
+  .chat-bubble .sender {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  .chat-bubble.right .sender {
+    opacity: 0.7;
+  }
+
+  .chat-bubble .emoji {
+    font-size: 36px;
+    margin-left: 8px;
+  }
+
+  /* Reaction bar */
+  .reactions {
+    display: flex;
+    gap: 12px;
+    align-self: flex-start;
+    margin-top: -8px;
+    margin-left: 20px;
+  }
+
+  .reaction {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Members online */
+  .members-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 10px 0 30px;
+    padding: 24px 32px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+  }
+
+  .avatars {
+    display: flex;
+  }
+
+  .avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: 3px solid #0a0a0a;
+    margin-left: -16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: #000;
+  }
+  .avatar:first-child { margin-left: 0; }
+  .avatar.a1 { background: #22c55e; }
+  .avatar.a2 { background: #3b82f6; }
+  .avatar.a3 { background: #f59e0b; }
+  .avatar.a4 { background: #ef4444; }
+  .avatar.a5 {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    font-size: 18px;
+  }
+
+  .members-text {
+    color: rgba(255,255,255,0.5);
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .members-text strong {
+    color: #22c55e;
+  }
+
+  /* Features pills */
+  .features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .pill {
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.15);
+    color: rgba(255,255,255,0.7);
+    padding: 16px 28px;
+    border-radius: 50px;
+    font-size: 22px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pill .icon {
+    font-size: 26px;
+  }
+
+  /* CTA */
+  .cta-section {
+    margin-top: auto;
+  }
+
+  .cta-button {
+    width: 100%;
+    padding: 36px;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border-radius: 24px;
+    text-align: center;
+    font-size: 36px;
+    font-weight: 900;
+    color: #000;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    box-shadow: 0 8px 40px rgba(34,197,94,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-button::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .cta-sub {
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    font-size: 22px;
+    margin-top: 20px;
+    font-weight: 600;
+  }
+
+  /* Swipe up indicator */
+  .swipe-up {
+    text-align: center;
+    margin-top: 30px;
+  }
+
+  .swipe-arrow {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-left: 3px solid rgba(255,255,255,0.3);
+    border-top: 3px solid rgba(255,255,255,0.3);
+    transform: rotate(45deg);
+    margin-bottom: -10px;
+  }
+
+  .swipe-text {
+    color: rgba(255,255,255,0.3);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="grid-pattern"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="content">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="logo-badge">
+      <div class="dot"></div>
+      <span>Pablo Fitness</span>
+    </div>
+    <div class="live-badge">NUEVO</div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="pre-title">/// nueva funcionalidad</div>
+    <div class="title">
+      GYM BRO<br>
+      <span class="highlight">CHAT</span>
+    </div>
+    <div class="subtitle">Tu crew del gym, siempre conectado</div>
+  </div>
+
+  <!-- Chat Mockup -->
+  <div class="chat-mockup">
+    <div class="chat-bubble left">
+      <div class="sender">Carlos M.</div>
+      Acabo de romper mi PR en sentadilla! 140kg<span class="emoji">🔥</span>
+    </div>
+
+    <div class="reactions">
+      <div class="reaction">💪 12</div>
+      <div class="reaction">🔥 8</div>
+    </div>
+
+    <div class="chat-bubble right">
+      <div class="sender">Ana R.</div>
+      Vamos!! Yo metan hoy espalda, alguien se apunta?<span class="emoji">💪</span>
+    </div>
+
+    <div class="chat-bubble left">
+      <div class="sender">Miguel T.</div>
+      Yo voy a las 7! Nos vemos ahii<span class="emoji">🏋️</span>
+    </div>
+  </div>
+
+  <!-- Members Online -->
+  <div class="members-bar">
+    <div class="avatars">
+      <div class="avatar a1">C</div>
+      <div class="avatar a2">A</div>
+      <div class="avatar a3">M</div>
+      <div class="avatar a4">L</div>
+      <div class="avatar a5">+24</div>
+    </div>
+    <div class="members-text"><strong>28 miembros</strong> activos ahora</div>
+  </div>
+
+  <!-- Feature Pills -->
+  <div class="features">
+    <div class="pill"><span class="icon">💬</span> Chat en tiempo real</div>
+    <div class="pill"><span class="icon">📊</span> Comparte progreso</div>
+    <div class="pill"><span class="icon">🏆</span> Retos grupales</div>
+    <div class="pill"><span class="icon">🤝</span> Comunidad fitness</div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <div class="cta-button">UNETE A LA COMUNIDAD</div>
+    <div class="cta-sub">Gratis para todos los miembros</div>
+  </div>
+
+  <!-- Swipe Up -->
+  <div class="swipe-up">
+    <div class="swipe-arrow"></div>
+    <div class="swipe-text">Desliza para unirte</div>
+  </div>
+
+</div>
+
+</body>
+</html>

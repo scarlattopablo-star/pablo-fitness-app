@@ -52,3 +52,4 @@ ios/App/ExportOptions.plist
 
 # Capacitor assets source
 /assets/
+.claude/settings.local.json

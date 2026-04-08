@@ -6,6 +6,7 @@ import {
   Dumbbell, Check, Camera, Upload,
   ArrowRight, ArrowLeft,
 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
 import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
@@ -159,7 +160,7 @@ export default function EncuestaDirectaPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><RatLoader size={64} /></div>;
   }
 
   // Step mapping for dynamic goal step

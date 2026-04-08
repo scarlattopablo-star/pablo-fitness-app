@@ -6,6 +6,7 @@ import {
   Dumbbell, UserPlus, Check, Eye, EyeOff, Camera, Upload,
   ArrowRight, ArrowLeft,
 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
 import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
@@ -273,7 +274,7 @@ function ClienteDirectoForm() {
   };
 
   if (validating) {
-    return <div className="min-h-screen flex items-center justify-center"><Dumbbell className="h-8 w-8 text-primary animate-pulse" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><RatLoader size={64} /></div>;
   }
 
   if (!valid) {

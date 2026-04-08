@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
+  body {
+    width: 1080px; height: 1920px;
+    font-family: 'Outfit', sans-serif;
+    background: #09090b;
+    color: white;
+    overflow: hidden;
+    position: relative;
+  }
+  /* Background photo */
+  .bg-photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: top;
+    opacity: 0.5;
+  }
+  /* Gradient overlay */
+  .overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom,
+      rgba(9,9,11,0.7) 0%,
+      rgba(9,9,11,0.3) 30%,
+      rgba(9,9,11,0.3) 50%,
+      rgba(9,9,11,0.85) 75%,
+      rgba(9,9,11,1) 100%
+    );
+  }
+  .content {
+    position: relative; z-index: 2;
+    height: 100%;
+    display: flex; flex-direction: column;
+    padding: 80px 60px;
+  }
+  /* Top badge */
+  .badge {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(0,230,118,0.15);
+    border: 2px solid rgba(0,230,118,0.3);
+    border-radius: 50px;
+    padding: 14px 28px;
+    font-size: 28px; font-weight: 700;
+    color: #00e676;
+    align-self: flex-start;
+  }
+  /* Main text area */
+  .main {
+    flex: 1;
+    display: flex; flex-direction: column;
+    justify-content: center;
+    gap: 40px;
+  }
+  .headline {
+    font-size: 88px; font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -2px;
+  }
+  .headline .accent {
+    background: linear-gradient(135deg, #00e676, #00c853);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    font-size: 36px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+    max-width: 800px;
+  }
+  /* Features */
+  .features {
+    display: flex; flex-direction: column; gap: 24px;
+    margin-top: 20px;
+  }
+  .feature {
+    display: flex; align-items: center; gap: 20px;
+    font-size: 32px; font-weight: 600;
+    color: rgba(255,255,255,0.9);
+  }
+  .feature .icon {
+    width: 56px; height: 56px;
+    background: rgba(0,230,118,0.15);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #00e676;
+  }
+  /* CTA */
+  .cta-area {
+    padding-bottom: 40px;
+  }
+  .cta {
+    background: linear-gradient(135deg, #00e676, #00c853);
+    color: #09090b;
+    font-size: 38px; font-weight: 800;
+    padding: 32px 0;
+    border-radius: 24px;
+    text-align: center;
+    width: 100%;
+  }
+  .url {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 26px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 1px;
+  }
+  /* Swipe up arrow */
+  .swipe {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 24px;
+    color: rgba(255,255,255,0.4);
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+</style>
+</head>
+<body>
+  <img src="images/hero-training.jpg" class="bg-photo" style="object-position: right top;" />
+  <div class="overlay"></div>
+
+  <div class="content">
+    <div class="badge">NUEVA APP DISPONIBLE</div>
+
+    <div class="main">
+      <div class="headline">
+        TU PLAN<br>
+        <span class="accent">PERSONALIZADO</span><br>
+        EN TU CELULAR
+      </div>
+
+      <div class="subtitle">
+        Entrenamiento + nutricion calculados para vos. Resultados reales.
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="icon">&#x1F4AA;</div>
+          Plan de entrenamiento con GIFs
+        </div>
+        <div class="feature">
+          <div class="icon">&#x1F372;</div>
+          Dieta con macros exactos
+        </div>
+        <div class="feature">
+          <div class="icon">&#x1F4C8;</div>
+          Seguimiento de progreso con fotos
+        </div>
+        <div class="feature">
+          <div class="icon">&#x1F3C6;</div>
+          Ranking y logros entre usuarios
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-area">
+      <div class="cta">EMPEZA HOY</div>
+      <div class="url">pabloscarlattoentrenamientos.com</div>
+      <div class="swipe">&#x25B2; Desliza para ver mas</div>
+    </div>
+  </div>
+</body>
+</html>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Dumbbell, Gift, Check, Eye, EyeOff, Loader2 } from "lucide-react";
+import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 
 function AccesoGratisForm() {
@@ -206,7 +207,7 @@ function AccesoGratisForm() {
   if (validating) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Dumbbell className="h-8 w-8 text-primary animate-pulse" />
+        <RatLoader size={64} />
       </div>
     );
   }
