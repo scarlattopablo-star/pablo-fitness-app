@@ -11,8 +11,6 @@ workflows:
       - name: Install dependencies
         script: |
           npm ci
-      - name: Sync Capacitor iOS
-        script: |
           npx cap sync ios
       - name: Install CocoaPods
         script: |
@@ -22,8 +20,9 @@ workflows:
           cd ios/App
           xcodebuild -workspace App.xcworkspace \
             -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
             -archivePath build/App.xcarchive \
             archive \
             CODE_SIGNING_ALLOWED=NO
