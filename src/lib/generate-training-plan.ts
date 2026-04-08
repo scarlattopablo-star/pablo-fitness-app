@@ -482,23 +482,16 @@ interface VolumeConfig {
   isolationSmall: number; // isolation exercises for the secondary (small) muscle
 }
 
-function getVolumeConfig(activityLevel: string): VolumeConfig {
-  switch (activityLevel) {
-    case "sedentario":
-      // 3 large + 2 small = 5 exercises per session
-      return { compoundMain: 2, isolationMain: 1, compoundSmall: 1, isolationSmall: 1 };
-    case "moderado":
-      // 4 large + 3 small = 7 exercises per session
-      return { compoundMain: 2, isolationMain: 2, compoundSmall: 1, isolationSmall: 2 };
-    case "activo":
-      // 5 large + 3 small = 8 exercises per session
-      return { compoundMain: 3, isolationMain: 2, compoundSmall: 1, isolationSmall: 2 };
-    case "muy-activo":
-      // 6 large + 4 small = 10 exercises per session
-      return { compoundMain: 3, isolationMain: 3, compoundSmall: 2, isolationSmall: 2 };
-    default:
-      return { compoundMain: 2, isolationMain: 2, compoundSmall: 1, isolationSmall: 2 };
-  }
+function getVolumeConfig(activityLevel: string, sex: string = "hombre"): VolumeConfig {
+  // Standard: 5 exercises for large muscle, 3-4 for small muscle (frequency 2)
+  // Men (active/very-active): 6 for large muscle
+  const isAdvancedMale = sex === "hombre" && (activityLevel === "activo" || activityLevel === "muy-activo");
+  return {
+    compoundMain: isAdvancedMale ? 4 : 3,   // 4+2=6 (advanced men) or 3+2=5 (everyone else) for large
+    isolationMain: 2,
+    compoundSmall: 2,                         // 2+1=3 or 2+2=4 for small
+    isolationSmall: activityLevel === "muy-activo" ? 2 : 1,
+  };
 }
 
 export function generateTrainingPlan(
@@ -512,7 +505,7 @@ export function generateTrainingPlan(
   const p = getParams(objective);
   const isHome = objective === "entrenamiento-casa";
   const isBeginner = objective === "principiante-total";
-  const vol = getVolumeConfig(isBeginner ? "sedentario" : activityLevel);
+  const vol = getVolumeConfig(isBeginner ? "sedentario" : activityLevel, sex);
 
   // For women: default emphasis on glutes/legs if no specific emphasis chosen
   const effectiveEmphasis = (sex === "mujer" && emphasis === "ninguno")

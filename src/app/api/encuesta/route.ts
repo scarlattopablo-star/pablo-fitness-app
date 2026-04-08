@@ -111,3 +111,72 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Error al guardar encuesta: ${msg}` }, { status: 500 });
   }
 }
+
+// PATCH: Update existing survey fields and regenerate plans
+export async function PATCH(request: NextRequest) {
+  try {
+    // Get user from Bearer token
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Token requerido" }, { status: 401 });
+    }
+    const token = authHeader.replace("Bearer ", "");
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    // Verify user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: "Token inválido" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const userId = user.id;
+
+    // Find existing survey
+    const { data: existing, error: findError } = await supabase
+      .from("surveys")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (findError || !existing) {
+      return NextResponse.json({ error: "No se encontró encuesta para actualizar" }, { status: 404 });
+    }
+
+    // Update only the provided fields
+    const { error: updateError } = await supabase
+      .from("surveys")
+      .update(body)
+      .eq("id", existing.id);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    // Regenerate plans after survey update
+    const baseUrl = request.nextUrl.origin;
+    const generateRes = await fetch(`${baseUrl}/api/generate-plans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!generateRes.ok) {
+      // Survey updated but plan generation failed - still return success
+      // Plans can be regenerated later
+      console.error("Plan regeneration failed after survey update:", await generateRes.text());
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error desconocido";
+    return NextResponse.json({ error: `Error al actualizar encuesta: ${msg}` }, { status: 500 });
+  }
+}

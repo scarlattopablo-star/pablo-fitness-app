@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { User, Mail, Phone, Save, Shield, Loader2, Check, Camera } from "lucide-react";
+import { User, Mail, Phone, Save, Shield, Loader2, Check, Camera, Pencil } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
@@ -16,7 +16,32 @@ interface SurveyData {
   activity_level: string;
   dietary_restrictions: string[];
   objective: string;
+  training_days?: number;
+  wake_hour?: number;
+  sleep_hour?: number;
+  emphasis?: string;
 }
+
+const ACTIVITY_OPTIONS = [
+  { value: "sedentario", label: "Sedentario" },
+  { value: "moderado", label: "Moderado" },
+  { value: "activo", label: "Activo" },
+  { value: "muy-activo", label: "Muy Activo" },
+];
+
+const EMPHASIS_OPTIONS = [
+  { value: "ninguno", label: "Equilibrado" },
+  { value: "pecho", label: "Pecho" },
+  { value: "espalda", label: "Espalda" },
+  { value: "piernas", label: "Piernas" },
+  { value: "abdomen", label: "Abdomen" },
+  { value: "tren-superior", label: "Tren Superior" },
+];
+
+const RESTRICTIONS = [
+  "Ninguna", "Vegetariano", "Vegano", "Sin gluten (celíaco)",
+  "Sin lactosa", "Sin frutos secos", "Diabetes", "Otra",
+];
 
 export default function PerfilPage() {
   const { user, profile, subscription } = useAuth();
@@ -28,6 +53,10 @@ export default function PerfilPage() {
   const [saved, setSaved] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [editingSurvey, setEditingSurvey] = useState(false);
+  const [surveyForm, setSurveyForm] = useState<Partial<SurveyData>>({});
+  const [savingSurvey, setSavingSurvey] = useState(false);
+  const [surveySuccess, setSurveySuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -182,33 +211,220 @@ export default function PerfilPage() {
         {/* Survey Data */}
         {survey && (
           <div className="card-premium rounded-2xl p-6">
-            <h2 className="font-bold mb-4">Datos de mi Encuesta</h2>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-card-bg rounded-xl p-3">
-                <p className="text-xs text-muted">Edad</p>
-                <p className="font-bold">{survey.age} años</p>
-              </div>
-              <div className="bg-card-bg rounded-xl p-3">
-                <p className="text-xs text-muted">Sexo</p>
-                <p className="font-bold capitalize">{survey.sex}</p>
-              </div>
-              <div className="bg-card-bg rounded-xl p-3">
-                <p className="text-xs text-muted">Peso inicial</p>
-                <p className="font-bold">{survey.weight} kg</p>
-              </div>
-              <div className="bg-card-bg rounded-xl p-3">
-                <p className="text-xs text-muted">Altura</p>
-                <p className="font-bold">{survey.height} cm</p>
-              </div>
-              <div className="bg-card-bg rounded-xl p-3">
-                <p className="text-xs text-muted">Actividad</p>
-                <p className="font-bold capitalize">{survey.activity_level?.replace("-", " ")}</p>
-              </div>
-              <div className="bg-card-bg rounded-xl p-3">
-                <p className="text-xs text-muted">Restricciones</p>
-                <p className="font-bold">{survey.dietary_restrictions?.join(", ") || "Ninguna"}</p>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold">Datos de mi Encuesta</h2>
+              {!editingSurvey && (
+                <button
+                  onClick={() => {
+                    setSurveyForm({
+                      weight: survey.weight,
+                      height: survey.height,
+                      age: survey.age,
+                      activity_level: survey.activity_level,
+                      dietary_restrictions: survey.dietary_restrictions || [],
+                      training_days: survey.training_days ?? 5,
+                      wake_hour: survey.wake_hour ?? 7,
+                      sleep_hour: survey.sleep_hour ?? 23,
+                      emphasis: survey.emphasis ?? "ninguno",
+                    });
+                    setEditingSurvey(true);
+                    setSurveySuccess(false);
+                  }}
+                  className="flex items-center gap-1.5 text-sm text-primary font-medium hover:opacity-80 transition-opacity"
+                >
+                  <Pencil className="h-4 w-4" /> Actualizar Encuesta
+                </button>
+              )}
             </div>
+
+            {surveySuccess && (
+              <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 mb-4 text-sm text-primary font-medium">
+                Encuesta actualizada, tu plan se esta regenerando
+              </div>
+            )}
+
+            {!editingSurvey ? (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Edad</p>
+                  <p className="font-bold">{survey.age} anos</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Sexo</p>
+                  <p className="font-bold capitalize">{survey.sex}</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Peso</p>
+                  <p className="font-bold">{survey.weight} kg</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Altura</p>
+                  <p className="font-bold">{survey.height} cm</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Actividad</p>
+                  <p className="font-bold capitalize">{survey.activity_level?.replace("-", " ")}</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Restricciones</p>
+                  <p className="font-bold">{survey.dietary_restrictions?.join(", ") || "Ninguna"}</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Dias de entrenamiento</p>
+                  <p className="font-bold">{survey.training_days ?? 5} dias/sem</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Enfasis</p>
+                  <p className="font-bold capitalize">{EMPHASIS_OPTIONS.find(e => e.value === survey.emphasis)?.label || "Equilibrado"}</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Despertar</p>
+                  <p className="font-bold">{survey.wake_hour ?? 7}:00</p>
+                </div>
+                <div className="bg-card-bg rounded-xl p-3">
+                  <p className="text-xs text-muted">Dormir</p>
+                  <p className="font-bold">{survey.sleep_hour ?? 23}:00</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Peso (kg)</label>
+                    <input type="number" value={surveyForm.weight || ""} onChange={(e) => setSurveyForm({ ...surveyForm, weight: Number(e.target.value) })}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Altura (cm)</label>
+                    <input type="number" value={surveyForm.height || ""} onChange={(e) => setSurveyForm({ ...surveyForm, height: Number(e.target.value) })}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Edad</label>
+                    <input type="number" value={surveyForm.age || ""} onChange={(e) => setSurveyForm({ ...surveyForm, age: Number(e.target.value) })}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Dias entrenamiento/sem</label>
+                    <input type="number" min={1} max={7} value={surveyForm.training_days || ""} onChange={(e) => setSurveyForm({ ...surveyForm, training_days: Number(e.target.value) })}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Hora despertar</label>
+                    <input type="number" min={0} max={23} value={surveyForm.wake_hour ?? ""} onChange={(e) => setSurveyForm({ ...surveyForm, wake_hour: Number(e.target.value) })}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1">Hora dormir</label>
+                    <input type="number" min={0} max={23} value={surveyForm.sleep_hour ?? ""} onChange={(e) => setSurveyForm({ ...surveyForm, sleep_hour: Number(e.target.value) })}
+                      className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-muted mb-1">Nivel de actividad</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ACTIVITY_OPTIONS.map((opt) => (
+                      <button key={opt.value} onClick={() => setSurveyForm({ ...surveyForm, activity_level: opt.value })}
+                        className={`text-left p-3 rounded-xl border transition-all text-sm ${surveyForm.activity_level === opt.value ? "border-primary bg-primary/5 font-medium" : "border-card-border hover:border-muted"}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-muted mb-1">Enfasis</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {EMPHASIS_OPTIONS.map((opt) => (
+                      <button key={opt.value} onClick={() => setSurveyForm({ ...surveyForm, emphasis: opt.value })}
+                        className={`text-left p-2.5 rounded-xl border transition-all text-sm ${surveyForm.emphasis === opt.value ? "border-primary bg-primary/5 font-medium" : "border-card-border hover:border-muted"}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs text-muted mb-1">Restricciones dietéticas</label>
+                  <div className="flex flex-wrap gap-2">
+                    {RESTRICTIONS.map((r) => (
+                      <button key={r}
+                        onClick={() => {
+                          const current = surveyForm.dietary_restrictions || [];
+                          if (r === "Ninguna") {
+                            setSurveyForm({ ...surveyForm, dietary_restrictions: ["Ninguna"] });
+                          } else {
+                            const without = current.filter((x) => x !== "Ninguna");
+                            setSurveyForm({
+                              ...surveyForm,
+                              dietary_restrictions: without.includes(r) ? without.filter((x) => x !== r) : [...without, r],
+                            });
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                          (surveyForm.dietary_restrictions || []).includes(r)
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-card-border hover:border-muted"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => setEditingSurvey(false)}
+                    className="flex-1 border border-card-border text-muted font-bold py-3 rounded-xl hover:bg-card-bg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      setSavingSurvey(true);
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const res = await fetch("/api/encuesta", {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${session?.access_token}`,
+                          },
+                          body: JSON.stringify({
+                            weight: surveyForm.weight,
+                            height: surveyForm.height,
+                            age: surveyForm.age,
+                            activity_level: surveyForm.activity_level,
+                            dietary_restrictions: surveyForm.dietary_restrictions,
+                            training_days: surveyForm.training_days,
+                            wake_hour: surveyForm.wake_hour,
+                            sleep_hour: surveyForm.sleep_hour,
+                            emphasis: surveyForm.emphasis,
+                          }),
+                        });
+                        if (res.ok) {
+                          setSurvey({ ...survey, ...surveyForm } as SurveyData);
+                          setEditingSurvey(false);
+                          setSurveySuccess(true);
+                          setTimeout(() => setSurveySuccess(false), 5000);
+                        }
+                      } catch (e) {
+                        console.error("Error updating survey:", e);
+                      } finally {
+                        setSavingSurvey(false);
+                      }
+                    }}
+                    disabled={savingSurvey}
+                    className="flex-1 gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {savingSurvey ? (<><Loader2 className="h-4 w-4 animate-spin" /> Guardando...</>) : (<><Save className="h-4 w-4" /> Guardar Cambios</>)}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

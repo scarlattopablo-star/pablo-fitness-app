@@ -7,6 +7,7 @@ import {
   Calendar, Target, Scale, Mail, Phone, Edit,
   Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
   ChevronDown, ChevronUp, Ruler, Image, Save, Plus, X, Check,
+  ArrowRightLeft, AtSign,
 } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
@@ -112,6 +113,19 @@ export default function ClienteDetailPage({
   const [savingNutrition, setSavingNutrition] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState<{ dayIdx: number; exIdx: number; query: string } | null>(null);
   const [foodSearch, setFoodSearch] = useState<{ mealIdx: number; foodIdx: number; query: string } | null>(null);
+
+  // Email change state
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg, setEmailMsg] = useState("");
+
+  // Plan transfer state
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferEmail, setTransferEmail] = useState("");
+  const [transferSaving, setTransferSaving] = useState(false);
+  const [transferMsg, setTransferMsg] = useState("");
+  const [transferConfirmed, setTransferConfirmed] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -250,7 +264,126 @@ export default function ClienteDetailPage({
             {client.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {client.phone}</span>}
             <button onClick={() => { setShowEditProfile(true); setEditName(client.full_name || ""); setEditPhone(client.phone || ""); }}
               className="text-primary text-xs hover:underline">Editar datos</button>
+            <button onClick={() => { setShowEmailModal(true); setNewEmail(client.email || ""); setEmailMsg(""); }}
+              className="text-xs text-blue-400 hover:underline flex items-center gap-1"><AtSign className="h-3 w-3" /> Editar Email</button>
+            <button onClick={() => { setShowTransferModal(true); setTransferEmail(""); setTransferMsg(""); setTransferConfirmed(false); }}
+              className="text-xs text-yellow-400 hover:underline flex items-center gap-1"><ArrowRightLeft className="h-3 w-3" /> Transferir Plan</button>
           </div>
+
+          {/* Email change modal */}
+          {showEmailModal && (
+            <div className="mt-3 bg-card-bg border border-card-border rounded-xl p-4 space-y-3">
+              <p className="font-bold text-sm">Cambiar email del cliente</p>
+              <p className="text-xs text-muted">Email actual: <span className="text-white">{client.email}</span></p>
+              <div>
+                <label className="block text-xs text-muted mb-1">Nuevo email</label>
+                <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                  className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+              </div>
+              {emailMsg && (
+                <div className={`text-xs p-2 rounded-lg ${emailMsg.includes("Error") ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+                  {emailMsg}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button onClick={async () => {
+                  if (!newEmail || newEmail === client.email) return;
+                  setEmailSaving(true);
+                  setEmailMsg("");
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (!session?.access_token) { setEmailMsg("Error: sesion expirada"); setEmailSaving(false); return; }
+                    const res = await fetch("/api/admin/update-email", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                      body: JSON.stringify({ userId: id, newEmail }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setEmailMsg("Email actualizado!");
+                      setClient({ ...client, email: newEmail });
+                      setTimeout(() => setShowEmailModal(false), 1500);
+                    } else {
+                      setEmailMsg(`Error: ${data.error || "Error desconocido"}`);
+                    }
+                  } catch (err) {
+                    setEmailMsg(`Error: ${err}`);
+                  }
+                  setEmailSaving(false);
+                }} disabled={emailSaving || !newEmail || newEmail === client.email}
+                  className="gradient-primary text-black text-sm font-bold px-4 py-2 rounded-lg disabled:opacity-50">
+                  {emailSaving ? "Guardando..." : "Actualizar Email"}
+                </button>
+                <button onClick={() => setShowEmailModal(false)} className="text-sm text-muted">Cancelar</button>
+              </div>
+            </div>
+          )}
+
+          {/* Plan transfer modal */}
+          {showTransferModal && (
+            <div className="mt-3 bg-card-bg border border-card-border rounded-xl p-4 space-y-3">
+              <p className="font-bold text-sm">Transferir plan a otro usuario</p>
+              <p className="text-xs text-muted">Se moveran los planes de entrenamiento y nutricion al usuario destino.</p>
+              <div>
+                <label className="block text-xs text-muted mb-1">Email del usuario destino</label>
+                <input type="email" value={transferEmail} onChange={e => { setTransferEmail(e.target.value); setTransferConfirmed(false); }}
+                  className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  placeholder="correo@ejemplo.com" />
+              </div>
+              {transferMsg && (
+                <div className={`text-xs p-2 rounded-lg ${transferMsg.includes("Error") ? "bg-danger/10 text-danger" : "bg-primary/10 text-primary"}`}>
+                  {transferMsg}
+                </div>
+              )}
+              {!transferConfirmed ? (
+                <div className="flex gap-2">
+                  <button onClick={() => { if (transferEmail) setTransferConfirmed(true); }}
+                    disabled={!transferEmail}
+                    className="bg-yellow-500/10 text-yellow-400 text-sm font-bold px-4 py-2 rounded-lg disabled:opacity-50 hover:bg-yellow-500/20 transition-colors">
+                    Continuar
+                  </button>
+                  <button onClick={() => setShowTransferModal(false)} className="text-sm text-muted">Cancelar</button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                    <p className="text-xs text-yellow-400 font-bold">Estas seguro? Esto movera todos los datos de plan al usuario: {transferEmail}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={async () => {
+                      setTransferSaving(true);
+                      setTransferMsg("");
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session?.access_token) { setTransferMsg("Error: sesion expirada"); setTransferSaving(false); return; }
+                        const res = await fetch("/api/admin/transfer-plan", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ fromUserId: id, toEmail: transferEmail }),
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                          setTransferMsg("Plan transferido con exito!");
+                          loadClient();
+                          setTimeout(() => setShowTransferModal(false), 2000);
+                        } else {
+                          setTransferMsg(`Error: ${data.error || "Error desconocido"}`);
+                        }
+                      } catch (err) {
+                        setTransferMsg(`Error: ${err}`);
+                      }
+                      setTransferSaving(false);
+                    }} disabled={transferSaving}
+                      className="bg-yellow-500 text-black text-sm font-bold px-4 py-2 rounded-lg disabled:opacity-50">
+                      {transferSaving ? "Transfiriendo..." : "Confirmar Transferencia"}
+                    </button>
+                    <button onClick={() => { setTransferConfirmed(false); setShowTransferModal(false); }} className="text-sm text-muted">Cancelar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {showEditProfile && (
             <div className="mt-3 bg-card-bg border border-card-border rounded-xl p-4 space-y-3">
               <div>

@@ -150,6 +150,39 @@ function PlanContent() {
     }
   }, [user]);
 
+  // Realtime subscription: re-fetch when admin updates plans
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('plan-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'training_plans', filter: `user_id=eq.${user.id}` },
+        () => { loadMacros(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'nutrition_plans', filter: `user_id=eq.${user.id}` },
+        () => { loadMacros(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'training_plans', filter: `user_id=eq.${user.id}` },
+        () => { loadMacros(); }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'nutrition_plans', filter: `user_id=eq.${user.id}` },
+        () => { loadMacros(); }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const loadExerciseLogs = async () => {
     if (!user) return;
     const { data } = await supabase

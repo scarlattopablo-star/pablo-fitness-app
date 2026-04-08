@@ -8,8 +8,7 @@ interface GymRatLogoProps {
   className?: string;
 }
 
-// Big Disney-style rat animation:
-// Appears from bottom, runs right across GYMRAT, runs left (2nd pass), then climbs up behind text and hides
+// Sin City style rat — runs from bottom, circles GYMRAT twice, climbs up and hides
 const ratAnimation = {
   hidden: { opacity: 0, x: 150, y: 160 } as const,
   run: {
@@ -27,8 +26,8 @@ const ratAnimation = {
   },
 };
 
-// Rat cartoon character — bigger, rounder, Disney-style
-function CartoonRat({ animated }: { animated: boolean }) {
+// Sin City muscular rat — high contrast, aggressive, noir style
+function SinCityRat({ animated }: { animated: boolean }) {
   if (!animated) return null;
 
   return (
@@ -38,92 +37,114 @@ function CartoonRat({ animated }: { animated: boolean }) {
       animate="run"
     >
       {/* Shadow */}
-      <ellipse cx="0" cy="18" rx="12" ry="3" fill="rgba(0,0,0,0.2)" />
+      <ellipse cx="0" cy="20" rx="14" ry="3" fill="rgba(0,0,0,0.4)" />
 
-      {/* Tail — long curvy */}
+      {/* Tail — thick, aggressive curl */}
       <motion.path
-        d="M-18 5 Q-28 -5 -25 -15 Q-22 -22 -16 -18 Q-12 -15 -15 -8"
-        stroke="#c0a080"
-        strokeWidth="2.5"
+        d="M-20 4 Q-32 -8 -28 -20 Q-24 -28 -16 -22 Q-10 -17 -14 -8"
+        stroke="#333"
+        strokeWidth="3"
         fill="none"
         strokeLinecap="round"
         animate={{ d: [
-          "M-18 5 Q-28 -5 -25 -15 Q-22 -22 -16 -18 Q-12 -15 -15 -8",
-          "M-18 5 Q-30 0 -28 -12 Q-25 -20 -18 -16 Q-14 -13 -16 -6",
-          "M-18 5 Q-28 -5 -25 -15 Q-22 -22 -16 -18 Q-12 -15 -15 -8",
+          "M-20 4 Q-32 -8 -28 -20 Q-24 -28 -16 -22 Q-10 -17 -14 -8",
+          "M-20 4 Q-34 -2 -30 -16 Q-27 -24 -19 -20 Q-13 -16 -16 -6",
+          "M-20 4 Q-32 -8 -28 -20 Q-24 -28 -16 -22 Q-10 -17 -14 -8",
         ]}}
-        transition={{ duration: 0.6, repeat: Infinity }}
-      />
-
-      {/* Body — big round */}
-      <ellipse cx="0" cy="5" rx="16" ry="13" fill="#d4b896" />
-      {/* Belly */}
-      <ellipse cx="2" cy="8" rx="10" ry="8" fill="#e8d5b8" />
-
-      {/* Back legs */}
-      <motion.g animate={{ rotate: [0, -15, 0, 15, 0] }} transition={{ duration: 0.25, repeat: Infinity }}>
-        <ellipse cx="-10" cy="15" rx="5" ry="4" fill="#c0a080" />
-        <ellipse cx="-10" cy="18" rx="4" ry="2.5" fill="#d4b896" />
-      </motion.g>
-
-      {/* Front legs — running animation */}
-      <motion.g animate={{ rotate: [0, 20, 0, -20, 0] }} transition={{ duration: 0.25, repeat: Infinity }}>
-        <ellipse cx="10" cy="14" rx="4" ry="3.5" fill="#c0a080" />
-        <ellipse cx="12" cy="17" rx="3.5" ry="2" fill="#d4b896" />
-      </motion.g>
-
-      {/* Head — big round Disney style */}
-      <circle cx="16" cy="-4" r="12" fill="#d4b896" />
-
-      {/* Cheeks */}
-      <circle cx="22" cy="0" r="4" fill="#e8c8a8" />
-      <circle cx="10" cy="0" r="3.5" fill="#e8c8a8" />
-
-      {/* Ears — big and round */}
-      <circle cx="8" cy="-16" r="8" fill="#c0a080" />
-      <circle cx="8" cy="-16" r="5.5" fill="#f0c0a0" />
-      <circle cx="24" cy="-14" r="7" fill="#c0a080" />
-      <circle cx="24" cy="-14" r="4.5" fill="#f0c0a0" />
-
-      {/* Eyes — big expressive Disney eyes */}
-      <ellipse cx="13" cy="-6" rx="4" ry="4.5" fill="white" />
-      <ellipse cx="22" cy="-5" rx="3.5" ry="4" fill="white" />
-      {/* Pupils — looking in direction of movement */}
-      <motion.circle
-        cx="14.5" cy="-5.5" r="2.2" fill="#222"
-        animate={{ cx: [14.5, 15.5, 14.5, 13, 14.5] }}
-        transition={{ duration: 1, repeat: Infinity }}
-      />
-      <motion.circle
-        cx="23" cy="-4.5" r="2" fill="#222"
-        animate={{ cx: [23, 24, 23, 22, 23] }}
-        transition={{ duration: 1, repeat: Infinity }}
-      />
-      {/* Eye shine */}
-      <circle cx="13.5" cy="-7.5" r="1" fill="white" />
-      <circle cx="22" cy="-6.5" r="0.8" fill="white" />
-
-      {/* Nose — pink */}
-      <ellipse cx="27" cy="-2" rx="3" ry="2.5" fill="#ff8899" />
-      {/* Nose shine */}
-      <circle cx="26" cy="-3" r="0.8" fill="#ffb0b8" />
-
-      {/* Mouth — cute smile */}
-      <path d="M24 2 Q27 5 30 2" stroke="#8B6914" strokeWidth="1" fill="none" strokeLinecap="round" />
-
-      {/* Whiskers */}
-      <motion.g
-        animate={{ rotate: [-3, 3, -3] }}
         transition={{ duration: 0.5, repeat: Infinity }}
-        style={{ transformOrigin: "27px -1px" }}
-      >
-        <line x1="28" y1="-4" x2="38" y2="-7" stroke="#c0a080" strokeWidth="0.8" />
-        <line x1="28" y1="-1" x2="39" y2="-1" stroke="#c0a080" strokeWidth="0.8" />
-        <line x1="28" y1="1" x2="37" y2="4" stroke="#c0a080" strokeWidth="0.8" />
+      />
+
+      {/* Back leg — muscular */}
+      <motion.g animate={{ rotate: [0, -12, 0, 12, 0] }} transition={{ duration: 0.2, repeat: Infinity }}>
+        <ellipse cx="-8" cy="12" rx="6" ry="5" fill="#222" />
+        <ellipse cx="-8" cy="12" rx="5" ry="4" fill="#444" />
+        <ellipse cx="-9" cy="17" rx="4" ry="2.5" fill="#333" />
       </motion.g>
 
-      {/* Little green headband (gym rat!) */}
-      <path d="M5 -12 Q16 -18 27 -10" stroke="#22c55e" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* Body — big, muscular, V-shape */}
+      <ellipse cx="2" cy="2" rx="18" ry="14" fill="#1a1a1a" />
+      {/* Muscle definition — chest/back highlight */}
+      <ellipse cx="4" cy="0" rx="14" ry="10" fill="#2a2a2a" />
+      {/* Abs hint */}
+      <line x1="-2" y1="-2" x2="-2" y2="8" stroke="#333" strokeWidth="0.5" />
+      <line x1="4" y1="-3" x2="4" y2="7" stroke="#333" strokeWidth="0.5" />
+
+      {/* Front leg — muscular, running */}
+      <motion.g animate={{ rotate: [0, 18, 0, -18, 0] }} transition={{ duration: 0.2, repeat: Infinity }}>
+        <ellipse cx="14" cy="10" rx="5" ry="5" fill="#222" />
+        <ellipse cx="14" cy="10" rx="4" ry="4" fill="#444" />
+        <ellipse cx="16" cy="16" rx="4" ry="2" fill="#333" />
+      </motion.g>
+
+      {/* Arm muscles — big biceps visible */}
+      <ellipse cx="-6" cy="-2" rx="4" ry="6" fill="#333" transform="rotate(-15 -6 -2)" />
+      <ellipse cx="12" cy="-4" rx="4" ry="6" fill="#333" transform="rotate(15 12 -4)" />
+
+      {/* Neck — thick */}
+      <rect x="10" y="-12" width="8" height="8" rx="3" fill="#1a1a1a" />
+
+      {/* Head — angular, aggressive */}
+      <ellipse cx="18" cy="-14" rx="12" ry="11" fill="#1a1a1a" />
+      {/* Jaw — strong, angular */}
+      <path d="M10 -8 Q18 -2 26 -8" fill="#222" />
+
+      {/* Ears — pointed, aggressive */}
+      <path d="M8 -24 L12 -30 L16 -22" fill="#1a1a1a" stroke="#333" strokeWidth="1" />
+      <path d="M8 -24 L12 -28 L15 -22" fill="#22c55e" opacity="0.3" />
+      <path d="M22 -24 L26 -30 L28 -20" fill="#1a1a1a" stroke="#333" strokeWidth="1" />
+      <path d="M23 -24 L26 -28 L27 -21" fill="#22c55e" opacity="0.3" />
+
+      {/* Eyes — narrow, intense, white on black (Sin City) */}
+      <ellipse cx="14" cy="-16" rx="4" ry="2.5" fill="white" />
+      <ellipse cx="23" cy="-15" rx="3.5" ry="2.5" fill="white" />
+      {/* Pupils — small, focused */}
+      <motion.ellipse
+        cx="15" cy="-15.5" rx="1.8" ry="2" fill="black"
+        animate={{ cx: [15, 16, 15, 14, 15] }}
+        transition={{ duration: 0.8, repeat: Infinity }}
+      />
+      <motion.ellipse
+        cx="24" cy="-14.5" rx="1.6" ry="2" fill="black"
+        animate={{ cx: [24, 25, 24, 23, 24] }}
+        transition={{ duration: 0.8, repeat: Infinity }}
+      />
+      {/* Eye shine — sharp */}
+      <circle cx="13.5" cy="-17" r="0.8" fill="white" />
+      <circle cx="22.5" cy="-16" r="0.6" fill="white" />
+
+      {/* Eyebrows — angry, furrowed */}
+      <line x1="10" y1="-20" x2="17" y2="-19" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="27" y1="-19" x2="20" y2="-19" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Snout/nose — angular */}
+      <path d="M26 -12 L30 -10 L26 -8" fill="#333" />
+      <circle cx="30" cy="-10" r="1.5" fill="#22c55e" />
+
+      {/* Mouth — snarl, showing teeth */}
+      <path d="M24 -6 Q28 -4 31 -7" stroke="#555" strokeWidth="0.8" fill="none" />
+      {/* Fang */}
+      <path d="M26 -6 L27 -3 L28 -6" fill="white" />
+
+      {/* Whiskers — stiff, sharp */}
+      <motion.g
+        animate={{ rotate: [-2, 2, -2] }}
+        transition={{ duration: 0.4, repeat: Infinity }}
+        style={{ transformOrigin: "28px -10px" }}
+      >
+        <line x1="29" y1="-13" x2="40" y2="-16" stroke="#555" strokeWidth="0.6" />
+        <line x1="30" y1="-10" x2="42" y2="-10" stroke="#555" strokeWidth="0.6" />
+        <line x1="29" y1="-7" x2="40" y2="-4" stroke="#555" strokeWidth="0.6" />
+      </motion.g>
+
+      {/* Green headband — gym rat identity */}
+      <path d="M7 -22 Q18 -28 29 -20" stroke="#22c55e" strokeWidth="3" fill="none" strokeLinecap="round" />
+      {/* Headband knot */}
+      <circle cx="7" cy="-22" r="2" fill="#22c55e" />
+      <line x1="5" y1="-22" x2="2" y2="-26" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="5" y1="-22" x2="3" y2="-19" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Vein on arm — detail */}
+      <path d="M-5 -4 Q-3 -1 -4 3" stroke="#444" strokeWidth="0.4" fill="none" />
     </motion.g>
   );
 }
@@ -160,60 +181,30 @@ export function GymRatLogo({ animated = false, size = "md", className = "" }: Gy
         <g>
           {animated ? (
             <>
-              <motion.rect
-                x="95" y="18" width="16" height="30" rx="3"
-                fill="#22c55e"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
+              <motion.rect x="95" y="18" width="16" height="30" rx="3" fill="#22c55e"
+                initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
                 transition={{ delay: 0.2, duration: 0.4, ease: "backOut" }}
-                style={{ transformOrigin: "103px 33px" }}
-              />
-              <motion.rect
-                x="85" y="22" width="10" height="22" rx="2"
-                fill="#16a34a"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
+                style={{ transformOrigin: "103px 33px" }} />
+              <motion.rect x="85" y="22" width="10" height="22" rx="2" fill="#16a34a"
+                initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
                 transition={{ delay: 0.3, duration: 0.4, ease: "backOut" }}
-                style={{ transformOrigin: "90px 33px" }}
-              />
-              <motion.rect
-                x="111" y="29" width="78" height="8" rx="4"
-                fill="#d4d4d8"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
+                style={{ transformOrigin: "90px 33px" }} />
+              <motion.rect x="111" y="29" width="78" height="8" rx="4" fill="#d4d4d8"
+                initial={{ scaleX: 0 }} animate={{ scaleX: 1 }}
                 transition={{ delay: 0.1, duration: 0.5, ease: "easeOut" }}
-                style={{ transformOrigin: "150px 33px" }}
-              />
-              <motion.rect
-                x="189" y="18" width="16" height="30" rx="3"
-                fill="#22c55e"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
+                style={{ transformOrigin: "150px 33px" }} />
+              <motion.rect x="189" y="18" width="16" height="30" rx="3" fill="#22c55e"
+                initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
                 transition={{ delay: 0.2, duration: 0.4, ease: "backOut" }}
-                style={{ transformOrigin: "197px 33px" }}
-              />
-              <motion.rect
-                x="205" y="22" width="10" height="22" rx="2"
-                fill="#16a34a"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
+                style={{ transformOrigin: "197px 33px" }} />
+              <motion.rect x="205" y="22" width="10" height="22" rx="2" fill="#16a34a"
+                initial={{ scaleY: 0 }} animate={{ scaleY: 1 }}
                 transition={{ delay: 0.3, duration: 0.4, ease: "backOut" }}
-                style={{ transformOrigin: "210px 33px" }}
-              />
-              <motion.rect
-                x="80" y="30" width="5" height="6" rx="1"
-                fill="#a1a1aa"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              />
-              <motion.rect
-                x="215" y="30" width="5" height="6" rx="1"
-                fill="#a1a1aa"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              />
+                style={{ transformOrigin: "210px 33px" }} />
+              <motion.rect x="80" y="30" width="5" height="6" rx="1" fill="#a1a1aa"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
+              <motion.rect x="215" y="30" width="5" height="6" rx="1" fill="#a1a1aa"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
             </>
           ) : (
             <>
@@ -230,98 +221,39 @@ export function GymRatLogo({ animated = false, size = "md", className = "" }: Gy
 
         {/* GYMRAT text */}
         {animated ? (
-          <motion.text
-            x="150"
-            y="85"
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize="38"
-            fontWeight="900"
-            fill="white"
-            letterSpacing="3"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-          >
-            GYMRAT
-          </motion.text>
+          <motion.text x="150" y="85" textAnchor="middle" fontFamily="Arial, sans-serif"
+            fontSize="38" fontWeight="900" fill="white" letterSpacing="3"
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}>GYMRAT</motion.text>
         ) : (
-          <text
-            x="150"
-            y="85"
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize="38"
-            fontWeight="900"
-            fill="white"
-            letterSpacing="3"
-          >
-            GYMRAT
-          </text>
+          <text x="150" y="85" textAnchor="middle" fontFamily="Arial, sans-serif"
+            fontSize="38" fontWeight="900" fill="white" letterSpacing="3">GYMRAT</text>
         )}
 
         {/* by Pablo Scarlatto */}
         {animated ? (
-          <motion.text
-            x="150"
-            y="108"
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize="12"
-            fill="#22c55e"
-            letterSpacing="4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-          >
-            BY PABLO SCARLATTO
-          </motion.text>
+          <motion.text x="150" y="108" textAnchor="middle" fontFamily="Arial, sans-serif"
+            fontSize="12" fill="#22c55e" letterSpacing="4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.5 }}>BY PABLO SCARLATTO</motion.text>
         ) : (
-          <text
-            x="150"
-            y="108"
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize="12"
-            fill="#22c55e"
-            letterSpacing="4"
-          >
-            BY PABLO SCARLATTO
-          </text>
+          <text x="150" y="108" textAnchor="middle" fontFamily="Arial, sans-serif"
+            fontSize="12" fill="#22c55e" letterSpacing="4">BY PABLO SCARLATTO</text>
         )}
 
         {/* ENTRENAMIENTOS */}
         {animated ? (
-          <motion.text
-            x="150"
-            y="125"
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize="8"
-            fill="#555"
-            letterSpacing="5"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, duration: 0.5 }}
-          >
-            ENTRENAMIENTOS
-          </motion.text>
+          <motion.text x="150" y="125" textAnchor="middle" fontFamily="Arial, sans-serif"
+            fontSize="8" fill="#555" letterSpacing="5"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ delay: 1, duration: 0.5 }}>ENTRENAMIENTOS</motion.text>
         ) : (
-          <text
-            x="150"
-            y="125"
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize="8"
-            fill="#555"
-            letterSpacing="5"
-          >
-            ENTRENAMIENTOS
-          </text>
+          <text x="150" y="125" textAnchor="middle" fontFamily="Arial, sans-serif"
+            fontSize="8" fill="#555" letterSpacing="5">ENTRENAMIENTOS</text>
         )}
 
-        {/* Disney-style cartoon rat — runs around GYMRAT twice then hides behind text */}
-        <CartoonRat animated={animated} />
+        {/* Sin City muscular rat */}
+        <SinCityRat animated={animated} />
       </svg>
     </Wrapper>
   );
