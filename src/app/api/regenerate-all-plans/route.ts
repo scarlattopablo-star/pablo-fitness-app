@@ -142,13 +142,15 @@ export async function POST(request: NextRequest) {
 
         if (existingNP) {
           await supabase.from("nutrition_plans").update({
-            data: { meals: nutrition, macros: { calories: target_calories, protein, carbs, fats }, admin_updated_at: new Date().toISOString() },
+            data: { meals: nutrition.meals, macros: { calories: target_calories, protein, carbs, fats }, admin_updated_at: new Date().toISOString() },
+            important_notes: nutrition.importantNotes || [],
             plan_approved: true,
           }).eq("id", existingNP.id);
         } else {
           await supabase.from("nutrition_plans").insert({
             user_id: userId,
-            data: { meals: nutrition, macros: { calories: target_calories, protein, carbs, fats }, admin_updated_at: new Date().toISOString() },
+            data: { meals: nutrition.meals, macros: { calories: target_calories, protein, carbs, fats }, admin_updated_at: new Date().toISOString() },
+            important_notes: nutrition.importantNotes || [],
             plan_approved: true,
           });
         }
