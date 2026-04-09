@@ -254,7 +254,6 @@ const GYM_EXERCISES: Record<string, { compound: { id: string; name: string }[]; 
     isolation: [
       { id: "plancha", name: "Plancha" },
       { id: "crunch-polea", name: "Crunch en Polea" },
-      { id: "mountain-climbers", name: "Mountain Climbers" },
       { id: "plancha-lateral", name: "Plancha Lateral" },
       { id: "russian-twist", name: "Russian Twist" },
       { id: "crunch-bicicleta", name: "Crunch Bicicleta" },
@@ -445,7 +444,6 @@ function buildEmphasisDay(dayName: string, group: string, variant: "fuerza" | "v
 const GYM_CARDIO = [
   { id: "hiit-cinta", name: "HIIT en Cinta" },
   { id: "saltar-cuerda", name: "Saltar la Cuerda" },
-  { id: "burpees", name: "Burpees" },
 ];
 const HOME_CARDIO = [
   { id: "hiit-casa", name: "HIIT en Casa" },
@@ -483,15 +481,14 @@ interface VolumeConfig {
 }
 
 function getVolumeConfig(activityLevel: string, sex: string = "hombre"): VolumeConfig {
-  // Target: max 8-9 exercises per session (excluding cardio finisher)
-  // Large muscle: 5 exercises (men active/muy-activo: 6)
-  // Small muscle: 3 exercises (muy-activo: 4)
-  const isAdvancedMale = sex === "hombre" && (activityLevel === "activo" || activityLevel === "muy-activo");
+  // Large muscles (piernas, gluteos, espalda, pecho, hombros): 4-5 exercises
+  // Small muscles (biceps, triceps, abdomen): 3-4 exercises
+  const isAdvanced = activityLevel === "activo" || activityLevel === "muy-activo";
   return {
-    compoundMain: isAdvancedMale ? 4 : 3,   // 4+2=6 or 3+2=5 for large muscle
-    isolationMain: 2,
-    compoundSmall: 2,                         // 2+1=3 for small muscle
-    isolationSmall: 1,                        // keep small muscle at 3 total
+    compoundMain: 3,                          // 3+1=4 or 3+2=5 for large muscle
+    isolationMain: isAdvanced ? 2 : 1,        // advanced: 5 total, others: 4 total
+    compoundSmall: 2,                         // 2+1=3 or 2+2=4 for small muscle
+    isolationSmall: isAdvanced ? 2 : 1,       // advanced: 4 total, others: 3 total
   };
 }
 
@@ -539,7 +536,7 @@ export function generateTrainingPlan(
     if (!hasEmphasis) {
       plan = generateBalancedPlan(days, p, vol);
     } else {
-      plan = generateEmphasisPlan(days, p, primaryGroup, emphasisGroups, vol);
+      plan = generateEmphasisPlan(days, p, primaryGroup, emphasisGroups, vol, sex);
     }
   }
 
@@ -928,21 +925,25 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
 // ============================================================
 // EMPHASIS plan (randomized)
 // ============================================================
-function generateEmphasisPlan(days: number, p: TrainingParams, primary: string, allGroups: string[], vol: VolumeConfig = { compoundMain: 2, isolationMain: 2, compoundSmall: 1, isolationSmall: 2 }): TrainingDay[] {
+function generateEmphasisPlan(days: number, p: TrainingParams, primary: string, allGroups: string[], vol: VolumeConfig = { compoundMain: 2, isolationMain: 2, compoundSmall: 1, isolationSmall: 2 }, sex: string = "hombre"): TrainingDay[] {
   const emphasisDay1 = buildEmphasisDay("Dia 1", primary, "fuerza", p);
   const emphasisDay2 = buildEmphasisDay(`Dia ${Math.min(days, 4)}`, primary, "volumen", p);
 
   const pool = GYM_EXERCISES;
   const { compoundMain: cM, isolationMain: iM, compoundSmall: cS, isolationSmall: iS } = vol;
+  // For women with leg emphasis: reduce upper body volume (2 compound + 1 isolation = 3 exercises for chest/shoulders)
+  const isWomanLegFocus = sex === "mujer" && (primary === "piernas" || allGroups.includes("piernas"));
+  const upperCM = isWomanLegFocus ? 2 : cM;
+  const upperIM = isWomanLegFocus ? 1 : iM;
   const otherDays: TrainingDay[] = [];
 
   if (primary !== "pecho" && primary !== "espalda") {
     otherDays.push({ day: "Dia 2 - Pecho y Triceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.pecho, cM, iM, p),
+      ...pickExercises(pool.pecho, upperCM, upperIM, p),
       ...pickExercises(pool.triceps, cS, iS, p),
     ]});
     otherDays.push({ day: "Dia 3 - Espalda y Biceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.espalda, cM, iM, p),
+      ...pickExercises(pool.espalda, upperCM, upperIM, p),
       ...pickExercises(pool.biceps, cS, iS, p),
     ]});
   }
@@ -975,11 +976,11 @@ function generateEmphasisPlan(days: number, p: TrainingParams, primary: string, 
     }
   } else {
     otherDays.push({ day: "Dia 2 - Pecho y Triceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.pecho, cM, iM, p),
+      ...pickExercises(pool.pecho, upperCM, upperIM, p),
       ...pickExercises(pool.triceps, cS, iS, p),
     ]});
     otherDays.push({ day: "Dia 3 - Espalda y Biceps", instructions: p.instructions, exercises: [
-      ...pickExercises(pool.espalda, cM, iM, p),
+      ...pickExercises(pool.espalda, upperCM, upperIM, p),
       ...pickExercises(pool.biceps, cS, iS, p),
     ]});
   }
@@ -989,7 +990,6 @@ function generateEmphasisPlan(days: number, p: TrainingParams, primary: string, 
   const cardioOptions = [
     { id: "hiit-cinta", name: "HIIT en Cinta" },
     { id: "saltar-cuerda", name: "Saltar la Cuerda" },
-    { id: "burpees", name: "Burpees" },
   ];
 
   if (days >= 5) {
