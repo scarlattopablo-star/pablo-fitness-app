@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Eye, Loader2, AlertTriangle } from "lucide-react";
+import { Users, Eye, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -124,6 +124,35 @@ export default function AdminDashboard() {
           <p className="text-2xl font-black">{visits.total}</p>
           <p className="text-xs text-muted">Visitas totales</p>
         </div>
+      </div>
+
+      {/* Regenerate all plans button */}
+      <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-sm">Regenerar Todos los Planes</h3>
+          <p className="text-xs text-muted">Actualiza entrenamiento y nutricion de todos los clientes con la logica mas reciente</p>
+        </div>
+        <button
+          onClick={async () => {
+            if (!confirm("Esto regenerara los planes de TODOS los clientes. Continuar?")) return;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return alert("No hay sesion activa");
+            const res = await fetch("/api/regenerate-all-plans", {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+            });
+            const data = await res.json();
+            if (data.success) {
+              alert(`Planes regenerados: ${data.updated} clientes actualizados${data.errors?.length ? `. Errores: ${data.errors.length}` : ""}`);
+            } else {
+              alert("Error: " + (data.error || "desconocido"));
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-black hover:opacity-90 transition-opacity flex-shrink-0"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Regenerar
+        </button>
       </div>
 
       <div className="glass-card rounded-2xl p-6">
