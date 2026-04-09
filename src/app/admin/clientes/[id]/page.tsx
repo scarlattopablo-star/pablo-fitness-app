@@ -7,7 +7,7 @@ import {
   Calendar, Target, Scale, Mail, Phone, Edit,
   Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
   ChevronDown, ChevronUp, Ruler, Image, Save, Plus, X, Check,
-  ArrowRightLeft, AtSign,
+  ArrowRightLeft, AtSign, RefreshCw,
 } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
@@ -268,6 +268,24 @@ export default function ClienteDetailPage({
               className="text-xs text-blue-400 hover:underline flex items-center gap-1"><AtSign className="h-3 w-3" /> Editar Email</button>
             <button onClick={() => { setShowTransferModal(true); setTransferEmail(""); setTransferMsg(""); setTransferConfirmed(false); }}
               className="text-xs text-yellow-400 hover:underline flex items-center gap-1"><ArrowRightLeft className="h-3 w-3" /> Transferir Plan</button>
+            <button onClick={async () => {
+              if (!confirm("Regenerar el plan de este cliente con la logica mas reciente?")) return;
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) return alert("No hay sesion");
+              const res = await fetch("/api/regenerate-all-plans", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ userIds: [id] }),
+              });
+              const data = await res.json();
+              if (data.success && data.updated > 0) {
+                alert("Plan regenerado exitosamente");
+                window.location.reload();
+              } else {
+                alert("Error: " + (data.error || `${data.updated} actualizados. ${data.errors?.join(", ") || ""}`));
+              }
+            }}
+              className="text-xs text-emerald-400 hover:underline flex items-center gap-1"><RefreshCw className="h-3 w-3" /> Regenerar Plan</button>
           </div>
 
           {/* Email change modal */}
