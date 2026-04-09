@@ -556,18 +556,11 @@ export function generateTrainingPlan(
     };
   });
 
-  // Order: compound (base) exercises first, then isolation — always start heavy
-  const allCompoundIds = new Set<string>();
-  const pools = isHome ? HOME_EXERCISES : GYM_EXERCISES;
-  for (const group of Object.values(pools)) {
-    for (const e of group.compound) allCompoundIds.add(e.id);
-  }
-  plan = plan.map(day => {
-    const compounds = day.exercises.filter(e => allCompoundIds.has(e.id) && !CARDIO_IDS_SET.has(e.id));
-    const isolations = day.exercises.filter(e => !allCompoundIds.has(e.id) && !CARDIO_IDS_SET.has(e.id));
-    const cardio = day.exercises.filter(e => CARDIO_IDS_SET.has(e.id));
-    return { ...day, exercises: [...compounds, ...isolations, ...cardio] };
-  });
+  // Order is already correct from pickExercises:
+  // 1. Large muscle (compounds then isolations)
+  // 2. Small muscle (compounds then isolations)
+  // 3. Cardio at the end
+  // No reordering needed — muscles stay grouped together
 
   // Enforce exactly 8 exercises per session (excluding cardio finisher)
   const exercisePool = isHome ? HOME_EXERCISES : GYM_EXERCISES;
