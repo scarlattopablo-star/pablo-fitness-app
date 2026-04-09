@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function DELETE(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -92,6 +93,13 @@ export async function DELETE(request: NextRequest) {
   if (deleteAuthError) {
     return NextResponse.json({ error: deleteAuthError.message }, { status: 500 });
   }
+
+  await logAdminAction({
+    admin_id: user.id,
+    action: "permanent_delete_client",
+    target_id: clientId,
+    details: "Permanently deleted client and all related data",
+  });
 
   return NextResponse.json({ ok: true });
 }

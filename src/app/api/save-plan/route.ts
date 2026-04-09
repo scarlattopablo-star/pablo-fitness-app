@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,23 +19,21 @@ export async function POST(request: NextRequest) {
 
     // Verify caller is admin via auth token
     const authHeader = request.headers.get("authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.slice(7);
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (!user) {
-        return NextResponse.json({ error: "No autenticado" }, { status: 401 });
-      }
-      // Check admin
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .single();
-      if (!profile?.is_admin) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-      }
-    } else {
+    if (!authHeader?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+    const token = authHeader.slice(7);
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (!user) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+    if (!profile?.is_admin) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
     if (type === "training") {
@@ -115,6 +114,13 @@ export async function POST(request: NextRequest) {
     } else {
       return NextResponse.json({ error: "Tipo invalido" }, { status: 400 });
     }
+
+    await logAdminAction({
+      admin_id: user.id,
+      action: "save_plan",
+      target_id: clientId,
+      details: `Saved ${type} plan`,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

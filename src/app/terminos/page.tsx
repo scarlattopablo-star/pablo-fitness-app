@@ -136,7 +136,21 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">11. Contacto</h2>
+            <h2 className="text-white font-bold text-lg mb-3">11. Uso de la Aplicacion Movil</h2>
+            <p>La aplicacion movil de Pablo Scarlatto Entrenamientos funciona como un cliente que accede al servicio web principal. Su uso esta sujeto a las siguientes condiciones:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>La aplicacion requiere conexion a internet para funcionar correctamente</li>
+              <li>Las notificaciones push son opcionales y pueden activarse o desactivarse en cualquier momento desde la configuracion del dispositivo</li>
+              <li>La aplicacion puede actualizarse sin previo aviso para mejorar la experiencia del usuario, corregir errores o incorporar nuevas funcionalidades</li>
+              <li>Se utiliza almacenamiento local (localStorage) unicamente para guardar preferencias del usuario y mejorar la experiencia de uso</li>
+              <li>La aplicacion no accede a datos del dispositivo (camara, contactos, ubicacion, etc.) sin el consentimiento expreso del usuario</li>
+              <li>La aplicacion esta disponible para dispositivos iOS y Android</li>
+              <li>El uso de la aplicacion esta sujeto a los terminos adicionales de Apple App Store y Google Play Store segun corresponda</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-white font-bold text-lg mb-3">12. Contacto</h2>
             <p>Para consultas sobre estos términos: <a href="https://instagram.com/pabloscarlattoentrenamientos" className="text-primary">@pabloscarlattoentrenamientos</a></p>
           </section>
         </div>

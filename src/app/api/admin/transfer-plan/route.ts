@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,6 +55,13 @@ export async function POST(request: NextRequest) {
     await supabase.from("surveys")
       .update({ user_id: toUserId })
       .eq("user_id", fromUserId);
+
+    await logAdminAction({
+      admin_id: user!.id,
+      action: "transfer_plan",
+      target_id: fromUserId,
+      details: `Transferred plan from ${fromUserId} to ${toEmail} (${toUserId})`,
+    });
 
     return NextResponse.json({
       success: true,

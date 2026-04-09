@@ -13,6 +13,8 @@ export default function RegistroGratisPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,13 +180,48 @@ export default function RegistroGratisPage() {
             </div>
           </div>
 
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-card-border accent-emerald-500"
+            />
+            <span className="text-xs text-muted">
+              Acepto los{" "}
+              <a href="/terminos" target="_blank" className="text-emerald-400 underline hover:opacity-80">
+                Términos y Condiciones
+              </a>{" "}
+              y la{" "}
+              <a href="/privacidad" target="_blank" className="text-emerald-400 underline hover:opacity-80">
+                Política de Privacidad
+              </a>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedPrivacy}
+              onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-card-border accent-emerald-500"
+            />
+            <span className="text-xs text-muted">
+              Acepto que mis datos personales sean tratados conforme a la{" "}
+              <a href="/privacidad" target="_blank" className="text-emerald-400 underline hover:opacity-80">
+                Política de Privacidad
+              </a>{" "}
+              para la prestación del servicio de entrenamiento personalizado.
+            </span>
+          </label>
+
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !acceptedTerms || !acceptedPrivacy}
             className="w-full h-12 rounded-2xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creando cuenta..." : "Empezar Prueba Gratis"}

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -23,12 +24,26 @@ const NAV_ITEMS = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const { signOut } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [verified, setVerified] = useState<boolean | null>(null);
+
+  // Check 2FA verification
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const lastVerified = localStorage.getItem("admin-2fa-verified");
+    const isVerified = lastVerified && (Date.now() - Number(lastVerified)) < 24 * 60 * 60 * 1000;
+    if (!isVerified && pathname !== "/admin/verify") {
+      router.push("/admin/verify");
+    } else {
+      setVerified(true);
+    }
+  }, [pathname, router]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -50,6 +65,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setShowIOSGuide(!showIOSGuide);
     }
   };
+
+  // Show nothing while checking 2FA or redirecting to verify page
+  if (pathname !== "/admin/verify" && !verified) {
+    return null;
+  }
+
+  // If on verify page, render children directly without the admin layout
+  if (pathname === "/admin/verify") {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen flex">

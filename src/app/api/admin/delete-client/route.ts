@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function DELETE(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -53,6 +54,13 @@ export async function DELETE(request: NextRequest) {
   if (banError) {
     return NextResponse.json({ error: banError.message }, { status: 500 });
   }
+
+  await logAdminAction({
+    admin_id: user.id,
+    action: "delete_client",
+    target_id: clientId,
+    details: "Soft-deleted client and banned access",
+  });
 
   return NextResponse.json({ ok: true });
 }

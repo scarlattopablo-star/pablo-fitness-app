@@ -25,6 +25,7 @@ function RegistroForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
 
   const searchParams = useSearchParams();
   const planSlug = searchParams.get("plan") || "";
@@ -244,9 +245,25 @@ function RegistroForm() {
             </span>
           </label>
 
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedPrivacy}
+              onChange={(e) => setAcceptedPrivacy(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-card-border accent-primary"
+            />
+            <span className="text-xs text-muted">
+              Acepto que mis datos personales sean tratados conforme a la{" "}
+              <a href="/privacidad" target="_blank" className="text-primary underline hover:opacity-80">
+                Política de Privacidad
+              </a>{" "}
+              para la prestación del servicio de entrenamiento personalizado.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading || !acceptedTerms}
+            disabled={loading || !acceptedTerms || !acceptedPrivacy}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "Procesando..." : plan ? `Crear Cuenta y Pagar $${formatPrice(price)}` : "Crear Cuenta"}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAdminAction } from "@/lib/audit-log";
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -27,6 +28,13 @@ export async function PATCH(request: NextRequest) {
 
     // Update email in profiles
     await supabase.from("profiles").update({ email: newEmail }).eq("id", userId);
+
+    await logAdminAction({
+      admin_id: user!.id,
+      action: "update_email",
+      target_id: userId,
+      details: `Updated email to ${newEmail}`,
+    });
 
     return NextResponse.json({ success: true });
   } catch {
