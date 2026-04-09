@@ -578,13 +578,13 @@ export function generateTrainingPlan(
     };
   });
 
-  // Cap exercises per session at 9 (excluding cardio finisher) → total max 10 with cardio
-  // Minimum 8 exercises per session (excluding cardio)
+  // Cap exercises per session: women max 9, men max 10 (excluding cardio finisher)
+  const maxExercises = sex === "mujer" ? 9 : 10;
   plan = plan.map(day => {
     const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
     const cardio = day.exercises.filter(e => CARDIO_IDS_SET.has(e.id));
-    if (nonCardio.length > 9) {
-      return { ...day, exercises: [...nonCardio.slice(0, 9), ...cardio] };
+    if (nonCardio.length > maxExercises) {
+      return { ...day, exercises: [...nonCardio.slice(0, maxExercises), ...cardio] };
     }
     return day;
   });
