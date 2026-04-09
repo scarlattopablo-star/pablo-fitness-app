@@ -540,28 +540,8 @@ export function generateTrainingPlan(
     }
   }
 
-  // For women: reduce upper body volume unless emphasis is on upper body
-  if (sex === "mujer" && !["pecho", "espalda", "tren-superior"].includes(effectiveEmphasis)) {
-    const pool = isHome ? HOME_EXERCISES : GYM_EXERCISES;
-    const chestIds = new Set([...pool.pecho.compound, ...pool.pecho.isolation].map(e => e.id));
-    const shoulderIds = new Set([...pool.hombros.compound, ...pool.hombros.isolation].map(e => e.id));
-    plan = plan.map(day => {
-      // Max 2 chest exercises per session for women
-      const chestExercises = day.exercises.filter(e => chestIds.has(e.id));
-      let exercises = day.exercises;
-      if (chestExercises.length > 2) {
-        const keep = new Set(chestExercises.slice(0, 2).map(e => e.id));
-        exercises = exercises.filter(e => !chestIds.has(e.id) || keep.has(e.id));
-      }
-      // Max 2 shoulder exercises per session for women
-      const shoulderExercises = exercises.filter(e => shoulderIds.has(e.id));
-      if (shoulderExercises.length > 2) {
-        const keep = new Set(shoulderExercises.slice(0, 2).map(e => e.id));
-        exercises = exercises.filter(e => !shoulderIds.has(e.id) || keep.has(e.id));
-      }
-      return { ...day, exercises };
-    });
-  }
+  // Women upper body reduction is now handled by the plan structure itself
+  // (women get 1 large + 2 small muscles per session, with piernas as primary focus)
 
   // Remove duplicate exercises within each session
   plan = plan.map(day => {
@@ -576,12 +556,23 @@ export function generateTrainingPlan(
     };
   });
 
-  // Exactly 8 exercises per session (excluding cardio finisher) + cardio = 9 total
+  // Enforce exactly 8 exercises per session (excluding cardio finisher)
+  const exercisePool = isHome ? HOME_EXERCISES : GYM_EXERCISES;
   plan = plan.map(day => {
     const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
     const cardio = day.exercises.filter(e => CARDIO_IDS_SET.has(e.id));
     if (nonCardio.length > 8) {
       return { ...day, exercises: [...nonCardio.slice(0, 8), ...cardio] };
+    }
+    // If less than 8, fill with abdomen exercises to reach 8
+    if (nonCardio.length < 8) {
+      const needed = 8 - nonCardio.length;
+      const usedIds = new Set(nonCardio.map(e => e.id));
+      const abPool = [...exercisePool.abdomen.compound, ...exercisePool.abdomen.isolation]
+        .filter(e => !usedIds.has(e.id));
+      const extras = pickRandom(abPool, Math.min(needed, abPool.length))
+        .map(e => ex(e.id, e.name, p, false));
+      return { ...day, exercises: [...nonCardio, ...extras, ...cardio] };
     }
     return day;
   });
