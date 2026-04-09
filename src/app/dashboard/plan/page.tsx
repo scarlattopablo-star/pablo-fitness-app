@@ -827,13 +827,14 @@ function PlanContent() {
             const dCarbs = tCarbs > 0 ? tCarbs : macros.carbs;
             const dFats = tFats > 0 ? tFats : macros.fats;
 
-            // Determine goal label comparing meal plan calories vs survey target
+            // Determine goal label comparing plan calories vs TDEE (maintenance)
             let gLabel = ""; let gIcon = ""; let gColor = "";
-            if (macros.calories > 0 && dCals > 0) {
-              const diff = dCals - macros.calories;
-              if (diff < -50) {
+            const compareBase = tdee > 0 ? tdee : macros.calories;
+            if (compareBase > 0 && dCals > 0) {
+              const diff = dCals - compareBase;
+              if (diff < -100) {
                 gLabel = "Deficit calorico"; gIcon = "🔥"; gColor = "text-orange-400";
-              } else if (diff > 50) {
+              } else if (diff > 100) {
                 gLabel = "Superavit calorico"; gIcon = "💪"; gColor = "text-blue-400";
               } else {
                 gLabel = "Mantenimiento"; gIcon = "⚖️"; gColor = "text-emerald-400";
