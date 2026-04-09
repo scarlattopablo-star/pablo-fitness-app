@@ -510,14 +510,17 @@ export function generateTrainingPlan(
     ? "tren-inferior"
     : emphasis;
 
-  // Filter hip-thrust for men (only available for women)
+  // Filter exercises by sex
   if (sex === "hombre") {
+    // Hip-thrust only for women
     GYM_EXERCISES.piernas.compound = GYM_EXERCISES.piernas.compound.filter(e => e.id !== "hip-thrust");
   } else {
     // Ensure hip-thrust is in the pool for women
     if (!GYM_EXERCISES.piernas.compound.some(e => e.id === "hip-thrust")) {
       GYM_EXERCISES.piernas.compound.push({ id: "hip-thrust", name: "Hip Thrust" });
     }
+    // No dominadas for women
+    GYM_EXERCISES.espalda.compound = GYM_EXERCISES.espalda.compound.filter(e => e.id !== "dominadas");
   }
 
   let plan: TrainingDay[];
