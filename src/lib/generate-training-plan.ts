@@ -482,13 +482,15 @@ interface VolumeConfig {
 
 function getVolumeConfig(activityLevel: string, sex: string = "hombre"): VolumeConfig {
   // Large muscles (piernas, gluteos, espalda, pecho, hombros): 4-5 exercises
+  // Large muscles (piernas, espalda, pecho, hombros): 5 exercises (advanced men: 6)
   // Small muscles (biceps, triceps, abdomen): 3-4 exercises
-  const isAdvanced = activityLevel === "activo" || activityLevel === "muy-activo";
+  // Minimum 8 exercises per session (5 large + 3 small = 8, or 5+4=9)
+  const isAdvancedMale = sex === "hombre" && (activityLevel === "activo" || activityLevel === "muy-activo");
   return {
-    compoundMain: 3,                          // 3+1=4 or 3+2=5 for large muscle
-    isolationMain: isAdvanced ? 2 : 1,        // advanced: 5 total, others: 4 total
-    compoundSmall: 2,                         // 2+1=3 or 2+2=4 for small muscle
-    isolationSmall: isAdvanced ? 2 : 1,       // advanced: 4 total, others: 3 total
+    compoundMain: isAdvancedMale ? 4 : 3,     // 4+2=6 (advanced men) or 3+2=5 for large muscle
+    isolationMain: 2,                          // always 2 isolation for large
+    compoundSmall: 2,                          // 2+1=3 or 2+2=4 for small muscle
+    isolationSmall: isAdvancedMale ? 2 : 1,   // advanced men: 4 small, others: 3 small
   };
 }
 
@@ -576,12 +578,13 @@ export function generateTrainingPlan(
     };
   });
 
-  // Cap exercises per session at 8 (excluding cardio finisher) → total max 9 with cardio
+  // Cap exercises per session at 9 (excluding cardio finisher) → total max 10 with cardio
+  // Minimum 8 exercises per session (excluding cardio)
   plan = plan.map(day => {
     const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
     const cardio = day.exercises.filter(e => CARDIO_IDS_SET.has(e.id));
-    if (nonCardio.length > 8) {
-      return { ...day, exercises: [...nonCardio.slice(0, 8), ...cardio] };
+    if (nonCardio.length > 9) {
+      return { ...day, exercises: [...nonCardio.slice(0, 9), ...cardio] };
     }
     return day;
   });
