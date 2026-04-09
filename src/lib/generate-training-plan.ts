@@ -483,14 +483,15 @@ interface VolumeConfig {
 }
 
 function getVolumeConfig(activityLevel: string, sex: string = "hombre"): VolumeConfig {
-  // Standard: 5 exercises for large muscle, 3-4 for small muscle (frequency 2)
-  // Men (active/very-active): 6 for large muscle
+  // Target: max 8-9 exercises per session (excluding cardio finisher)
+  // Large muscle: 5 exercises (men active/muy-activo: 6)
+  // Small muscle: 3 exercises (muy-activo: 4)
   const isAdvancedMale = sex === "hombre" && (activityLevel === "activo" || activityLevel === "muy-activo");
   return {
-    compoundMain: isAdvancedMale ? 4 : 3,   // 4+2=6 (advanced men) or 3+2=5 (everyone else) for large
+    compoundMain: isAdvancedMale ? 4 : 3,   // 4+2=6 or 3+2=5 for large muscle
     isolationMain: 2,
-    compoundSmall: 2,                         // 2+1=3 or 2+2=4 for small
-    isolationSmall: activityLevel === "muy-activo" ? 2 : 1,
+    compoundSmall: 2,                         // 2+1=3 for small muscle
+    isolationSmall: 1,                        // keep small muscle at 3 total
   };
 }
 
@@ -542,17 +543,26 @@ export function generateTrainingPlan(
     }
   }
 
-  // For women: reduce chest volume (max 2 chest exercises per session)
-  if (sex === "mujer") {
+  // For women: reduce upper body volume unless emphasis is on upper body
+  if (sex === "mujer" && !["pecho", "espalda", "tren-superior"].includes(effectiveEmphasis)) {
     const pool = isHome ? HOME_EXERCISES : GYM_EXERCISES;
     const chestIds = new Set([...pool.pecho.compound, ...pool.pecho.isolation].map(e => e.id));
+    const shoulderIds = new Set([...pool.hombros.compound, ...pool.hombros.isolation].map(e => e.id));
     plan = plan.map(day => {
+      // Max 2 chest exercises per session for women
       const chestExercises = day.exercises.filter(e => chestIds.has(e.id));
+      let exercises = day.exercises;
       if (chestExercises.length > 2) {
         const keep = new Set(chestExercises.slice(0, 2).map(e => e.id));
-        return { ...day, exercises: day.exercises.filter(e => !chestIds.has(e.id) || keep.has(e.id)) };
+        exercises = exercises.filter(e => !chestIds.has(e.id) || keep.has(e.id));
       }
-      return day;
+      // Max 2 shoulder exercises per session for women
+      const shoulderExercises = exercises.filter(e => shoulderIds.has(e.id));
+      if (shoulderExercises.length > 2) {
+        const keep = new Set(shoulderExercises.slice(0, 2).map(e => e.id));
+        exercises = exercises.filter(e => !shoulderIds.has(e.id) || keep.has(e.id));
+      }
+      return { ...day, exercises };
     });
   }
 
@@ -569,12 +579,12 @@ export function generateTrainingPlan(
     };
   });
 
-  // Cap exercises per session at 9 (excluding cardio)
+  // Cap exercises per session at 8 (excluding cardio finisher) → total max 9 with cardio
   plan = plan.map(day => {
     const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
     const cardio = day.exercises.filter(e => CARDIO_IDS_SET.has(e.id));
-    if (nonCardio.length > 9) {
-      return { ...day, exercises: [...nonCardio.slice(0, 9), ...cardio] };
+    if (nonCardio.length > 8) {
+      return { ...day, exercises: [...nonCardio.slice(0, 8), ...cardio] };
     }
     return day;
   });
