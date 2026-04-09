@@ -77,7 +77,9 @@ export async function POST(request: NextRequest) {
       fats,
       wakeHour,
       sleepHour,
-      dietaryRestrictions
+      dietaryRestrictions,
+      objective,
+      nutritionalGoal || ""
     );
 
     // Direct clients require admin approval before client sees the plan

@@ -116,7 +116,8 @@ export async function POST(request: NextRequest) {
         );
         const nutrition = generateMealPlan(
           target_calories, protein, carbs, fats,
-          wakeHour, sleepHour, dietaryRestrictions
+          wakeHour, sleepHour, dietaryRestrictions,
+          objective, String(nutritionalGoal || "")
         );
 
         // Update or insert training plan

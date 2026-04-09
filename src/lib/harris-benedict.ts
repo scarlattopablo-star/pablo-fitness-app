@@ -8,22 +8,22 @@ const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
 };
 
 const OBJECTIVE_ADJUSTMENTS: Record<string, number> = {
-  'quema-grasa': -0.20,
+  'quema-grasa': -0.25,
   'ganancia-muscular': 0.15,
-  'tonificacion': -0.10,
+  'tonificacion': -0.15,
   'principiante-total': 0,
   'rendimiento-deportivo': 0.10,
-  'post-parto': -0.10,
+  'post-parto': -0.15,
   'fuerza-funcional': 0.05,
-  'recomposicion-corporal': -0.10,
+  'recomposicion-corporal': -0.15,
   'plan-pareja': 0,
-  'competicion': -0.15,
+  'competicion': -0.20,
   'direct-client': 0,
   'entrenamiento-casa': 0,
 };
 
 const NUTRITIONAL_GOAL_ADJUSTMENTS: Record<NutritionalGoal, number> = {
-  'perder-grasa': -0.20,
+  'perder-grasa': -0.25,
   'ganar-musculo': 0.15,
   'mantenimiento': 0,
 };

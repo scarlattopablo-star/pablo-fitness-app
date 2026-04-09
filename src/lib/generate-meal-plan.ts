@@ -206,7 +206,9 @@ export function generateMealPlan(
   fats: number,
   wakeHour: number = 7,
   sleepHour: number = 23,
-  dietaryRestrictions: string[] = []
+  dietaryRestrictions: string[] = [],
+  objective: string = "",
+  nutritionalGoal: string = ""
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
   const flags = parseRestrictions(dietaryRestrictions);
   const awakeHours = (sleepHour > wakeHour ? sleepHour : sleepHour + 24) - wakeHour;
@@ -400,7 +402,19 @@ export function generateMealPlan(
   });
 
   // Build restriction-specific notes
+  // Determine caloric strategy
+  const deficitObjectives = ["quema-grasa", "tonificacion", "recomposicion-corporal", "post-parto", "competicion"];
+  const surplusObjectives = ["ganancia-muscular", "fuerza-funcional", "rendimiento-deportivo"];
+  const isDeficit = nutritionalGoal === "perder-grasa" || deficitObjectives.includes(objective);
+  const isSurplus = nutritionalGoal === "ganar-musculo" || surplusObjectives.includes(objective);
+  const strategyLabel = isDeficit
+    ? "DEFICIT CALORICO — Estas comiendo por debajo de tu mantenimiento para perder grasa"
+    : isSurplus
+    ? "SUPERAVIT CALORICO — Estas comiendo por encima de tu mantenimiento para ganar musculo"
+    : "MANTENIMIENTO — Estas comiendo acorde a tu gasto calorico diario";
+
   const notes = [
+    strategyLabel,
     "COMER CADA 3 HORAS",
     `OBJETIVO DIARIO: ${targetCalories} kcal | ${protein}g proteina | ${carbs}g carbos | ${fats}g grasas`,
     "TOMAR 3 LITROS DE AGUA AL DIA",
