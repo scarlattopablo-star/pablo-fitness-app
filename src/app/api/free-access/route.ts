@@ -31,9 +31,11 @@ export async function GET(request: NextRequest) {
 // POST: Atomically claim a free access code (prevents race condition)
 export async function POST(request: NextRequest) {
   try {
-    const { code, userId } = await request.json();
-    if (!code || !userId) {
-      return NextResponse.json({ error: "code y userId requeridos" }, { status: 400 });
+    // Auth check: require valid Bearer token
+    const authHeader = request.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     const supabase = createClient(
@@ -41,6 +43,21 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: "Token invalido" }, { status: 401 });
+    }
+
+    const { code, userId } = await request.json();
+    if (!code || !userId) {
+      return NextResponse.json({ error: "code y userId requeridos" }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId
+    if (user.id !== userId) {
+      return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+    }
 
     // Atomic: only updates if used=false, returns data if successful
     const { data, error } = await supabase

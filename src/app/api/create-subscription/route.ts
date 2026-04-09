@@ -4,9 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 // POST: Create a subscription for a user (uses service role to bypass RLS)
 export async function POST(request: NextRequest) {
   try {
-    const { userId, duration, amountPaid, currency } = await request.json();
-    if (!userId || !duration) {
-      return NextResponse.json({ error: "userId y duration requeridos" }, { status: 400 });
+    // Auth check: require valid Bearer token
+    const authHeader = request.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     const supabase = createClient(
@@ -14,6 +16,27 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: "Token invalido" }, { status: 401 });
+    }
+
+    const { userId, duration, amountPaid, currency } = await request.json();
+    if (!userId || !duration) {
+      return NextResponse.json({ error: "userId y duration requeridos" }, { status: 400 });
+    }
+
+    // Verify the authenticated user matches the userId or is admin
+    const { data: authProfile } = await supabase
+      .from("profiles")
+      .select("id, role")
+      .eq("id", user.id)
+      .single();
+
+    if (user.id !== userId && authProfile?.role !== "admin") {
+      return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+    }
 
     // Verify the user exists
     const { data: profile } = await supabase

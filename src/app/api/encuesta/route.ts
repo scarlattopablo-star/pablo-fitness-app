@@ -1,6 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+function validateSurveyData(data: Record<string, unknown>): { valid: boolean; error?: string } {
+  if (data.age !== undefined) {
+    const age = Number(data.age);
+    if (isNaN(age) || age < 14 || age > 80) return { valid: false, error: "Edad debe ser entre 14 y 80" };
+  }
+  if (data.weight !== undefined) {
+    const weight = Number(data.weight);
+    if (isNaN(weight) || weight < 30 || weight > 250) return { valid: false, error: "Peso debe ser entre 30 y 250 kg" };
+  }
+  if (data.height !== undefined) {
+    const height = Number(data.height);
+    if (isNaN(height) || height < 100 || height > 230) return { valid: false, error: "Altura debe ser entre 100 y 230 cm" };
+  }
+  if (data.training_days !== undefined) {
+    const days = Number(data.training_days);
+    if (isNaN(days) || days < 2 || days > 7) return { valid: false, error: "Dias de entrenamiento debe ser entre 2 y 7" };
+  }
+  if (data.sex !== undefined && !["hombre", "mujer"].includes(String(data.sex))) {
+    return { valid: false, error: "Sexo debe ser hombre o mujer" };
+  }
+  if (data.activity_level !== undefined && !["sedentario", "moderado", "activo", "muy-activo"].includes(String(data.activity_level))) {
+    return { valid: false, error: "Nivel de actividad invalido" };
+  }
+  const allowedRestrictions = ["sin-gluten", "sin-lactosa", "vegano", "vegetariano", "sin-frutos-secos", "halal", "kosher", "sin-mariscos", "sin-huevo", "sin-soja"];
+  if (data.dietary_restrictions !== undefined && Array.isArray(data.dietary_restrictions)) {
+    for (const r of data.dietary_restrictions) {
+      if (!allowedRestrictions.includes(String(r))) return { valid: false, error: `Restriccion dietetica invalida: ${r}` };
+    }
+  }
+  // Sanitize text fields
+  if (data.full_name !== undefined) {
+    const name = String(data.full_name);
+    if (name.length > 100 || /<[^>]*>/g.test(name)) return { valid: false, error: "Nombre invalido" };
+  }
+  return { valid: true };
+}
+
 // POST: Save survey data (uses service role to bypass RLS)
 export async function POST(request: NextRequest) {
   try {
@@ -8,6 +45,12 @@ export async function POST(request: NextRequest) {
     const { userId, full_name, email, ...surveyData } = body;
     if (!userId) {
       return NextResponse.json({ error: "userId requerido" }, { status: 400 });
+    }
+
+    // Validate survey input
+    const validation = validateSurveyData(surveyData);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -136,6 +179,12 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
     const userId = user.id;
+
+    // Validate survey input
+    const validation = validateSurveyData(body);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
 
     // Find existing survey
     const { data: existing, error: findError } = await supabase

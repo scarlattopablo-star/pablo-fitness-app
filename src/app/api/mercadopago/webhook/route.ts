@@ -13,7 +13,11 @@ function log(level: "INFO" | "WARN" | "ERROR", message: string, data?: Record<st
 
 function verifySignature(request: NextRequest): boolean {
   if (!WEBHOOK_SECRET) {
-    log("WARN", "MP_WEBHOOK_SECRET not configured, skipping signature verification");
+    if (process.env.NODE_ENV === "production") {
+      log("ERROR", "MP_WEBHOOK_SECRET not configured in production, rejecting webhook");
+      return false;
+    }
+    log("WARN", "MP_WEBHOOK_SECRET not configured, skipping signature verification (dev only)");
     return true;
   }
   const xSignature = request.headers.get("x-signature") || "";
