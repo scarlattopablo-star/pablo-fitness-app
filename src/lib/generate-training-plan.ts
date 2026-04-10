@@ -879,33 +879,41 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
     ];
   }
 
+  // RULE: No muscle can be trained on consecutive days
+  // Large muscles (piernas, pecho, espalda): min 2 days rest
+  // Small muscles (biceps, triceps, hombros): min 1 day rest
+
   if (days === 4) {
     if (sex === "mujer") {
+      // D1:Piernas+Bic/Tric → D2:Pecho+Hombros/Tric → D3:Espalda+Bic/Hombros → D4:Piernas+Tric/Bic
+      // No muscle repeats on consecutive days ✓
       return [
         { day: "Dia 1 - Piernas + Biceps y Triceps", instructions: p.instructions, exercises: [
           ...pickExercises(pool.piernas, wCM, wIM, p),
           ...pickExercises(pool.biceps, wCS, wIS, p),
           ...pickExercises(pool.triceps, wCS, wIS, p),
         ]},
-        { day: "Dia 2 - Pecho + Hombros y Biceps", instructions: p.instructions, exercises: [
+        { day: "Dia 2 - Pecho + Hombros y Triceps", instructions: p.instructions, exercises: [
           ...pickExercises(pool.pecho, wCM, wIM, p),
           ...pickExercises(pool.hombros, wCS, wIS, p),
-          ...pickExercises(pool.biceps, wCS, wIS, p),
+          ...pickExercises(pool.triceps, wCS, wIS, p),
           ...abs2(),
         ]},
-        { day: "Dia 3 - Espalda + Biceps y Triceps", instructions: p.instructions, exercises: [
+        { day: "Dia 3 - Espalda + Biceps y Hombros", instructions: p.instructions, exercises: [
           ...pickExercises(pool.espalda, wCM, wIM, p),
           ...pickExercises(pool.biceps, wCS, wIS, p),
-          ...pickExercises(pool.triceps, wCS, wIS, p),
-        ]},
-        { day: "Dia 4 - Piernas + Hombros y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-          ...pickExercises(pool.piernas, wCM, wIM, p),
           ...pickExercises(pool.hombros, wCS, wIS, p),
+        ]},
+        { day: "Dia 4 - Piernas + Triceps y Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+          ...pickExercises(pool.piernas, wCM, wIM, p),
           ...pickExercises(pool.triceps, wCS, wIS, p),
+          ...pickExercises(pool.biceps, wCS, wIS, p),
           ...abs2(),
         ]},
       ];
     }
+    // Men 4 days: no muscle on consecutive days
+    // D1:Pecho+Biceps → D2:Espalda+Triceps → D3:Piernas+Hombros → D4:Pecho+Triceps
     return [
       { day: "Dia 1 - Pecho + Biceps", instructions: p.instructions, exercises: [
         ...pickExercises(pool.pecho, cM, iM, p),
@@ -920,8 +928,8 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
         ...pickExercises(pool.hombros, cS, iS, p),
         ...abs2(),
       ]},
-      { day: "Dia 4 - Hombros + Biceps", instructions: p.instructions, exercises: [
-        ...pickExercises(pool.hombros, cM, iM, p),
+      { day: "Dia 4 - Pecho + Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.pecho, cM, iM, p),
         ...pickExercises(pool.biceps, cS, iS, p),
         ...abs2(),
       ]},
@@ -930,6 +938,8 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
 
   if (days === 5) {
     if (sex === "mujer") {
+      // D1:Piernas+Bic/Tric → D2:Pecho+Hombros/Bic → D3:Espalda+Tric/Hombros → D4:Piernas+Bic/Tric → D5:Pecho+Hombros/Tric
+      // No consecutive muscle repeats ✓
       return [
         { day: "Dia 1 - Piernas + Biceps y Triceps", instructions: p.instructions, exercises: [
           ...pickExercises(pool.piernas, wCM, wIM, p),
@@ -941,25 +951,27 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
           ...pickExercises(pool.hombros, wCS, wIS, p),
           ...pickExercises(pool.biceps, wCS, wIS, p),
         ]},
-        { day: "Dia 3 - Espalda + Biceps y Triceps", instructions: p.instructions, exercises: [
+        { day: "Dia 3 - Espalda + Triceps y Hombros", instructions: p.instructions, exercises: [
           ...pickExercises(pool.espalda, wCM, wIM, p),
+          ...pickExercises(pool.triceps, wCS, wIS, p),
+          ...pickExercises(pool.hombros, wCS, wIS, p),
+          ...abs2(),
+        ]},
+        { day: "Dia 4 - Piernas + Biceps y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+          ...pickExercises(pool.piernas, wCM, wIM, p),
           ...pickExercises(pool.biceps, wCS, wIS, p),
           ...pickExercises(pool.triceps, wCS, wIS, p),
+          ...abs2(),
         ]},
-        { day: "Dia 4 - Piernas + Hombros y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-          ...pickExercises(pool.piernas, wCM, wIM, p),
+        { day: "Dia 5 - Pecho + Hombros y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+          ...pickExercises(pool.pecho, wCM, wIM, p),
           ...pickExercises(pool.hombros, wCS, wIS, p),
           ...pickExercises(pool.triceps, wCS, wIS, p),
-          ...abs2(),
-        ]},
-        { day: "Dia 5 - Piernas + Biceps y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-          ...pickExercises(pool.piernas, wCM, wIM, p),
-          ...pickExercises(pool.biceps, wCS, wIS, p),
-          ...pickExercises(pool.triceps, wCS, wIS, p),
-          ...abs2(),
         ]},
       ];
     }
+    // Men 5 days: D1:Pecho+Bic → D2:Espalda+Tric → D3:Piernas+Hombros → D4:Pecho+Bic → D5:Espalda+Tric
+    // No consecutive repeats ✓ (Pecho D1→D4=2days, Espalda D2→D5=2days, Bic D1→D4=2days)
     return [
       { day: "Dia 1 - Pecho + Biceps", instructions: p.instructions, exercises: [
         ...pickExercises(pool.pecho, cM, iM, p),
@@ -972,22 +984,23 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
       { day: "Dia 3 - Piernas + Hombros", instructions: p.instructions, exercises: [
         ...pickExercises(pool.piernas, cM, iM, p),
         ...pickExercises(pool.hombros, cS, iS, p),
-      ]},
-      { day: "Dia 4 - Hombros + Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-        ...pickExercises(pool.hombros, cM, iM, p),
-        ...pickExercises(pool.biceps, cS, iS, p),
         ...abs2(),
       ]},
-      { day: "Dia 5 - Piernas + Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-        ...pickExercises(pool.piernas, cM, iM, p),
+      { day: "Dia 4 - Pecho + Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.pecho, cM, iM, p),
+        ...pickExercises(pool.biceps, cS, iS, p),
+      ]},
+      { day: "Dia 5 - Espalda + Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.espalda, cM, iM, p),
         ...pickExercises(pool.triceps, cS, iS, p),
         ...abs2(),
       ]},
     ];
   }
 
-  // 6 days
+  // 6 days — no muscle on consecutive days
   if (sex === "mujer") {
+    // D1:Piernas+Bic/Tric → D2:Pecho+Hombros/Bic → D3:Espalda+Tric/Hombros → D4:Piernas+Bic/Tric → D5:Pecho+Hombros/Bic → D6:Espalda+Tric/Hombros
     return [
       { day: "Dia 1 - Piernas + Biceps y Triceps", instructions: p.instructions, exercises: [
         ...pickExercises(pool.piernas, wCM, wIM, p),
@@ -998,31 +1011,34 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
         ...pickExercises(pool.pecho, wCM, wIM, p),
         ...pickExercises(pool.hombros, wCS, wIS, p),
         ...pickExercises(pool.biceps, wCS, wIS, p),
+        ...abs2(),
       ]},
-      { day: "Dia 3 - Espalda + Biceps y Triceps", instructions: p.instructions, exercises: [
+      { day: "Dia 3 - Espalda + Triceps y Hombros", instructions: p.instructions, exercises: [
         ...pickExercises(pool.espalda, wCM, wIM, p),
-        ...pickExercises(pool.biceps, wCS, wIS, p),
         ...pickExercises(pool.triceps, wCS, wIS, p),
-      ]},
-      { day: "Dia 4 - Piernas + Hombros y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-        ...pickExercises(pool.piernas, wCM, wIM, p),
         ...pickExercises(pool.hombros, wCS, wIS, p),
+      ]},
+      { day: "Dia 4 - Piernas + Biceps y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.piernas, wCM, wIM, p),
+        ...pickExercises(pool.biceps, wCS, wIS, p),
         ...pickExercises(pool.triceps, wCS, wIS, p),
         ...abs2(),
       ]},
-      { day: "Dia 5 - Pecho + Biceps y Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      { day: "Dia 5 - Pecho + Hombros y Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
         ...pickExercises(pool.pecho, wCM, wIM, p),
-        ...pickExercises(pool.biceps, wCS, wIS, p),
-        ...pickExercises(pool.triceps, wCS, wIS, p),
-      ]},
-      { day: "Dia 6 - Piernas + Hombros y Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-        ...pickExercises(pool.piernas, wCM, wIM, p),
         ...pickExercises(pool.hombros, wCS, wIS, p),
         ...pickExercises(pool.biceps, wCS, wIS, p),
+      ]},
+      { day: "Dia 6 - Espalda + Triceps y Hombros", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+        ...pickExercises(pool.espalda, wCM, wIM, p),
+        ...pickExercises(pool.triceps, wCS, wIS, p),
+        ...pickExercises(pool.hombros, wCS, wIS, p),
         ...abs2(),
       ]},
     ];
   }
+  // Men 6 days: D1:Pecho+Bic → D2:Espalda+Tric → D3:Piernas+Hombros → D4:Pecho+Bic → D5:Espalda+Tric → D6:Piernas+Hombros
+  // No consecutive repeats ✓
   return [
     { day: "Dia 1 - Pecho + Biceps", instructions: p.instructions, exercises: [
       ...pickExercises(pool.pecho, cM, iM, p),
@@ -1035,19 +1051,19 @@ function generateBalancedPlan(days: number, p: TrainingParams, vol: VolumeConfig
     { day: "Dia 3 - Piernas + Hombros", instructions: p.instructions, exercises: [
       ...pickExercises(pool.piernas, cM, iM, p),
       ...pickExercises(pool.hombros, cS, iS, p),
-    ]},
-    { day: "Dia 4 - Hombros + Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
-      ...pickExercises(pool.hombros, cM, iM, p),
-      ...pickExercises(pool.biceps, cS, iS, p),
       ...abs2(),
     ]},
-    { day: "Dia 5 - Pecho + Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+    { day: "Dia 4 - Pecho + Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
       ...pickExercises(pool.pecho, cM, iM, p),
+      ...pickExercises(pool.biceps, cS, iS, p),
+    ]},
+    { day: "Dia 5 - Espalda + Triceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+      ...pickExercises(pool.espalda, cM, iM, p),
       ...pickExercises(pool.triceps, cS, iS, p),
     ]},
-    { day: "Dia 6 - Piernas + Biceps", instructions: "Frecuencia 2. " + p.instructions, exercises: [
+    { day: "Dia 6 - Piernas + Hombros", instructions: "Frecuencia 2. " + p.instructions, exercises: [
       ...pickExercises(pool.piernas, cM, iM, p),
-      ...pickExercises(pool.biceps, cS, iS, p),
+      ...pickExercises(pool.hombros, cS, iS, p),
       ...abs2(),
     ]},
   ];
