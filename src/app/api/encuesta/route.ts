@@ -24,10 +24,11 @@ function validateSurveyData(data: Record<string, unknown>): { valid: boolean; er
   if (data.activity_level !== undefined && !["sedentario", "moderado", "activo", "muy-activo"].includes(String(data.activity_level))) {
     return { valid: false, error: "Nivel de actividad invalido" };
   }
-  const allowedRestrictions = ["sin-gluten", "sin-lactosa", "vegano", "vegetariano", "sin-frutos-secos", "halal", "kosher", "sin-mariscos", "sin-huevo", "sin-soja"];
+  // Accept any dietary restriction string (users can select "Otra", "Ninguna", etc.)
   if (data.dietary_restrictions !== undefined && Array.isArray(data.dietary_restrictions)) {
     for (const r of data.dietary_restrictions) {
-      if (!allowedRestrictions.includes(String(r))) return { valid: false, error: `Restriccion dietetica invalida: ${r}` };
+      const str = String(r);
+      if (str.length > 100 || /<[^>]*>/g.test(str)) return { valid: false, error: "Restriccion dietetica invalida" };
     }
   }
   // Sanitize text fields
