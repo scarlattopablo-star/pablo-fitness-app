@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1080"/>
+<title>Nueva Rutina</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  body {
+    width: 1080px; height: 1920px; overflow: hidden;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #ffffff;
+  }
+  .story {
+    width: 1080px; height: 1920px; position: relative; overflow: hidden;
+  }
+  .logo {
+    position: absolute; top: 260px; left: 60px; height: 40px;
+    filter: invert(1); z-index: 10; opacity: 0.9;
+  }
+  .footer {
+    position: absolute; bottom: 220px; left: 0; right: 0;
+    text-align: center; font-size: 22px; color: rgba(255,255,255,0.35);
+    letter-spacing: 1px; z-index: 10;
+  }
+  .safe-content {
+    position: absolute; top: 320px; left: 60px; right: 60px; bottom: 260px;
+    display: flex; flex-direction: column; z-index: 5;
+  }
+
+  .story {
+    background: linear-gradient(180deg, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.85) 100%),
+      url('../images/pablo-gym2.jpg') center/cover no-repeat;
+  }
+  .accent-bar { width: 120px; height: 6px; background: #22c55e; border-radius: 3px; margin-bottom: 40px; }
+  .headline { font-size: 76px; font-weight: 900; line-height: 1.05; letter-spacing: -1px; margin-bottom: 30px; text-transform: uppercase; }
+  .subtitle { font-size: 34px; font-weight: 500; line-height: 1.4; color: rgba(255,255,255,0.85); margin-bottom: 60px; max-width: 800px; }
+  .cta { font-size: 28px; font-weight: 700; color: #22c55e; letter-spacing: 2px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<div class="story">
+<img class="logo" src="../logo-pablo.jpg" alt="Pablo Scarlatto" />
+
+  <div class="safe-content" style="justify-content: center;">
+    <div class="accent-bar"></div>
+    <div class="headline">NUEVA RUTINA<br/>DISPONIBLE</div>
+    <div class="subtitle">Entr&aacute; a la app y mir&aacute; tu plan actualizado</div>
+    <div class="cta">Link en bio &uarr;</div>
+  </div>
+
+<div class="footer">pabloscarlattoentrenamientos.com</div>
+</div>
+</body>
+</html>

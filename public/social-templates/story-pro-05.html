@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1080"/>
+<title>Que Entrenaste Hoy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  body {
+    width: 1080px; height: 1920px; overflow: hidden;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #ffffff;
+  }
+  .story {
+    width: 1080px; height: 1920px; position: relative; overflow: hidden;
+  }
+  .logo {
+    position: absolute; top: 260px; left: 60px; height: 40px;
+    filter: invert(1); z-index: 10; opacity: 0.9;
+  }
+  .footer {
+    position: absolute; bottom: 220px; left: 0; right: 0;
+    text-align: center; font-size: 22px; color: rgba(255,255,255,0.35);
+    letter-spacing: 1px; z-index: 10;
+  }
+  .safe-content {
+    position: absolute; top: 320px; left: 60px; right: 60px; bottom: 260px;
+    display: flex; flex-direction: column; z-index: 5;
+  }
+
+  .story {
+    background: radial-gradient(ellipse at 50% 30%, #1a1a2e 0%, #09090b 70%);
+  }
+  .headline { font-size: 64px; font-weight: 900; text-transform: uppercase; text-align: center; margin-bottom: 20px; line-height: 1.1; }
+  .hint { font-size: 28px; color: rgba(255,255,255,0.5); text-align: center; margin-bottom: 50px; }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .opt {
+    background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 16px; padding: 36px 20px; text-align: center;
+    font-size: 32px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    transition: all 0.2s;
+  }
+  .opt:hover { background: rgba(34,197,94,0.15); border-color: #22c55e; }
+  .tap-hint { font-size: 26px; color: #22c55e; text-align: center; margin-top: 40px; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="story">
+<img class="logo" src="../logo-pablo.jpg" alt="Pablo Scarlatto" />
+
+  <div class="safe-content" style="justify-content: center;">
+    <div class="headline">QU&Eacute; ENTRENASTE<br/>HOY?</div>
+    <div class="hint">Vot&aacute; y mir&aacute; los resultados</div>
+    <div class="options">
+      <div class="opt">PIERNAS</div>
+      <div class="opt">PECHO</div>
+      <div class="opt">ESPALDA</div>
+      <div class="opt">DESCANSO</div>
+    </div>
+    <div class="tap-hint">Toc&aacute; tu respuesta &darr;</div>
+  </div>
+
+<div class="footer">pabloscarlattoentrenamientos.com</div>
+</div>
+</body>
+</html>

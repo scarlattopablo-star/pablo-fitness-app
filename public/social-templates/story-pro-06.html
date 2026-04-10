@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=1080"/>
+<title>Frase Motivacional</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  body {
+    width: 1080px; height: 1920px; overflow: hidden;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #ffffff;
+  }
+  .story {
+    width: 1080px; height: 1920px; position: relative; overflow: hidden;
+    background: #09090b;
+  }
+  .logo {
+    position: absolute; top: 260px; left: 60px; height: 40px;
+    filter: invert(1); z-index: 10; opacity: 0.9;
+  }
+  .footer {
+    position: absolute; bottom: 220px; left: 0; right: 0;
+    text-align: center; font-size: 22px; color: rgba(255,255,255,0.35);
+    letter-spacing: 1px; z-index: 10;
+  }
+  .quote-section {
+    position: absolute; top: 320px; left: 60px; right: 60px;
+    display: flex; flex-direction: column; justify-content: center;
+    height: 600px; z-index: 5;
+  }
+  .quote-mark { font-size: 200px; color: #22c55e; opacity: 0.3; line-height: 0.5; font-family: Georgia, serif; margin-bottom: 30px; }
+  .quote {
+    font-size: 58px; font-weight: 800; font-style: italic; line-height: 1.25;
+    max-width: 860px; margin-bottom: 50px;
+  }
+  .sig { font-size: 32px; font-weight: 700; color: #22c55e; letter-spacing: 1px; }
+  .photo-container {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 700px;
+    display: flex; justify-content: center; align-items: flex-end;
+    z-index: 2;
+  }
+  .photo-container img {
+    width: 100%; max-height: 700px; object-fit: contain;
+    opacity: 0.35;
+  }
+</style>
+</head>
+<body>
+<div class="story">
+<img class="logo" src="../logo-pablo.jpg" alt="Pablo Scarlatto" />
+
+  <div class="quote-section">
+    <div class="quote-mark">&ldquo;</div>
+    <div class="quote">NO BUSQUES EXCUSAS, BUSC&Aacute; RESULTADOS</div>
+    <div class="sig">&mdash; Pablo Scarlatto</div>
+  </div>
+
+  <div class="photo-container">
+    <img src="../images/gym-bg.png" alt="Gym" />
+  </div>
+
+<div class="footer">pabloscarlattoentrenamientos.com</div>
+</div>
+</body>
+</html>
