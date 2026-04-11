@@ -12,6 +12,7 @@ import { SubscriptionExpiredBanner } from "@/components/subscription-expired";
 import { OfflineBanner } from "@/components/offline-banner";
 import { cacheData, getCachedData } from "@/lib/offline-cache";
 import { EXERCISES } from "@/lib/exercises-data";
+import { getExerciseGif } from "@/lib/exercise-images";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 interface SetData {
@@ -209,9 +210,13 @@ export default function EntrenamientoPage() {
                 className="w-full p-4 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Dumbbell className="h-5 w-5 text-primary" />
-                  </div>
+                  {getExerciseGif(exId) ? (
+                    <img src={getExerciseGif(exId)} alt={data.name} className="w-10 h-10 rounded-xl object-cover bg-card-bg" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Dumbbell className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
                   <div className="text-left">
                     <p className="font-bold text-sm">{data.name}</p>
                     <p className="text-xs text-muted">{data.logs.length} sesiones</p>

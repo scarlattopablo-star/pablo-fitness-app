@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   Flame, TrendingUp, Camera, Dumbbell,
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
-  Loader2, ChevronRight, Zap,
+  Loader2, ChevronRight, Zap, CreditCard, Crown,
 } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { InstagramIcon } from "@/components/icons";
@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const [weightLost, setWeightLost] = useState<number | null>(null);
   const [daysSinceProgress, setDaysSinceProgress] = useState(999);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     if (user) loadData();
@@ -83,6 +84,35 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Buenos dias" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
+  const hasActiveSubscription = subscription && subscription.status === "active";
+
+  const handleActivatePlan = async (duration: string, price: number) => {
+    if (!user || !profile) return;
+    setCheckoutLoading(true);
+    try {
+      const response = await fetch("/api/mercadopago/create-preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planName: "Plan Personalizado",
+          planSlug: "plan-personalizado",
+          duration,
+          price,
+          email: profile.email || user.email,
+          name: profile.full_name || "Cliente",
+          userId: user.id,
+        }),
+      });
+      const data = await response.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      }
+    } catch {
+      // silently fail
+    }
+    setCheckoutLoading(false);
+  };
+
   if (loading) return <div className="flex items-center justify-center py-20"><RatLoader size={64} /></div>;
 
   return (
@@ -120,6 +150,50 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* UPGRADE BANNER — only for users without active subscription */}
+      {!hasActiveSubscription && (
+        <div className="card-premium rounded-2xl p-5 mb-6 border border-primary/30 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-3">
+              <Crown className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-sm">Activa tu plan personalizado</h3>
+            </div>
+            <p className="text-xs text-muted mb-4">
+              Entreno + nutricion adaptado a tu cuerpo. Oferta de lanzamiento con 30% OFF.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                onClick={() => handleActivatePlan("3-meses", 4700)}
+                disabled={checkoutLoading}
+                className="btn-shimmer rounded-xl py-3 px-3 text-center text-black font-bold text-xs"
+              >
+                {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : (
+                  <>
+                    <span className="block text-base font-black">$4.700</span>
+                    <span className="block text-[10px] font-normal opacity-80">3 meses · 30% OFF</span>
+                    <span className="block text-[10px] line-through opacity-50">$6.720</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => handleActivatePlan("1-mes", 3200)}
+                disabled={checkoutLoading}
+                className="btn-outline-premium rounded-xl py-3 px-3 text-center text-xs"
+              >
+                {checkoutLoading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : (
+                  <>
+                    <span className="block text-base font-black">$3.200</span>
+                    <span className="block text-[10px] opacity-60">1 mes</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-[10px] text-muted text-center">Pago seguro con MercadoPago · Precios en pesos uruguayos</p>
+          </div>
+        </div>
+      )}
 
       {/* ALERT */}
       {daysSinceProgress >= 20 && (
