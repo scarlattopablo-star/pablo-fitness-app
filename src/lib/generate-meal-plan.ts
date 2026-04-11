@@ -447,3 +447,43 @@ export function generateMealPlan(
     importantNotes: notes,
   };
 }
+
+// ============================================================
+// KITESURF — Dual nutrition: gym day vs kitesurf day
+// Kitesurf day: +15% carbs, -10% fats, +200 kcal for water sport energy demand
+// ============================================================
+export function generateKitesurfMealPlans(
+  targetCalories: number,
+  protein: number,
+  carbs: number,
+  fats: number,
+  wakeHour: number = 7,
+  sleepHour: number = 23,
+  dietaryRestrictions: string[] = [],
+  nutritionalGoal: string = ""
+): { gymDay: { meals: MealPlanMeal[]; importantNotes: string[] }; kitesurfDay: { meals: MealPlanMeal[]; importantNotes: string[] } } {
+  // Gym day: standard macros
+  const gymDay = generateMealPlan(targetCalories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal);
+
+  // Kitesurf day: higher carbs for energy, slightly less fat, more total calories
+  const kiteCals = targetCalories + 200;
+  const kiteCarbs = Math.round(carbs * 1.15);
+  const kiteFats = Math.round(fats * 0.90);
+  const kiteDay = generateMealPlan(kiteCals, protein, kiteCarbs, kiteFats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal);
+
+  // Add kitesurf-specific hydration and electrolyte notes
+  kiteDay.importantNotes = [
+    "DIA DE KITESURF: +200 kcal y +15% carbohidratos para sostener la actividad en el agua.",
+    "HIDRATACION PRE-SESION: 500ml de agua con electrolitos (sodio, potasio, magnesio) 1 hora antes de navegar.",
+    "DURANTE LA SESION: Llevar botella con electrolitos. Beber cada 20-30 minutos.",
+    "POST-SESION: Dentro de los 30 min, consumir carbohidratos rapidos + proteina (ej: banana + whey).",
+    ...kiteDay.importantNotes,
+  ];
+
+  gymDay.importantNotes = [
+    "DIA DE GYM: Macros estandar para entrenamiento de fuerza.",
+    ...gymDay.importantNotes,
+  ];
+
+  return { gymDay, kitesurfDay: kiteDay };
+}

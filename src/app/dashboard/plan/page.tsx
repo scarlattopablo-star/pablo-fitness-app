@@ -96,6 +96,7 @@ const OBJECTIVE_LABELS: Record<string, string> = {
   "recomposicion-corporal": "Recomposicion Corporal",
   "plan-pareja": "Plan Pareja",
   "competicion": "Competicion",
+  "kitesurf": "Kitesurf Performance",
   "direct-client": "Plan Personalizado",
 };
 
@@ -109,6 +110,8 @@ function PlanContent() {
   const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">(initialView);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
+  const [kitesurfMealPlans, setKitesurfMealPlans] = useState<{ gymDay: { meals: MealPlanMeal[]; importantNotes: string[] }; kitesurfDay: { meals: MealPlanMeal[]; importantNotes: string[] } } | null>(null);
+  const [kiteDayType, setKiteDayType] = useState<"gym" | "kitesurf">("gym");
   const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [objective, setObjective] = useState("");
@@ -395,7 +398,18 @@ function PlanContent() {
         setTrainingPlan(generateTrainingPlan(5));
       }
 
-      if (dbNutrition && dbNutrition.data?.meals?.length > 0 && dbNutrition.plan_approved !== false) {
+      if (dbNutrition && dbNutrition.data?.gymDay && dbNutrition.data?.kitesurfDay && dbNutrition.plan_approved !== false) {
+        // Kitesurf dual nutrition format
+        const enrichGym = dbNutrition.data.gymDay.meals.map((m: MealPlanMeal) => enrichMealWithFoodDetails(m));
+        const enrichKite = dbNutrition.data.kitesurfDay.meals.map((m: MealPlanMeal) => enrichMealWithFoodDetails(m));
+        const dual = {
+          gymDay: { meals: enrichGym, importantNotes: dbNutrition.data.gymDay.importantNotes || [] },
+          kitesurfDay: { meals: enrichKite, importantNotes: dbNutrition.data.kitesurfDay.importantNotes || [] },
+        };
+        setKitesurfMealPlans(dual);
+        setMealPlan(dual.gymDay); // default to gym day
+        cacheData("nutrition_plan", dual.gymDay);
+      } else if (dbNutrition && dbNutrition.data?.meals?.length > 0 && dbNutrition.plan_approved !== false) {
         const enrichedMeals = dbNutrition.data.meals.map((m: MealPlanMeal) => enrichMealWithFoodDetails(m));
         const mealData = {
           meals: enrichedMeals,
@@ -617,6 +631,7 @@ function PlanContent() {
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{ex.name}</p>
                               <p className="text-xs text-muted">{ex.sets} series x {ex.reps} | Descanso: {ex.rest}</p>
+                              {"notes" in ex && ex.notes && <p className="text-[10px] text-primary/70 italic mt-0.5">{String(ex.notes)}</p>}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
                               {log ? (
@@ -666,6 +681,7 @@ function PlanContent() {
                                 <div className="flex-1 min-w-0">
                                   <p className="font-bold text-sm truncate">{ex.name}</p>
                                   <p className="text-[10px] text-muted">{isCardioEx ? ex.reps : `${ex.sets}x${ex.reps} | ${ex.rest}`}</p>
+                                  {"notes" in ex && ex.notes && <p className="text-[9px] text-primary/70 italic">{String(ex.notes)}</p>}
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {!isCardioEx && log && (
@@ -754,6 +770,25 @@ function PlanContent() {
             <UtensilsCrossed className="h-5 w-5 text-primary" />
             Plan de Nutricion
           </h2>
+
+          {/* Kitesurf day toggle */}
+          {kitesurfMealPlans && (
+            <div className="flex gap-2 mb-4">
+              {(["gym", "kitesurf"] as const).map((type) => (
+                <button key={type} onClick={() => {
+                  setKiteDayType(type);
+                  setMealPlan(type === "gym" ? kitesurfMealPlans.gymDay : kitesurfMealPlans.kitesurfDay);
+                }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                    kiteDayType === type
+                      ? "gradient-primary text-black"
+                      : "bg-card-bg text-muted border border-card-border"
+                  }`}>
+                  {type === "gym" ? "Dia de Gym" : "Dia de Kitesurf"}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="glass-card rounded-2xl p-4 mb-4 border-l-4 border-warning">
             <p className="font-bold text-warning text-sm mb-1">IMPORTANTE</p>
             <ul className="space-y-1">
@@ -912,6 +947,50 @@ function PlanContent() {
               </div>
             );
           })()}
+
+          {/* Kitesurf Supplementation */}
+          {objective === "kitesurf" && (
+            <div className="glass-card rounded-2xl p-4 mt-4">
+              <h3 className="font-bold text-sm mb-3 text-primary">Suplementacion Recomendada</h3>
+              <div className="space-y-2">
+                {[
+                  { name: "Proteina Whey", dose: "1 scoop (30g) post-entrenamiento", desc: "Recuperacion muscular rapida" },
+                  { name: "Creatina Monohidrato", dose: "5g/dia todos los dias", desc: "Fuerza, potencia y rendimiento" },
+                  { name: "Electrolitos", dose: "Antes y durante sesiones de kitesurf", desc: "Prevenir calambres y deshidratacion" },
+                  { name: "Omega-3", dose: "2-3g/dia (EPA+DHA)", desc: "Antiinflamatorio — articulaciones y recuperacion" },
+                ].map((s) => (
+                  <div key={s.name} className="flex items-start gap-2">
+                    <span className="text-primary shrink-0 mt-0.5">&#8226;</span>
+                    <div>
+                      <p className="text-sm font-medium">{s.name} — <span className="text-muted">{s.dose}</span></p>
+                      <p className="text-[10px] text-muted">{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Kitesurf Performance Tips */}
+          {objective === "kitesurf" && (
+            <div className="glass-card rounded-2xl p-4 mt-4 border-l-4 border-primary">
+              <h3 className="font-bold text-sm mb-3">Tips para Kitesurf</h3>
+              <div className="space-y-3 text-sm text-muted">
+                <div>
+                  <p className="font-medium text-white">Mejorar el Grip</p>
+                  <p>Entrena dead hangs y farmer walks 3x/semana. Usa toalla sobre la barra para simular el agarre inestable. Evita usar straps en ejercicios de traccion para fortalecer los antebrazos.</p>
+                </div>
+                <div>
+                  <p className="font-medium text-white">Resistencia del Core</p>
+                  <p>Prioriza ejercicios anti-rotacion (Pallof Press) sobre crunches. El core en kitesurf resiste fuerzas, no las genera. Plancha lateral + hollow hold son clave para sesiones largas.</p>
+                </div>
+                <div>
+                  <p className="font-medium text-white">Prevencion de Fatiga</p>
+                  <p>Hidratate con electrolitos desde 1 hora antes de navegar. Cada 20 min de sesion, toma un trago. Lleva barritas energeticas para sesiones de +2 horas. Elongar hombros y caderas al terminar.</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

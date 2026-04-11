@@ -1358,6 +1358,53 @@ export const EXERCISES: Exercise[] = [
   { id: 'pantorrilla-unilateral', name: 'Pantorrilla a Una Pierna', muscleGroup: 'piernas',
     description: 'Elevacion de pantorrilla unilateral para corregir desbalances.',
     steps: ['De pie sobre un escalon con un pie', 'Subir en punta de pie apretando la pantorrilla', 'Mantener arriba 2 segundos', 'Bajar estirando la pantorrilla'], videoUrl: 'SEARCH' },
+  // KITESURF - CORE / ANTI-ROTACION
+  { id: 'pallof-press', name: 'Pallof Press', muscleGroup: 'abdomen',
+    description: 'Ejercicio anti-rotación con cable o banda. Fortalece el core para resistir fuerzas rotacionales.',
+    steps: ['Colocarse de lado a la polea con el cable a la altura del pecho', 'Agarrar el mango con ambas manos frente al esternón', 'Extender los brazos al frente manteniendo el torso recto', 'Resistir la rotación que genera el cable', 'Sostener 2 segundos con los brazos extendidos y volver controlado'], videoUrl: 'SEARCH' },
+  { id: 'bird-dog', name: 'Bird Dog', muscleGroup: 'abdomen',
+    description: 'Ejercicio de estabilidad contralateral. Mejora la coordinación y equilibrio del core.',
+    steps: ['Colocarse en posición de cuatro puntos', 'Extender brazo derecho y pierna izquierda simultáneamente', 'Mantener la espalda completamente recta', 'Sostener 2-3 segundos con el core activado', 'Volver controlado y repetir con el lado opuesto'], videoUrl: 'SEARCH' },
+  { id: 'stir-the-pot', name: 'Stir the Pot', muscleGroup: 'abdomen',
+    description: 'Plancha dinámica sobre pelota suiza. Máxima activación del core con anti-rotación.',
+    steps: ['Apoyar antebrazos sobre pelota suiza en posición de plancha', 'Mantener cuerpo recto, core activado', 'Hacer pequeños círculos con los antebrazos', 'Resistir la rotación del torso', 'Realizar 8-10 círculos en cada dirección'], videoUrl: 'SEARCH' },
+  { id: 'woodchop-polea', name: 'Wood Chop en Polea', muscleGroup: 'abdomen',
+    description: 'Movimiento rotacional con cable. Desarrolla potencia rotacional.',
+    steps: ['Colocarse de lado a la polea con cable en posición alta', 'Agarrar el mango con ambas manos', 'Rotar el torso tirando en diagonal de arriba hacia abajo', 'Los pies giran acompañando la rotación', 'Volver controlado a la posición inicial'], videoUrl: 'SEARCH' },
+  // KITESURF - GRIP / AGARRE
+  { id: 'dead-hang', name: 'Dead Hang', muscleGroup: 'espalda',
+    description: 'Colgarse pasivamente de la barra. Fortalece el agarre y descomprime la columna.',
+    steps: ['Agarrar la barra con ambas manos en pronación', 'Colgarse con brazos extendidos', 'Activar ligeramente los hombros', 'Mantener el máximo tiempo posible', 'Respirar de forma controlada'], videoUrl: 'SEARCH' },
+  { id: 'farmer-walk', name: 'Farmer Walk', muscleGroup: 'espalda',
+    description: 'Caminata con peso. Fortalece agarre, core y estabilidad general.',
+    steps: ['Agarrar una mancuerna pesada en cada mano', 'Mantener postura erguida', 'Caminar con pasos controlados', 'No dejar que el peso incline el cuerpo', 'Recorrer 20-30 metros por serie'], videoUrl: 'SEARCH' },
+  { id: 'towel-pull-up', name: 'Dominadas con Toalla', muscleGroup: 'espalda',
+    description: 'Dominadas agarrando una toalla. Intensifica el trabajo de agarre.',
+    steps: ['Colgar dos toallas sobre la barra', 'Agarrar una toalla con cada mano', 'Realizar una dominada traccionando con la espalda', 'El agarre inestable fuerza los antebrazos', 'Bajar controlado y repetir'], videoUrl: 'SEARCH' },
+  // KITESURF - FUNCIONAL / ROTACIONAL
+  { id: 'turkish-getup', name: 'Turkish Get-Up', muscleGroup: 'abdomen',
+    description: 'Levantada turca completa. Cuerpo completo para estabilidad y fuerza funcional.',
+    steps: ['Acostarse boca arriba con pesa en brazo derecho extendido', 'Flexionar rodilla derecha con pie apoyado', 'Levantarse progresivamente: codo, mano, cadera, rodilla, de pie', 'Mantener brazo extendido durante todo el movimiento', 'Invertir el movimiento para volver al suelo'], videoUrl: 'SEARCH' },
+  { id: 'renegade-row', name: 'Renegade Row', muscleGroup: 'espalda',
+    description: 'Remo en posición de plancha con mancuernas. Anti-rotación con tracción.',
+    steps: ['Posición de plancha con manos sobre mancuernas', 'Core completamente activado', 'Remar una mancuerna hacia la cadera sin rotar', 'Bajar controlado y repetir con el otro brazo', 'Separar pies para mayor estabilidad'], videoUrl: 'SEARCH' },
+  { id: 'landmine-press', name: 'Landmine Press', muscleGroup: 'hombros',
+    description: 'Press con barra en mina. Hombro unilateral con patrón angular seguro.',
+    steps: ['Colocar extremo de barra en esquina o soporte', 'Agarrar extremo libre con una mano al hombro', 'Empujar la barra hacia arriba y al frente', 'Movimiento angular más seguro para el hombro', 'Bajar controlado hasta el hombro'], videoUrl: 'SEARCH' },
+  // KITESURF - BALANCE / UNILATERAL
+  { id: 'single-leg-rdl', name: 'Peso Muerto Rumano a Una Pierna', muscleGroup: 'piernas',
+    description: 'Peso muerto rumano unilateral. Mejora equilibrio y fuerza de isquiotibiales.',
+    steps: ['Pararse sobre una pierna con rodilla ligeramente flexionada', 'Mancuerna en mano opuesta a pierna de apoyo', 'Inclinar torso hacia adelante extendiendo pierna libre', 'Bajar mancuerna manteniendo espalda recta', 'Volver activando glúteo e isquiotibial'], videoUrl: 'SEARCH' },
+  { id: 'bosu-squat', name: 'Sentadilla en Bosu', muscleGroup: 'piernas',
+    description: 'Sentadilla sobre superficie inestable. Mejora propiocepción y estabilidad.',
+    steps: ['Pararse sobre bosu con parte plana hacia arriba', 'Pies al ancho de hombros, buscar equilibrio', 'Sentadilla controlada manteniendo equilibrio', 'Bajar hasta donde se pueda sin perder postura', 'Subir activando cuádriceps y glúteos'], videoUrl: 'SEARCH' },
+  // KITESURF - PREVENCION DE LESIONES
+  { id: 'band-pull-apart', name: 'Band Pull Apart', muscleGroup: 'hombros',
+    description: 'Separación de banda elástica. Deltoides posterior y manguito rotador.',
+    steps: ['Banda elástica con ambas manos frente al pecho', 'Separar las manos estirando la banda', 'Apretar omóplatos juntos al final', 'Volver controlado sin rebote', 'Mantener brazos a altura de hombros'], videoUrl: 'SEARCH' },
+  { id: 'external-rotation', name: 'Rotación Externa con Banda', muscleGroup: 'hombros',
+    description: 'Rotación externa del hombro. Esencial para el manguito rotador.',
+    steps: ['Banda o cable a la altura del codo', 'Codo a 90 grados pegado al costado', 'Rotar antebrazo hacia afuera', 'Controlar movimiento al abrir y cerrar', 'Realizar 15-20 reps con resistencia ligera'], videoUrl: 'SEARCH' },
 ];
 
 export function getVideoUrl(exercise: Exercise): string {
@@ -1366,7 +1413,6 @@ export function getVideoUrl(exercise: Exercise): string {
   }
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' tecnica correcta ejercicio gym')}`;
 }
-
 export function getExercisesByMuscleGroup(muscleGroup: string): Exercise[] {
   return EXERCISES.filter(e => e.muscleGroup === muscleGroup);
 }

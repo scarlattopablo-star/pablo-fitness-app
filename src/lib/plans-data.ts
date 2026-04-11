@@ -211,6 +211,27 @@ export const PLANS: Plan[] = [
     prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
     couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
   },
+  {
+    id: '12',
+    slug: 'kitesurf',
+    name: 'Kitesurf Performance',
+    shortDescription: 'Mejora tu rendimiento en el agua con entrenamiento especializado',
+    description: 'Plan de alto rendimiento diseñado exclusivamente para kitesurfistas. Fortalece core, grip, estabilidad y resistencia muscular para dominar el agua. Incluye nutrición dual para días de kitesurf vs gym.',
+    includes: [
+      'Entrenamiento funcional específico para kitesurf',
+      'Core y anti-rotación de alta prioridad',
+      'Trabajo de grip y fuerza de agarre',
+      'Prevención de lesiones (hombros, rodillas, espalda)',
+      'Nutrición dual: día de gym vs día de kitesurf',
+      'Guía de suplementación deportiva',
+      'Tips de rendimiento para sesiones largas',
+      'Ejercicios de equilibrio y estabilidad',
+    ],
+    icon: 'Wind',
+    color: '#0097A7',
+    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
+    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+  },
 ];
 
 export const DURATION_LABELS: Record<string, string> = {

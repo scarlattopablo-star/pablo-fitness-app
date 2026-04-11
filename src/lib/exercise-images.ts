@@ -146,6 +146,8 @@ const EXERCISE_GIFS: Record<string, string> = {
   'pantorrilla-unilateral': gif('pantorrilla-unilateral'),
   'remo-maquina-unilateral': gif('remo-maquina-unilateral'),
 
+  // KITESURF - GIFs pending, exercises will show without thumbnail for now
+
   // CARDIO
   'hiit-cinta': gif('hiit-cinta'),
   'saltar-cuerda': gif('saltar-cuerda'),

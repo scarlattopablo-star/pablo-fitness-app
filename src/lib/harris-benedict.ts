@@ -18,6 +18,7 @@ const OBJECTIVE_ADJUSTMENTS: Record<string, number> = {
   'recomposicion-corporal': -0.15,
   'plan-pareja': 0,
   'competicion': -0.20,
+  'kitesurf': 0.10,
   'direct-client': 0,
   'entrenamiento-casa': 0,
 };

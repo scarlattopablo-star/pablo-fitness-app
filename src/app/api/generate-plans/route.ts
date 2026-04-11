@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
-import { generateMealPlan } from "@/lib/generate-meal-plan";
+import { generateMealPlan, generateKitesurfMealPlans } from "@/lib/generate-meal-plan";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
 import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
 
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Get latest survey for this user
     const { data: survey, error: surveyError } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level")
+      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -70,17 +70,11 @@ export async function POST(request: NextRequest) {
     }
 
     const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
-    const nutrition = generateMealPlan(
-      target_calories,
-      protein,
-      carbs,
-      fats,
-      wakeHour,
-      sleepHour,
-      dietaryRestrictions,
-      objective,
-      nutritionalGoal || ""
-    );
+
+    const isKitesurf = objective === "kitesurf";
+    const nutrition = isKitesurf
+      ? generateKitesurfMealPlans(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, nutritionalGoal || "")
+      : generateMealPlan(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, objective, nutritionalGoal || "");
 
     // Direct clients require admin approval before client sees the plan
     // All other QR plans (free access with specific plan_slug) auto-approve
@@ -112,10 +106,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Build nutrition data for storage
+    const nutritionData = isKitesurf
+      ? { gymDay: (nutrition as { gymDay: { meals: unknown[]; importantNotes: string[] }; kitesurfDay: { meals: unknown[]; importantNotes: string[] } }).gymDay, kitesurfDay: (nutrition as { gymDay: { meals: unknown[]; importantNotes: string[] }; kitesurfDay: { meals: unknown[]; importantNotes: string[] } }).kitesurfDay }
+      : { meals: (nutrition as { meals: unknown[]; importantNotes: string[] }).meals };
+    const nutritionNotes = isKitesurf
+      ? [...(nutrition as { gymDay: { meals: unknown[]; importantNotes: string[] }; kitesurfDay: { meals: unknown[]; importantNotes: string[] } }).kitesurfDay.importantNotes]
+      : (nutrition as { meals: unknown[]; importantNotes: string[] }).importantNotes;
+
     if (existingNP) {
       // Update existing nutrition plan
       const { error: npError } = await supabase.from("nutrition_plans")
-        .update({ data: { meals: nutrition.meals }, important_notes: nutrition.importantNotes, plan_approved: !needsApproval })
+        .update({ data: nutritionData, important_notes: nutritionNotes, plan_approved: !needsApproval })
         .eq("id", existingNP.id);
       if (npError) {
         return NextResponse.json({ error: `Error guardando nutricion: ${npError.message}` }, { status: 500 });
@@ -123,8 +125,8 @@ export async function POST(request: NextRequest) {
     } else {
       const { error: npError } = await supabase.from("nutrition_plans").insert({
         user_id: userId,
-        data: { meals: nutrition.meals },
-        important_notes: nutrition.importantNotes,
+        data: nutritionData,
+        important_notes: nutritionNotes,
         plan_approved: !needsApproval,
       });
       if (npError) {
@@ -135,7 +137,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       training: { days: training.length },
-      nutrition: { meals: nutrition.meals.length },
+      nutrition: { meals: isKitesurf ? "dual" : (nutrition as { meals: unknown[] }).meals.length },
     });
   } catch {
     return NextResponse.json({ error: "Error al generar planes" }, { status: 500 });

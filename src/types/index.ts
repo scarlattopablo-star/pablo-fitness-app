@@ -10,6 +10,7 @@ export type PlanSlug =
   | 'plan-pareja'
   | 'competicion'
   | 'entrenamiento-casa'
+  | 'kitesurf'
   | 'direct-client';
 
 export type Duration = '1-mes' | '3-meses' | '6-meses' | '1-ano';
@@ -53,6 +54,7 @@ export interface SurveyData {
   activityLevel: ActivityLevel;
   dietaryRestrictions: string[];
   nutritionalGoal?: NutritionalGoal;
+  kitesurfLevel?: 'ninguna' | 'basica' | 'intermedia' | 'avanzada';
 }
 
 export interface MacroCalculation {

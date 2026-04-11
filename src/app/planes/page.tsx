@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
-  Heart, Shield, RefreshCw, Users, Medal, Home,
+  Heart, Shield, RefreshCw, Users, Medal, Home, Wind,
   ArrowLeft, ChevronRight, Check, Gift,
 } from "lucide-react";
 import { PLANS, DURATION_LABELS, DURATION_DESCRIPTIONS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
@@ -12,7 +12,7 @@ import type { Duration } from "@/types";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
-  Heart, Shield, RefreshCw, Users, Medal, Home,
+  Heart, Shield, RefreshCw, Users, Medal, Home, Wind,
 };
 
 const DURATIONS: Duration[] = ["1-mes", "3-meses", "6-meses", "1-ano"];

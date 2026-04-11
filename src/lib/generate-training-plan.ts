@@ -30,6 +30,7 @@ export interface TrainingExercise {
   sets: number;
   reps: string;
   rest: string;
+  notes?: string;
 }
 
 export interface TrainingDay {
@@ -137,6 +138,8 @@ function getParams(objective: string): TrainingParams {
       return { sets: 3, reps: "10-15", restCompound: "90s", restIsolation: "60s", instructions: "Aprender tecnica. Peso liviano, aumentar gradualmente semana a semana." };
     case "entrenamiento-casa":
       return { sets: 4, reps: "12-20", restCompound: "60s", restIsolation: "45s", instructions: "Sin equipamiento. Controlar el movimiento. Aumentar repeticiones progresivamente." };
+    case "kitesurf":
+      return { sets: 4, reps: "10-15", restCompound: "75s", restIsolation: "45s", instructions: "Resistencia muscular y estabilidad. Core activado en todo momento. Movimientos controlados y funcionales." };
     default:
       return { sets: 4, reps: "10-12", restCompound: "90s", restIsolation: "60s", instructions: "Peso moderado. Buena tecnica. Aumentar carga progresivamente." };
   }
@@ -492,6 +495,263 @@ function getVolumeConfig(activityLevel: string, sex: string = "hombre"): VolumeC
   };
 }
 
+// ============================================================
+// KITESURF — Sport-specific exercise pool with performance notes
+// ============================================================
+interface KitesurfExercise { id: string; name: string; note: string }
+const KITESURF_POOL: Record<string, { compound: KitesurfExercise[]; isolation: KitesurfExercise[] }> = {
+  abdomen: {
+    compound: [
+      { id: "rueda-abdominal", name: "Rueda Abdominal", note: "Core explosivo — estabiliza el torso contra la traccion de la cometa" },
+      { id: "v-up", name: "V-Up", note: "Fuerza abdominal para mantener postura en saltos y aterrizajes" },
+      { id: "pallof-press", name: "Pallof Press", note: "Anti-rotacion — resiste el tirón lateral de la cometa" },
+      { id: "woodchop-polea", name: "Wood Chop en Polea", note: "Potencia rotacional para giros y maniobras" },
+      { id: "turkish-getup", name: "Turkish Get-Up", note: "Estabilidad total del cuerpo — levantarse en la tabla tras caidas" },
+    ],
+    isolation: [
+      { id: "plancha", name: "Plancha", note: "Resistencia del core para sesiones largas en el agua" },
+      { id: "plancha-lateral", name: "Plancha Lateral", note: "Estabilidad lateral — controlar la tabla con las piernas" },
+      { id: "bird-dog", name: "Bird Dog", note: "Coordinacion contralateral — equilibrio dinámico en la tabla" },
+      { id: "stir-the-pot", name: "Stir the Pot", note: "Anti-extension y anti-rotacion — core funcional avanzado" },
+      { id: "hollow-hold", name: "Hollow Hold", note: "Posicion corporal compacta para saltos y rotaciones" },
+    ],
+  },
+  espalda: {
+    compound: [
+      { id: "dominadas", name: "Dominadas", note: "Fuerza de traccion — controlar y dirigir la barra de kite" },
+      { id: "remo-con-barra", name: "Remo con Barra", note: "Tirón horizontal — resistir la fuerza de la cometa" },
+      { id: "renegade-row", name: "Renegade Row", note: "Anti-rotacion + traccion — core y espalda al mismo tiempo" },
+      { id: "remo-polea-baja", name: "Remo Polea Baja", note: "Retraccion escapular — proteccion de hombros en traccion" },
+    ],
+    isolation: [
+      { id: "dead-hang", name: "Dead Hang", note: "Resistencia de agarre — aguantar la barra en sesiones largas" },
+      { id: "farmer-walk", name: "Farmer Walk", note: "Agarre bajo fatiga + core — simula sesiones prolongadas" },
+      { id: "towel-pull-up", name: "Dominadas con Toalla", note: "Agarre inestable — replica el grip de la barra de kite" },
+      { id: "face-pull", name: "Face Pull", note: "Salud de hombros — compensa la traccion frontal constante" },
+    ],
+  },
+  piernas: {
+    compound: [
+      { id: "sentadilla", name: "Sentadilla", note: "Fuerza de base — absorber impactos y mantener postura en la tabla" },
+      { id: "peso-muerto-rumano", name: "Peso Muerto Rumano", note: "Cadena posterior — estabilidad de cadera en posicion de navegacion" },
+      { id: "single-leg-rdl", name: "Peso Muerto Rumano a Una Pierna", note: "Equilibrio unilateral — control de la tabla con una pierna dominante" },
+      { id: "zancadas", name: "Zancadas", note: "Fuerza unilateral — estabilizar al aterrizar tras saltos" },
+    ],
+    isolation: [
+      { id: "bosu-squat", name: "Sentadilla en Bosu", note: "Propiocepcion — simula la inestabilidad de la tabla en el agua" },
+      { id: "sentadilla-bulgara", name: "Sentadilla Bulgara", note: "Fuerza y equilibrio unilateral de piernas" },
+      { id: "elevacion-pantorrillas", name: "Elevación de Pantorrillas", note: "Estabilidad del tobillo — control fino de la tabla" },
+    ],
+  },
+  hombros: {
+    compound: [
+      { id: "press-hombros", name: "Press de Hombros", note: "Fuerza overhead — controlar la cometa en posicion alta" },
+      { id: "landmine-press", name: "Landmine Press", note: "Empuje angular seguro — patron de movimiento del kitesurf" },
+    ],
+    isolation: [
+      { id: "elevaciones-laterales", name: "Elevaciones Laterales", note: "Estabilidad del deltoides — soporte de la articulacion del hombro" },
+      { id: "band-pull-apart", name: "Band Pull Apart", note: "Manguito rotador — prevencion de lesiones por traccion repetida" },
+      { id: "external-rotation", name: "Rotación Externa con Banda", note: "Rotador externo — la lesion #1 en kitesurf es el hombro" },
+    ],
+  },
+  pecho: {
+    compound: [
+      { id: "press-banca-plano", name: "Press Banca Plano", note: "Fuerza de empuje — estabilidad del tren superior" },
+      { id: "flexiones", name: "Flexiones de Brazos", note: "Empuje funcional + core — patron de movimiento completo" },
+    ],
+    isolation: [
+      { id: "aperturas-inclinadas", name: "Aperturas Inclinadas", note: "Apertura pectoral — rango de movimiento para brazos con la cometa" },
+    ],
+  },
+  biceps: {
+    compound: [
+      { id: "curl-biceps-barra", name: "Curl Bíceps Barra", note: "Fuerza de flexion — complementa el agarre de la barra" },
+    ],
+    isolation: [
+      { id: "curl-martillo", name: "Curl Martillo", note: "Braquiorradial — fuerza del antebrazo para el grip" },
+    ],
+  },
+  triceps: {
+    compound: [
+      { id: "fondos-triceps", name: "Fondos de Tríceps", note: "Extensión de brazos — empujar y controlar la barra" },
+    ],
+    isolation: [
+      { id: "extension-triceps-polea", name: "Extensión Tríceps Polea", note: "Aislamiento del tríceps — soporte de la articulación del codo" },
+    ],
+  },
+};
+
+// Build a kitesurf exercise with its performance note
+function exKite(e: KitesurfExercise, p: TrainingParams, compound: boolean): TrainingExercise & { notes?: string } {
+  const base = ex(e.id, e.name, p, compound);
+  return { ...base, notes: e.note };
+}
+
+function pickKitesurfExercises(
+  pool: { compound: KitesurfExercise[]; isolation: KitesurfExercise[] },
+  numCompound: number, numIsolation: number, p: TrainingParams
+): (TrainingExercise & { notes?: string })[] {
+  const compounds = pickRandom(pool.compound, numCompound);
+  const isolations = pickRandom(pool.isolation, numIsolation);
+  return [
+    ...compounds.map(e => exKite(e, p, true)),
+    ...isolations.map(e => exKite(e, p, false)),
+  ];
+}
+
+function generateKitesurfPlan(days: number, p: TrainingParams, vol: VolumeConfig): TrainingDay[] {
+  const kp = KITESURF_POOL;
+
+  if (days === 3) {
+    // Full body sessions with kitesurf priority
+    return [
+      { day: "Dia 1 - Core + Espalda + Grip",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.abdomen, 2, 1, p),
+          ...pickKitesurfExercises(kp.espalda, 2, 2, p),
+          ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 2 - Piernas + Equilibrio + Core",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.piernas, 3, 2, p),
+          ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+          ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 3 - Upper Body + Rotacional",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.espalda, 2, 1, p),
+          ...pickKitesurfExercises(kp.pecho, 1, 1, p),
+          ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+          ...pickKitesurfExercises(kp.biceps, 1, 0, p),
+        ] as TrainingExercise[] },
+    ];
+  }
+
+  if (days === 4) {
+    return [
+      { day: "Dia 1 - Core + Grip",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.abdomen, 3, 2, p),
+          ...pickKitesurfExercises(kp.espalda, 0, 3, p), // grip-focused: dead-hang, farmer, towel
+        ] as TrainingExercise[] },
+      { day: "Dia 2 - Piernas + Equilibrio",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.piernas, 3, 2, p),
+          ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+          ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 3 - Pull + Hombros",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.espalda, 3, 1, p),
+          ...pickKitesurfExercises(kp.hombros, 1, 2, p),
+          ...pickKitesurfExercises(kp.biceps, 1, 0, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 4 - Full Body Funcional",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.abdomen, 2, 1, p),
+          ...pickKitesurfExercises(kp.pecho, 1, 1, p),
+          ...pickKitesurfExercises(kp.piernas, 1, 1, p),
+          ...pickKitesurfExercises(kp.triceps, 1, 0, p),
+        ] as TrainingExercise[] },
+    ];
+  }
+
+  if (days === 5) {
+    return [
+      { day: "Dia 1 - Core + Anti-rotacion",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.abdomen, 3, 2, p),
+          ...pickKitesurfExercises(kp.espalda, 0, 2, p),
+          ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 2 - Piernas + Equilibrio",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.piernas, 3, 2, p),
+          ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+          ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 3 - Pull + Grip",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.espalda, 3, 2, p),
+          ...pickKitesurfExercises(kp.biceps, 1, 1, p),
+          ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 4 - Push + Core",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.pecho, 2, 1, p),
+          ...pickKitesurfExercises(kp.hombros, 1, 1, p),
+          ...pickKitesurfExercises(kp.triceps, 1, 0, p),
+          ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+        ] as TrainingExercise[] },
+      { day: "Dia 5 - Full Body Funcional",
+        instructions: "KITESURF: " + p.instructions,
+        exercises: [
+          ...pickKitesurfExercises(kp.piernas, 2, 1, p),
+          ...pickKitesurfExercises(kp.espalda, 1, 1, p),
+          ...pickKitesurfExercises(kp.abdomen, 2, 1, p),
+        ] as TrainingExercise[] },
+    ];
+  }
+
+  // 6 days: PPL x2 with kitesurf focus
+  return [
+    { day: "Dia 1 - Core + Grip",
+      instructions: "KITESURF: " + p.instructions,
+      exercises: [
+        ...pickKitesurfExercises(kp.abdomen, 3, 2, p),
+        ...pickKitesurfExercises(kp.espalda, 0, 3, p),
+      ] as TrainingExercise[] },
+    { day: "Dia 2 - Piernas + Equilibrio",
+      instructions: "KITESURF: " + p.instructions,
+      exercises: [
+        ...pickKitesurfExercises(kp.piernas, 3, 2, p),
+        ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+        ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+      ] as TrainingExercise[] },
+    { day: "Dia 3 - Pull + Hombros",
+      instructions: "KITESURF: " + p.instructions,
+      exercises: [
+        ...pickKitesurfExercises(kp.espalda, 3, 1, p),
+        ...pickKitesurfExercises(kp.hombros, 1, 2, p),
+        ...pickKitesurfExercises(kp.biceps, 1, 0, p),
+      ] as TrainingExercise[] },
+    { day: "Dia 4 - Core + Rotacional",
+      instructions: "KITESURF: " + p.instructions,
+      exercises: [
+        ...pickKitesurfExercises(kp.abdomen, 3, 2, p),
+        ...pickKitesurfExercises(kp.pecho, 1, 1, p),
+        ...pickKitesurfExercises(kp.triceps, 1, 0, p),
+      ] as TrainingExercise[] },
+    { day: "Dia 5 - Piernas + Unilateral",
+      instructions: "KITESURF: " + p.instructions,
+      exercises: [
+        ...pickKitesurfExercises(kp.piernas, 2, 3, p),
+        ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+        ...pickKitesurfExercises(kp.hombros, 0, 1, p),
+      ] as TrainingExercise[] },
+    { day: "Dia 6 - Full Body Funcional",
+      instructions: "KITESURF: " + p.instructions,
+      exercises: [
+        ...pickKitesurfExercises(kp.espalda, 2, 1, p),
+        ...pickKitesurfExercises(kp.pecho, 1, 0, p),
+        ...pickKitesurfExercises(kp.abdomen, 1, 1, p),
+        ...pickKitesurfExercises(kp.piernas, 1, 0, p),
+        ...pickKitesurfExercises(kp.biceps, 0, 1, p),
+      ] as TrainingExercise[] },
+  ];
+}
+
 export function generateTrainingPlan(
   days: number = 5,
   objective: string = "quema-grasa",
@@ -525,7 +785,9 @@ export function generateTrainingPlan(
 
   let plan: TrainingDay[];
 
-  if (isBeginner) {
+  if (objective === "kitesurf") {
+    plan = generateKitesurfPlan(days, p, vol);
+  } else if (isBeginner) {
     plan = isHome
       ? generateBeginnerHomePlan(days, p)
       : generateBeginnerPlan(days, p);
@@ -566,6 +828,7 @@ export function generateTrainingPlan(
   // No reordering needed — muscles stay grouped together
 
   // Enforce exactly 8 exercises per session (excluding cardio finisher)
+  const isKitesurf = objective === "kitesurf";
   const exercisePool = isHome ? HOME_EXERCISES : GYM_EXERCISES;
   plan = plan.map(day => {
     const nonCardio = day.exercises.filter(e => !CARDIO_IDS_SET.has(e.id));
@@ -577,7 +840,8 @@ export function generateTrainingPlan(
     if (nonCardio.length < 8) {
       const needed = 8 - nonCardio.length;
       const usedIds = new Set(nonCardio.map(e => e.id));
-      const abPool = [...exercisePool.abdomen.compound, ...exercisePool.abdomen.isolation]
+      const abPoolSrc = isKitesurf ? KITESURF_POOL.abdomen : exercisePool.abdomen;
+      const abPool = [...abPoolSrc.compound, ...abPoolSrc.isolation]
         .filter(e => !usedIds.has(e.id));
       const extras = pickRandom(abPool, Math.min(needed, abPool.length))
         .map(e => ex(e.id, e.name, p, false));

@@ -40,6 +40,7 @@ export default function EncuestaPage() {
   const [photoBack, setPhotoBack] = useState<File | null>(null);
 
   const [nutritionalGoal, setNutritionalGoal] = useState<NutritionalGoal | "">("");
+  const [kitesurfLevel, setKitesurfLevel] = useState("");
 
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const planSlug = (searchParams?.get("plan") || "quema-grasa") as PlanSlug;
@@ -47,22 +48,26 @@ export default function EncuestaPage() {
   const plan = getPlanBySlug(planSlug);
 
   const needsGoal = PLANS_NEEDING_GOAL.includes(planSlug);
-  const totalSteps = needsGoal ? 6 : 5;
+  const isKitesurf = planSlug === "kitesurf";
+  const totalSteps = (needsGoal ? 6 : 5) + (isKitesurf ? 1 : 0);
 
   // Mapeo de pasos: si needsGoal, paso 1=objetivo, 2=datos, 3=medidas, 4=actividad, 5=fotos, 6=fin
   // Si no needsGoal: 1=datos, 2=medidas, 3=actividad, 4=fotos, 5=fin
+  // Si kitesurf: agrega paso extra de nivel kitesurf antes de fotos
   const stepGoal = needsGoal ? 1 : -1;
   const stepData = needsGoal ? 2 : 1;
   const stepMedidas = needsGoal ? 3 : 2;
   const stepActividad = needsGoal ? 4 : 3;
-  const stepFotos = needsGoal ? 5 : 4;
-  const stepFin = needsGoal ? 6 : 5;
+  const stepKitesurf = isKitesurf ? (needsGoal ? 5 : 4) : -1;
+  const stepFotos = (needsGoal ? 5 : 4) + (isKitesurf ? 1 : 0);
+  const stepFin = (needsGoal ? 6 : 5) + (isKitesurf ? 1 : 0);
 
   const canProceed = () => {
     if (step === stepGoal) return nutritionalGoal !== "";
     if (step === stepData) return sex !== "" && age !== "" && Number(age) > 0;
     if (step === stepMedidas) return weight !== "" && height !== "" && Number(weight) > 0 && Number(height) > 0;
     if (step === stepActividad) return activityLevel !== "";
+    if (step === stepKitesurf) return kitesurfLevel !== "";
     if (step === stepFotos) return true;
     return true;
   };
@@ -311,6 +316,30 @@ export default function EncuestaPage() {
           </div>
         )}
 
+        {/* STEP KITESURF: Kitesurf experience level */}
+        {step === stepKitesurf && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">Tu Experiencia en Kitesurf</h2>
+            <p className="text-muted mb-8">Adaptamos tu plan según tu nivel en el agua.</p>
+            <div className="space-y-2">
+              {[
+                { value: "ninguna", label: "Sin experiencia", desc: "Nunca practiqué kitesurf" },
+                { value: "basica", label: "Principiante", desc: "Algunas clases tomadas, control básico" },
+                { value: "intermedia", label: "Intermedio", desc: "Navego con regularidad, algunos saltos" },
+                { value: "avanzada", label: "Avanzado", desc: "Saltos altos, trucos y maniobras" },
+              ].map((opt) => (
+                <button key={opt.value} onClick={() => setKitesurfLevel(opt.value)}
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                    kitesurfLevel === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"
+                  }`}>
+                  <p className="font-medium">{opt.label}</p>
+                  <p className="text-sm text-muted">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* STEP FOTOS: Photos */}
         {step === stepFotos && (
           <div className="animate-fade-in-up">
@@ -468,6 +497,7 @@ export default function EncuestaPage() {
                   sex, age: Number(age), weight: Number(weight), height: Number(height),
                   activityLevel, restrictions, emphasis, planSlug,
                   ...(nutritionalGoal ? { nutritionalGoal } : {}),
+                  ...(kitesurfLevel ? { kitesurfLevel } : {}),
                   macros: {
                     tmb: macros.tmb, tdee: macros.tdee,
                     targetCalories: macros.targetCalories,
