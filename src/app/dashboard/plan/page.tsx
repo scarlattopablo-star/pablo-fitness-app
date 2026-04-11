@@ -657,12 +657,17 @@ function PlanContent() {
                           const isCardioEx = ["hiit-cinta", "hiit-casa", "burpees", "jumping-jacks", "high-knees", "saltar-cuerda"].includes(ex.id);
                           return (
                             <div key={i} className="bg-card-bg rounded-xl p-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <div>
-                                  <p className="font-bold text-sm">{ex.name}</p>
+                              <div className="flex items-center gap-3 mb-2">
+                                {(() => { const gif = getExerciseGif(ex.id); return gif ? (
+                                  <button onClick={() => setExpandedGif({ src: gif, name: ex.name })} className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10 hover:ring-2 hover:ring-primary/50 transition-all">
+                                    <img src={gif} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                                  </button>
+                                ) : null; })()}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-bold text-sm truncate">{ex.name}</p>
                                   <p className="text-[10px] text-muted">{isCardioEx ? ex.reps : `${ex.sets}x${ex.reps} | ${ex.rest}`}</p>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-shrink-0">
                                   {!isCardioEx && log && (
                                     <span className="text-[10px] text-muted">Anterior: {log.weight}kg</span>
                                   )}
