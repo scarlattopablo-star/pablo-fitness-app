@@ -34,6 +34,7 @@ export default function DashboardPage() {
   const [daysSinceProgress, setDaysSinceProgress] = useState(999);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [isDirectClient, setIsDirectClient] = useState(false);
 
   useEffect(() => {
     if (user) loadData();
@@ -45,6 +46,16 @@ export default function DashboardPage() {
   const loadData = async () => {
     if (!user) return;
     try {
+      // Check if direct client (QR)
+      const { data: qrCode } = await supabase
+        .from("free_access_codes")
+        .select("id")
+        .eq("used_by", user.id)
+        .eq("plan_slug", "direct-client")
+        .limit(1)
+        .maybeSingle();
+      if (qrCode) setIsDirectClient(true);
+
       const [surveyRes, progressRes] = await Promise.all([
         supabase.from("surveys").select("*").eq("user_id", user.id)
           .order("created_at", { ascending: false }).limit(1).single(),
@@ -151,8 +162,8 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* UPGRADE BANNER — only for users without active subscription */}
-      {!hasActiveSubscription && (
+      {/* UPGRADE BANNER — only for non-direct users without active subscription */}
+      {!hasActiveSubscription && !isDirectClient && (
         <div className="card-premium rounded-2xl p-5 mb-6 border border-primary/30 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative">
