@@ -22,6 +22,7 @@ interface Subscription {
   status: string;
   start_date: string;
   end_date: string;
+  amount_paid: number;
 }
 
 interface AuthContextType {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [hasPlans, setHasPlans] = useState(false);
+  const [isDirectClient, setIsDirectClient] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fetchProfile(session.user.id);
           fetchSubscription(session.user.id);
           checkPlans(session.user.id);
+          checkDirectClient(session.user.id);
         }
         setLoading(false);
       }).catch(() => {
@@ -85,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             fetchProfile(session.user.id);
             fetchSubscription(session.user.id);
             checkPlans(session.user.id);
+            checkDirectClient(session.user.id);
           } else {
             setProfile(null);
             setSubscription(null);
@@ -134,6 +138,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (nCount && nCount > 0) { setHasPlans(true); return; }
   }
 
+  async function checkDirectClient(userId: string) {
+    const { data } = await supabase
+      .from("free_access_codes")
+      .select("id")
+      .eq("used_by", userId)
+      .eq("plan_slug", "direct-client")
+      .limit(1)
+      .maybeSingle();
+    if (data) setIsDirectClient(true);
+  }
+
   async function fetchSubscription(userId: string) {
     const { data } = await supabase
       .from("subscriptions")
@@ -153,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         status: data.status,
         start_date: data.start_date,
         end_date: data.end_date,
+        amount_paid: data.amount_paid || 0,
       });
     }
   }
@@ -171,29 +187,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Compare dates without time to avoid timezone issues (end_date is DATE, not TIMESTAMPTZ)
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const endDate = subscription ? new Date(subscription.end_date + "T23:59:59") : null;
+
+  // For free ($0) non-direct-client subscriptions: enforce 7-day trial limit
+  const isFreeSubscription = !!subscription && subscription.amount_paid === 0 && !isDirectClient;
+
+  let effectiveEndDate: Date | null = null;
+  if (subscription) {
+    if (isFreeSubscription) {
+      // Existing free users (before 2026-04-12) get 30 days; new free users get 7 days
+      const cutoffDate = new Date("2026-04-12");
+      const startDate = new Date(subscription.start_date);
+      const trialDays = startDate < cutoffDate ? 30 : 7;
+      const trialEnd = new Date(subscription.start_date + "T23:59:59");
+      trialEnd.setDate(trialEnd.getDate() + trialDays);
+      effectiveEndDate = trialEnd;
+    } else {
+      effectiveEndDate = new Date(subscription.end_date + "T23:59:59");
+    }
+  }
 
   const hasActiveSubscription =
     hasPlans ||
     (!!subscription &&
     subscription.status === "active" &&
-    !!endDate &&
-    endDate >= today);
+    !!effectiveEndDate &&
+    effectiveEndDate >= today);
 
   const isExpired =
     !!subscription &&
     subscription.status === "active" &&
-    !!endDate &&
-    endDate < today;
+    !!effectiveEndDate &&
+    effectiveEndDate < today;
 
   const isTrial =
     hasActiveSubscription &&
     !!subscription &&
-    subscription.duration === "7-dias";
+    (subscription.duration === "7-dias" || isFreeSubscription);
 
   const trialDaysLeft =
-    isTrial && endDate
-      ? Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+    isTrial && effectiveEndDate
+      ? Math.max(0, Math.ceil((effectiveEndDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
       : 0;
 
   return (
