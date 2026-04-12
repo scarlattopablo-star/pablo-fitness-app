@@ -43,6 +43,9 @@ export default function RegistroGratisPage() {
         body: JSON.stringify({ userId }),
       });
 
+      // 1.6 Sign in immediately after confirming
+      await supabase.auth.signInWithPassword({ email, password });
+
       // 2. Update profile
       await supabase
         .from("profiles")

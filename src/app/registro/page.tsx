@@ -74,6 +74,9 @@ function RegistroForm() {
         body: JSON.stringify({ userId: authData.user.id }),
       });
 
+      // 1.6 Sign in immediately after confirming (so user has active session)
+      await supabase.auth.signInWithPassword({ email, password });
+
       // 2. Update profile with phone
       if (phone) {
         await supabase
@@ -139,7 +142,7 @@ function RegistroForm() {
         }
       }
 
-      // If no plan selected or free, go to dashboard
+      // If no plan selected or free, show success then redirect to dashboard
       window.location.href = "/compra-exitosa";
     } catch (err) {
       setError("Error inesperado. Intentá de nuevo.");
