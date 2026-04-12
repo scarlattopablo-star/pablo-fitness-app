@@ -104,7 +104,7 @@ export default function HomePage() {
             <div className="hidden lg:block animate-fade-in-up animate-delay-300">
               <div className="relative">
                 <div className="card-premium rounded-3xl overflow-hidden border border-accent/30">
-                  <img src="/images/transf-4.jpg" alt="Mejor transformacion" className="w-full object-contain" />
+                  <img src="/images/transf-hombre-definicion.jpg" alt="Mejor transformacion" className="w-full object-contain" />
                 </div>
                 <div className="absolute -bottom-4 -left-4 bg-accent text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-accent/30">
                   Resultado real
