@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen overflow-hidden">
       {/* NAVBAR */}
-      <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-background/70 border-b border-card-border/50">
+      <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-background/70 border-b border-accent/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center">
             <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-10 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
@@ -49,16 +49,17 @@ export default function HomePage() {
         {/* Background */}
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15" style={{ backgroundImage: "url(/images/gym-bg.png)", filter: "grayscale(100%)" }} />
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-primary/[0.04] rounded-full blur-[120px]" />
+        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-accent/[0.04] rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-primary/[0.03] rounded-full blur-[100px]" />
 
         <div className="relative max-w-6xl mx-auto w-full pt-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left — Copy */}
             <div>
               {/* Free trial badge */}
-              <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 animate-fade-in-up">
-                <Star className="h-4 w-4 text-primary fill-primary" />
-                <span className="text-sm font-bold text-primary">7 DIAS GRATIS</span>
+              <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 animate-fade-in-up">
+                <Star className="h-4 w-4 text-accent fill-accent" />
+                <span className="text-sm font-bold text-accent">7 DIAS GRATIS</span>
                 <span className="text-xs text-muted">sin compromiso</span>
               </div>
 
@@ -92,7 +93,7 @@ export default function HomePage() {
                   { value: "24/7", label: "App" },
                 ].map((item) => (
                   <div key={item.label} className="text-center">
-                    <span className="block text-2xl font-black text-primary">{item.value}</span>
+                    <span className="block text-2xl font-black text-accent">{item.value}</span>
                     <span className="text-[10px] text-muted uppercase tracking-wider">{item.label}</span>
                   </div>
                 ))}
@@ -102,11 +103,11 @@ export default function HomePage() {
             {/* Right — Transformation highlight */}
             <div className="hidden lg:block animate-fade-in-up animate-delay-300">
               <div className="relative">
-                <div className="card-premium rounded-3xl overflow-hidden border border-primary/20">
+                <div className="card-premium rounded-3xl overflow-hidden border border-accent/30">
                   <img src="/images/transf-hombre-musculo.jpg" alt="Transformacion" className="w-full object-cover" />
                 </div>
                 {/* Floating badge */}
-                <div className="absolute -bottom-4 -left-4 bg-primary text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-primary/20">
+                <div className="absolute -bottom-4 -left-4 bg-accent text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-accent/30">
                   Resultado real
                 </div>
               </div>
@@ -120,7 +121,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Resultados <span className="text-gradient">Reales</span>
+              Resultados <span className="text-accent">Reales</span>
             </h2>
             <p className="text-sm text-muted mt-2">Transformaciones de alumnos reales</p>
           </div>
@@ -131,12 +132,10 @@ export default function HomePage() {
               { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
               { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
             ].map((item, i) => (
-              <div key={i} className="card-premium rounded-xl overflow-hidden group">
-                <div className="relative">
-                  <img src={item.src} alt={item.result} className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                    <p className="text-primary font-bold text-xs">{item.result}</p>
-                  </div>
+              <div key={i} className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-colors">
+                <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.02] transition-transform duration-500" loading="lazy" />
+                <div className="p-3 text-center border-t border-card-border/30">
+                  <p className="text-accent font-bold text-xs">{item.result}</p>
                 </div>
               </div>
             ))}
@@ -149,7 +148,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Que <span className="text-gradient">incluye</span>
+              Que <span className="text-accent">incluye</span>
             </h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -162,8 +161,8 @@ export default function HomePage() {
               { icon: Target, title: "Soporte directo", desc: "Chat con Pablo para dudas y ajustes" },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="card-premium rounded-xl p-5 text-center">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <Icon className="h-5 w-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                  <Icon className="h-5 w-5 text-accent" />
                 </div>
                 <h3 className="font-bold text-sm mb-1">{title}</h3>
                 <p className="text-xs text-muted">{desc}</p>
