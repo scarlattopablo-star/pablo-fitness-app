@@ -88,6 +88,13 @@ export const MOTIVATION_MESSAGES = {
     "Genial! Ya podes tachar el entrenamiento de hoy. Mañana seguimos!",
     "Entrenamiento completado! Recorda hidratarte y comer bien.",
   ],
+  freeUserOffer: [
+    "30% OFF tu plan personalizado! Activa antes de que se termine tu prueba gratis.",
+    "Tu prueba gratis tiene los dias contados. Asegura el 30% OFF ahora!",
+    "Plan completo de entrenamiento + nutricion por $4.700. Solo por tiempo limitado!",
+    "No pierdas tu progreso! Activa tu plan con 30% OFF desde la app.",
+    "Oferta exclusiva: primer trimestre a $4.700. Entrena con plan personalizado!",
+  ],
   sundayMotivation: [
     "Nueva semana, nueva oportunidad. Tu plan te esta esperando!",
     "Arranca la semana con todo. El lunes se entrena, no se descansa!",

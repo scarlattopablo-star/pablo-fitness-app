@@ -176,6 +176,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 5. WEEKLY OFFER — on Wednesday, remind free users about the offer
+    if (dayOfWeek === 3) { // Wednesday
+      // Get all free subscriptions ($0, non-direct-client)
+      const { data: freeSubs } = await supabase
+        .from("subscriptions")
+        .select("user_id, amount_paid")
+        .eq("status", "active")
+        .eq("amount_paid", 0);
+
+      if (freeSubs) {
+        // Exclude direct clients
+        const { data: directCodes } = await supabase
+          .from("free_access_codes")
+          .select("used_by")
+          .eq("used", true)
+          .eq("plan_slug", "direct-client");
+        const directIds = new Set((directCodes || []).map(c => c.used_by));
+
+        const freeUsers = freeSubs.filter(s => !directIds.has(s.user_id));
+        const offerMsg = getRandomMessage("freeUserOffer");
+
+        for (const fu of freeUsers) {
+          totalSent += await sendPushToUser(supabase, fu.user_id, "Oferta especial!", offerMsg, "/dashboard");
+        }
+      }
+    }
+
     return NextResponse.json({ sent: totalSent, streaksAtRisk: streaks?.length || 0 });
   } catch (err) {
     return NextResponse.json({ error: `Error: ${err}` }, { status: 500 });
