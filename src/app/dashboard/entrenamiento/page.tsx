@@ -110,7 +110,7 @@ export default function EntrenamientoPage() {
         "Excelente! Los resultados se construyen dia a dia.",
       ];
       const msg = msgs[Math.floor(Math.random() * msgs.length)];
-      await sendPushNotification(user.id, "Entrenamiento registrado!", msg);
+      await sendPushNotification(user.id, "Entrenamiento registrado!", msg, "/dashboard/entrenamiento");
     } catch { /* push is best-effort */ }
 
     setSaved(true);
