@@ -160,6 +160,12 @@ function ClienteDirectoForm() {
         return;
       }
       setUserId(data.user.id);
+      // Auto-confirm email (bypass SMTP issues)
+      await fetch("/api/confirm-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: data.user.id }),
+      });
       // Mark code as used via server-side API (bypasses RLS)
       await fetch("/api/free-access", {
         method: "POST",

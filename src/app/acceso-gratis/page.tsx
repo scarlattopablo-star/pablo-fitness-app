@@ -127,6 +127,13 @@ function AccesoGratisForm() {
       }
 
       if (authData.user) {
+        // Auto-confirm email (bypass SMTP issues)
+        await fetch("/api/confirm-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: authData.user.id }),
+        });
+
         // Atomically claim code (prevents race condition)
         const claimRes = await fetch("/api/free-access", {
           method: "POST",

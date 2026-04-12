@@ -36,6 +36,13 @@ export default function RegistroGratisPage() {
 
       const userId = authData.user.id;
 
+      // 1.5 Auto-confirm email (bypass SMTP issues)
+      await fetch("/api/confirm-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+
       // 2. Update profile
       await supabase
         .from("profiles")
