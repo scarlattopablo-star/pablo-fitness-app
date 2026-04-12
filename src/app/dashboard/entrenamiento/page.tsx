@@ -100,6 +100,19 @@ export default function EntrenamientoPage() {
       notes: notes || null,
     });
 
+    // Send workout completion push notification
+    try {
+      const { sendPushNotification } = await import("@/lib/push-notifications");
+      const msgs = [
+        "Tremendo! Otra sesion completada. Cada dia mas cerca de tu objetivo!",
+        "Bien ahi! Entrenamiento registrado. Tu cuerpo te lo agradece!",
+        "Sesion registrada! Sos de los que no aflojan. Segui asi!",
+        "Excelente! Los resultados se construyen dia a dia.",
+      ];
+      const msg = msgs[Math.floor(Math.random() * msgs.length)];
+      await sendPushNotification(user.id, "Entrenamiento registrado!", msg);
+    } catch { /* push is best-effort */ }
+
     setSaved(true);
     setTimeout(() => {
       setShowForm(false);

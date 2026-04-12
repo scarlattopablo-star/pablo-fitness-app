@@ -78,6 +78,26 @@ export const MOTIVATION_MESSAGES = {
     "El ranking se reinicia el lunes. Asegura tu posicion!",
     "Quedan {days} dias para cerrar el ranking semanal",
   ],
+  workoutComplete: [
+    "Tremendo! Otra sesion completada. Cada dia mas cerca de tu objetivo!",
+    "Bien ahi! Entrenamiento completo. Tu cuerpo te lo agradece!",
+    "Sesion terminada! Sos de los que no aflojan. Segui asi!",
+    "Completaste tu entrenamiento! Descansa y preparate para la proxima.",
+    "Excelente sesion! Los resultados se construyen dia a dia.",
+    "Otro dia, otro entrenamiento. Estas haciendo la diferencia!",
+    "Genial! Ya podes tachar el entrenamiento de hoy. Mañana seguimos!",
+    "Entrenamiento completado! Recorda hidratarte y comer bien.",
+  ],
+  sundayMotivation: [
+    "Nueva semana, nueva oportunidad. Tu plan te esta esperando!",
+    "Arranca la semana con todo. El lunes se entrena, no se descansa!",
+    "Los resultados no llegan solos. Tu plan esta listo, vos tambien?",
+    "Cada semana que entrenas es una semana mas cerca de tu objetivo. Dale!",
+    "Tu cuerpo puede. Tu mente lo sabe. Arranca la semana entrenando!",
+    "No importa como fue la semana pasada. Esta semana vas a dar todo!",
+    "Lunes = dia 1 de la mejor semana de entrenamiento. Nos vemos en la app!",
+    "La constancia le gana al talento. Arranca tu plan esta semana!",
+  ],
 };
 
 export function getRandomMessage(category: keyof typeof MOTIVATION_MESSAGES): string {

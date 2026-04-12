@@ -161,6 +161,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 4. SUNDAY MOTIVATION — motivational message to start the week
+    if (dayOfWeek === 0) { // Sunday
+      const { data: allUsers } = await supabase
+        .from("push_subscriptions")
+        .select("user_id")
+        .limit(200);
+
+      const uniqueUsers = [...new Set((allUsers || []).map(u => u.user_id))];
+      const msg = getRandomMessage("sundayMotivation");
+
+      for (const userId of uniqueUsers) {
+        totalSent += await sendPushToUser(supabase, userId, "Arranca la semana!", msg, "/dashboard/plan");
+      }
+    }
+
     return NextResponse.json({ sent: totalSent, streaksAtRisk: streaks?.length || 0 });
   } catch (err) {
     return NextResponse.json({ error: `Error: ${err}` }, { status: 500 });
