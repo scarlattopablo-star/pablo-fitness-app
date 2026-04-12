@@ -48,7 +48,7 @@ export default function HomePage() {
       <nav className="fixed top-0 w-full z-50 backdrop-blur-md bg-background/70 border-b border-accent/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-10 w-auto" style={{ filter: "invert(1)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className="h-14 w-auto" style={{ filter: "invert(1) brightness(0.85) sepia(1) hue-rotate(100deg) saturate(3)", mixBlendMode: "screen" }} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#resultados" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
