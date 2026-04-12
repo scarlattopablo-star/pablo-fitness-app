@@ -228,6 +228,17 @@ h1, h2, h3, h4, h5, h6 {
   animation: slideInLeft 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Scroll reveal animations */
+.animate-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.animate-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .animate-delay-100 { animation-delay: 100ms; }
 .animate-delay-200 { animation-delay: 200ms; }
 .animate-delay-300 { animation-delay: 300ms; }

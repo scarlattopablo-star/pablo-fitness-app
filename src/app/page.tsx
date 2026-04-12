@@ -1,13 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import {
   ArrowRight, Dumbbell, UtensilsCrossed, Smartphone,
-  BarChart3, Zap, Target, Star,
+  BarChart3, Zap, Target, Star, MessageCircle, Users,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { LanguageSelector } from "@/components/language-selector";
 import { useI18n } from "@/lib/i18n";
+
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("animate-revealed");
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
+
+function ScrollReveal({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useScrollReveal();
+  return (
+    <div ref={ref} className={`animate-reveal ${className}`}>
+      {children}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const { t } = useI18n();
@@ -44,7 +74,18 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* HERO — full viewport, clean */}
+      {/* WHATSAPP FLOATING BUTTON */}
+      <a
+        href="https://wa.me/59897336318?text=Hola%20Pablo!%20Vi%20tu%20web%20y%20quiero%20info%20sobre%20los%20planes"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg shadow-[#25D366]/30 hover:scale-110 transition-transform"
+        aria-label="Chat por WhatsApp"
+      >
+        <MessageCircle className="h-7 w-7 text-white fill-white" />
+      </a>
+
+      {/* HERO — full viewport */}
       <section className="relative min-h-screen flex items-center px-4">
         {/* Background */}
         <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15" style={{ backgroundImage: "url(/images/gym-bg.png)", filter: "grayscale(100%)" }} />
@@ -115,77 +156,96 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* RESULTADOS — compact horizontal scroll on mobile */}
+      {/* URGENCY BANNER — limited spots */}
+      <ScrollReveal>
+        <div className="bg-accent/10 border-y border-accent/20 py-4 px-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
+            <Users className="h-5 w-5 text-accent shrink-0" />
+            <p className="text-sm font-bold text-center">
+              <span className="text-accent">Quedan 5 lugares</span>
+              <span className="text-muted"> para planes personalizados este mes</span>
+            </p>
+          </div>
+        </div>
+      </ScrollReveal>
+
+      {/* RESULTADOS */}
       <section id="resultados" className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
+          <ScrollReveal className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
               Resultados <span className="text-accent">Reales</span>
             </h2>
             <p className="text-sm text-muted mt-2">Transformaciones de alumnos reales</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { src: "/images/transf-nueva-2.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-nueva-1.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-nueva-3.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-nueva-4.jpg", result: "Quema de grasa" },
+          </ScrollReveal>
+          <ScrollReveal>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {[
+                { src: "/images/transf-nueva-2.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-nueva-1.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-nueva-3.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-nueva-4.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-nueva-5.jpg", result: "Tonificacion" },
+              { src: "/images/transf-nueva-6.jpg", result: "Definicion" },
               { src: "/images/transf-4.jpg", result: "Transformacion" },
-              { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
-              { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
-              { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
-              { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
-              { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-mujer4-perfil.jpg", result: "Tonificacion" },
-              { src: "/images/transf-mujer3-perfil.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-mujer-frontal.jpg", result: "Recomposicion" },
-              { src: "/images/transf-mujer2-lateral.jpg", result: "Quema de grasa" },
-            ].map((item, i) => (
-              <div key={i} className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-colors">
-                <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.02] transition-transform duration-500" loading="lazy" />
-                <div className="p-3 text-center border-t border-card-border/30">
-                  <p className="text-accent font-bold text-xs">{item.result}</p>
+                { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
+                { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
+                { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
+                { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
+                { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-mujer4-perfil.jpg", result: "Tonificacion" },
+                { src: "/images/transf-mujer3-perfil.jpg", result: "Quema de grasa" },
+                { src: "/images/transf-mujer-frontal.jpg", result: "Recomposicion" },
+                { src: "/images/transf-mujer2-lateral.jpg", result: "Quema de grasa" },
+              ].map((item, i) => (
+                <div key={i} className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-colors">
+                  <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.02] transition-transform duration-500" loading="lazy" />
+                  <div className="p-3 text-center border-t border-card-border/30">
+                    <p className="text-accent font-bold text-xs">{item.result}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
-      {/* QUE INCLUYE — compact grid */}
+      {/* QUE INCLUYE */}
       <section id="incluido" className="py-16 px-4 bg-card-bg/30">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
+          <ScrollReveal className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
               Que <span className="text-accent">incluye</span>
             </h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { icon: Dumbbell, title: "Plan de entrenamiento", desc: "Rutina personalizada dia por dia" },
-              { icon: UtensilsCrossed, title: "Plan de nutricion", desc: "Comidas adaptadas a tu objetivo" },
-              { icon: Smartphone, title: "App completa", desc: "Todo en tu celular, siempre disponible" },
-              { icon: Zap, title: "GIFs de ejercicios", desc: "Tecnica correcta en cada movimiento" },
-              { icon: BarChart3, title: "Seguimiento", desc: "Registro de peso y fotos de progreso" },
-              { icon: Target, title: "Soporte directo", desc: "Chat con Pablo para dudas y ajustes" },
-            ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="card-premium rounded-xl p-5 text-center">
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-3">
-                  <Icon className="h-5 w-5 text-accent" />
+          </ScrollReveal>
+          <ScrollReveal>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {[
+                { icon: Dumbbell, title: "Plan de entrenamiento", desc: "Rutina personalizada dia por dia" },
+                { icon: UtensilsCrossed, title: "Plan de nutricion", desc: "Comidas adaptadas a tu objetivo" },
+                { icon: Smartphone, title: "App completa", desc: "Todo en tu celular, siempre disponible" },
+                { icon: Zap, title: "GIFs de ejercicios", desc: "Tecnica correcta en cada movimiento" },
+                { icon: BarChart3, title: "Seguimiento", desc: "Registro de peso y fotos de progreso" },
+                { icon: Target, title: "Soporte directo", desc: "Chat con Pablo para dudas y ajustes" },
+              ].map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="card-premium rounded-xl p-5 text-center hover:border-accent/30 border border-transparent transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mx-auto mb-3">
+                    <Icon className="h-5 w-5 text-accent" />
+                  </div>
+                  <h3 className="font-bold text-sm mb-1">{title}</h3>
+                  <p className="text-xs text-muted">{desc}</p>
                 </div>
-                <h3 className="font-bold text-sm mb-1">{title}</h3>
-                <p className="text-xs text-muted">{desc}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* CTA FINAL */}
       <section className="py-20 px-4">
-        <div className="max-w-2xl mx-auto text-center">
+        <ScrollReveal className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight">
             Empeza tu
             <br />
@@ -202,7 +262,7 @@ export default function HomePage() {
               o ver todos los planes →
             </Link>
           </div>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* FOOTER */}
