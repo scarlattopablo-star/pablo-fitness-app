@@ -181,24 +181,18 @@ export default function HomePage() {
           <ScrollReveal>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {[
-                { src: "/images/transf-nueva-2.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-nueva-1.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-nueva-3.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-nueva-4.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-nueva-5.jpg", result: "Tonificacion" },
-              { src: "/images/transf-nueva-6.jpg", result: "Definicion" },
-              { src: "/images/transf-4.jpg", result: "Transformacion" },
+                { src: "/images/transf-nueva-6.jpg", result: "Definicion" },
                 { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
-                { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
+                { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
                 { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
                 { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
                 { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
-                { src: "/images/transf-mujer4-perfil.jpg", result: "Tonificacion" },
-                { src: "/images/transf-mujer3-perfil.jpg", result: "Quema de grasa" },
-                { src: "/images/transf-mujer-frontal.jpg", result: "Recomposicion" },
-                { src: "/images/transf-mujer2-lateral.jpg", result: "Quema de grasa" },
               ].map((item, i) => (
                 <div key={i} className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-colors">
                   <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.02] transition-transform duration-500" loading="lazy" />
