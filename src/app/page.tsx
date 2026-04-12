@@ -100,13 +100,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Transformation highlight */}
+            {/* Right — Best transformation */}
             <div className="hidden lg:block animate-fade-in-up animate-delay-300">
               <div className="relative">
                 <div className="card-premium rounded-3xl overflow-hidden border border-accent/30">
-                  <img src="/images/transf-hombre-musculo.jpg" alt="Transformacion" className="w-full object-cover" />
+                  <img src="/images/transf-4.jpg" alt="Mejor transformacion" className="w-full object-contain" />
                 </div>
-                {/* Floating badge */}
                 <div className="absolute -bottom-4 -left-4 bg-accent text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-accent/30">
                   Resultado real
                 </div>
@@ -127,10 +126,18 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[
+              { src: "/images/transf-4.jpg", result: "Transformacion" },
               { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
               { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
               { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
               { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
+              { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
+              { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
+              { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
+              { src: "/images/transf-mujer4-perfil.jpg", result: "Tonificacion" },
+              { src: "/images/transf-mujer3-perfil.jpg", result: "Quema de grasa" },
+              { src: "/images/transf-mujer-frontal.jpg", result: "Recomposicion" },
+              { src: "/images/transf-mujer2-lateral.jpg", result: "Quema de grasa" },
             ].map((item, i) => (
               <div key={i} className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-colors">
                 <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.02] transition-transform duration-500" loading="lazy" />
