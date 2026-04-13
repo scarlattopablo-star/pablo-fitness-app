@@ -262,11 +262,34 @@ function PlanContent() {
       }));
     }
 
-    // Record gamification: XP + streak + achievements
+    // Send push notification
+    import("@/lib/push-notifications").then(({ sendPushNotification }) => {
+      const msgs = [
+        "Tremendo! Otra sesion completada. Segui asi!",
+        "Bien ahi! Entrenamiento registrado. Cada dia cuenta!",
+        "Sesion registrada! Sos imparable!",
+        "Excelente! Los resultados se construyen dia a dia.",
+      ];
+      const msg = msgs[Math.floor(Math.random() * msgs.length)];
+      sendPushNotification(user.id, "Entrenamiento registrado!", msg, "/dashboard/plan");
+    }).catch(() => {});
+
+    // Record gamification: XP + streak + achievements + toast
     fetch("/api/gamification", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: user.id, action: "session_logged" }),
+    }).then(async (res) => {
+      if (!res.ok) return;
+      const data = await res.json();
+      const { triggerAchievementToast } = await import("@/components/achievement-toast");
+      if (data.levelUp) {
+        const { triggerCelebration } = await import("@/components/celebration");
+        triggerCelebration("levelup");
+        triggerAchievementToast({ icon: "⚡", title: `Nivel ${data.newLevel}!`, subtitle: `+${data.xpGained} XP`, type: "levelup" });
+      } else if (data.newAchievements?.length > 0) {
+        triggerAchievementToast({ icon: "🏆", title: "Nuevo logro!", subtitle: `+${data.xpGained} XP`, type: "badge" });
+      }
     }).catch(() => {});
 
     // Trigger celebration animation
