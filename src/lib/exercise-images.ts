@@ -11,7 +11,7 @@ const gif = (name: string): string => `/exercises/gifs/${name}.gif`;
 const EXERCISE_GIFS: Record<string, string> = {
   // PECHO
   'press-banca-plano': gif('press-banca'),
-  'press-inclinado': gif('press-inclinado'),
+  'press-inclinado': gif('press-mancuernas-inclinado'),
   'press-declinado': gif('press-declinado'),
   'aperturas-inclinadas': gif('aperturas'),
   'cruces-polea': gif('cruces-polea'),
@@ -37,7 +37,7 @@ const EXERCISE_GIFS: Record<string, string> = {
   'press-hombros': gif('press-hombros'),
   'press-arnold': gif('press-arnold'),
   'elevaciones-laterales': gif('elevaciones-laterales'),
-  'face-pull': gif('remo-polea'),
+  'face-pull': gif('remo-posterior-cable'),
   'elevaciones-frontales': gif('elevaciones-frontales'),
   'pike-push-up': gif('pike-push-up'),
   'handstand-wall': gif('handstand'),
