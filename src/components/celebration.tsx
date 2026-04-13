@@ -2,11 +2,32 @@
 
 import confetti from "canvas-confetti";
 
-function playApplause() {
+function playCelebrationSound() {
   try {
-    const audio = new Audio("/sounds/applause.mp3");
-    audio.volume = 0.6;
-    audio.play().catch(() => {});
+    // 1. Three-note ascending jingle (the original sound you liked)
+    const Ctx = window.AudioContext || (window as unknown as Record<string, unknown>).webkitAudioContext as typeof AudioContext;
+    const ctx = new Ctx();
+    [523, 659, 784].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "triangle";
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
+      gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.12 + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.4);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.4);
+    });
+
+    // 2. Applause starts right after the jingle (~0.4s delay)
+    setTimeout(() => {
+      const audio = new Audio("/sounds/applause.mp3");
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+    }, 400);
+
     if (navigator.vibrate) navigator.vibrate([150, 50, 150]);
   } catch { /* audio is best-effort */ }
 }
@@ -40,8 +61,8 @@ function getOrCreateCanvas(): HTMLCanvasElement {
 }
 
 export function triggerCelebration(type: "workout" | "pr" | "streak" | "levelup" = "workout") {
-  // Play applause sound
-  playApplause();
+  // Play 3-note jingle + applause
+  playCelebrationSound();
 
   // Get/create canvas and confetti instance
   const canvas = getOrCreateCanvas();
