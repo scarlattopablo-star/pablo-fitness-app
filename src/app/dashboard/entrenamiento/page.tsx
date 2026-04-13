@@ -113,6 +113,32 @@ export default function EntrenamientoPage() {
       await sendPushNotification(user.id, "Entrenamiento registrado!", msg, "/dashboard/entrenamiento");
     } catch { /* push is best-effort */ }
 
+    // Trigger celebration animation
+    try {
+      const { triggerCelebration } = await import("@/components/celebration");
+      triggerCelebration("workout");
+    } catch { /* celebration is best-effort */ }
+
+    // Record gamification XP and show achievement toasts
+    try {
+      const gamRes = await fetch("/api/gamification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, action: "session_logged" }),
+      });
+      if (gamRes.ok) {
+        const gamData = await gamRes.json();
+        const { triggerAchievementToast } = await import("@/components/achievement-toast");
+        if (gamData.levelUp) {
+          const { triggerCelebration } = await import("@/components/celebration");
+          triggerCelebration("levelup");
+          triggerAchievementToast({ icon: "⚡", title: `Nivel ${gamData.newLevel}!`, subtitle: `+${gamData.xpGained} XP`, type: "levelup" });
+        } else if (gamData.newAchievements?.length > 0) {
+          triggerAchievementToast({ icon: "🏆", title: "Nuevo logro!", subtitle: `+${gamData.xpGained} XP`, type: "badge" });
+        }
+      }
+    } catch { /* gamification is best-effort */ }
+
     setSaved(true);
     setTimeout(() => {
       setShowForm(false);

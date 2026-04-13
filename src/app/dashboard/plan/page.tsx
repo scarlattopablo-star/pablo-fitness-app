@@ -269,6 +269,11 @@ function PlanContent() {
       body: JSON.stringify({ userId: user.id, action: "session_logged" }),
     }).catch(() => {});
 
+    // Trigger celebration animation
+    import("@/components/celebration").then(({ triggerCelebration }) => {
+      triggerCelebration("workout");
+    }).catch(() => {});
+
     setSavingSession(false);
     setSessionSaved(true);
     // Clear persisted session data after successful save

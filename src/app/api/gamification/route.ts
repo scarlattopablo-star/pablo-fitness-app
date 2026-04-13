@@ -29,7 +29,31 @@ export async function GET(request: NextRequest) {
   const xp = xpRes.data || { total_xp: 0, level: 1, level_name: "Novato" };
   const streak = streakRes.data || { current_streak: 0, max_streak: 0 };
   const earned = new Set((achievementsRes.data || []).map(a => a.achievement_id));
+  const earnedList = (achievementsRes.data || []);
   const level = getLevelForXp(xp.total_xp);
+
+  // Calculate weekly rank position
+  let rankPosition: number | null = null;
+  if (rankingRes.data) {
+    const weekStart = getWeekStart();
+    const { data: allRankings } = await supabase
+      .from("weekly_rankings")
+      .select("user_id, xp_earned")
+      .eq("week_start", weekStart)
+      .order("xp_earned", { ascending: false });
+    if (allRankings) {
+      const idx = allRankings.findIndex(r => r.user_id === userId);
+      if (idx >= 0) rankPosition = idx + 1;
+    }
+  }
+
+  // Enrich earned achievements with name/icon from definitions
+  const allAchDefs = allAchievementsRes.data || [];
+  const achMap = new Map(allAchDefs.map(a => [a.id, a]));
+  const enrichedEarned = earnedList.map(e => {
+    const def = achMap.get(e.achievement_id);
+    return { ...e, name: def?.name || "", icon: def?.icon || "🏆" };
+  });
 
   return NextResponse.json({
     xp: xp.total_xp,
@@ -41,8 +65,9 @@ export async function GET(request: NextRequest) {
     streak: streak.current_streak,
     maxStreak: streak.max_streak,
     ranking: rankingRes.data || null,
-    earnedAchievements: achievementsRes.data || [],
-    allAchievements: (allAchievementsRes.data || []).map(a => ({
+    rankPosition,
+    earnedAchievements: enrichedEarned,
+    allAchievements: allAchDefs.map(a => ({
       ...a,
       earned: earned.has(a.id),
     })),

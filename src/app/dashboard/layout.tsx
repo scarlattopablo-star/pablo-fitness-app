@@ -13,6 +13,7 @@ import { getPhotoUrl } from "@/lib/upload-photo";
 import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/lib/push-notifications";
 import { supabase } from "@/lib/supabase";
 import ChatNotificationToast, { triggerChatNotification } from "@/components/chat-notification-toast";
+import AchievementToast from "@/components/achievement-toast";
 import { PresenceProvider } from "@/hooks/use-presence";
 
 const NAV_ITEMS = [
@@ -373,8 +374,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </PresenceProvider>
       </main>
 
-      {/* In-app chat notification toast */}
+      {/* In-app notification toasts */}
       <ChatNotificationToast />
+      <AchievementToast />
     </div>
   );
 }

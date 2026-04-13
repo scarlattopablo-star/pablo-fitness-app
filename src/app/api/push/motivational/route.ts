@@ -203,6 +203,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 6. GENTLE INACTIVITY — users who haven't trained in 3+ days (no active streak)
+    const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
+    const { data: inactiveStreaks } = await supabase
+      .from("user_streaks")
+      .select("user_id, last_activity_date")
+      .lte("last_activity_date", threeDaysAgo)
+      .lte("current_streak", 1);
+
+    if (inactiveStreaks) {
+      const inactiveIds = inactiveStreaks.map(s => s.user_id);
+      const { data: inactiveProfiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", inactiveIds)
+        .is("deleted_at", null);
+
+      for (const p of inactiveProfiles || []) {
+        const streak = inactiveStreaks.find(s => s.user_id === p.id);
+        if (!streak) continue;
+        const daysSince = Math.floor((Date.now() - new Date(streak.last_activity_date).getTime()) / 86400000);
+        if (daysSince > 14) continue; // Don't bother users inactive >2 weeks
+        const name = p.full_name?.split(" ")[0] || "Crack";
+        const msgs = [
+          `${name}, hace ${daysSince} dias que no entrenas. Tu plan te espera!`,
+          `${name}, un dia a la vez. Volvemos a entrenar?`,
+          `Hey ${name}! No pasa nada, lo importante es volver. Te esperamos!`,
+        ];
+        const msg = msgs[Math.floor(Math.random() * msgs.length)];
+        totalSent += await sendPushToUser(supabase, p.id, "Te extrañamos!", msg, "/dashboard/plan");
+      }
+    }
+
+    // 7. PERSONALIZE STREAK RISK with user name
+    // (already handled above in section 1, but now let's add names to ranking notifications too)
+
     return NextResponse.json({ sent: totalSent, streaksAtRisk: streaks?.length || 0 });
   } catch (err) {
     return NextResponse.json({ error: `Error: ${err}` }, { status: 500 });

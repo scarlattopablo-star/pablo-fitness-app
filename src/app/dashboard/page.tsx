@@ -5,6 +5,7 @@ import {
   Flame, TrendingUp, Camera, Dumbbell,
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
   Loader2, ChevronRight, Zap, CreditCard, Crown,
+  Trophy, Star,
 } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { InstagramIcon } from "@/components/icons";
@@ -14,6 +15,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { OfflineBanner } from "@/components/offline-banner";
 import { cacheData, getCachedData } from "@/lib/offline-cache";
+import MuscleHeatmap from "@/components/muscle-heatmap";
+import { EXERCISES } from "@/lib/exercises-data";
 
 interface SurveyData {
   target_calories: number;
@@ -23,6 +26,41 @@ interface SurveyData {
   weight: number;
   created_at: string;
 }
+
+interface GamificationData {
+  xp: number;
+  level: number;
+  levelName: string;
+  progress: number;
+  streak: number;
+  lastAchievement: { name: string; icon: string } | null;
+  weekSessions: number;
+  weekXp: number;
+  weekRank: number | null;
+}
+
+const DAILY_MESSAGES = [
+  "Los resultados se construyen dia a dia",
+  "Cada entrenamiento te acerca a tu mejor version",
+  "La disciplina supera a la motivacion",
+  "Tu cuerpo puede, tu mente debe creerlo",
+  "Hoy es un gran dia para superar tus limites",
+  "El dolor de hoy es la fuerza de manana",
+  "No busques excusas, busca resultados",
+  "La constancia es la clave del exito",
+  "Entrena como si no hubiera manana",
+  "Cada gota de sudor cuenta",
+  "Tu unico rival sos vos de ayer",
+  "El progreso no es lineal, pero es progreso",
+  "Confia en el proceso",
+  "Hoy entrenas, manana agradeces",
+  "Un dia mas cerca de tu objetivo",
+  "La mejor inversion es en tu salud",
+  "No pares hasta sentirte orgulloso",
+  "El gimnasio nunca te falla",
+  "Vos elegis si hoy cuenta o no",
+  "Hacelo por vos, por tu mejor version",
+];
 
 export default function DashboardPage() {
   const { user, profile, subscription, isTrial, trialDaysLeft, hasActiveSubscription } = useAuth();
@@ -35,13 +73,48 @@ export default function DashboardPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [isDirectClient, setIsDirectClient] = useState(false);
+  const [gamification, setGamification] = useState<GamificationData | null>(null);
+  const [trainedMuscles, setTrainedMuscles] = useState<Record<string, number>>({});
+
+  // Deterministic daily message
+  const dailyMessage = (() => {
+    const seed = new Date().toDateString();
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+    return DAILY_MESSAGES[Math.abs(hash) % DAILY_MESSAGES.length];
+  })();
 
   useEffect(() => {
     if (user) loadData();
     if (profile?.avatar_url) {
       getPhotoUrl(profile.avatar_url).then(url => { if (url) setAvatarUrl(url); });
     }
+    if (user) loadGamification();
+    if (user) loadWeeklyMuscles();
   }, [user, profile]);
+
+  const loadGamification = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/gamification?userId=${user.id}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const lastAchievement = data.earnedAchievements?.length
+        ? data.earnedAchievements[data.earnedAchievements.length - 1]
+        : null;
+      setGamification({
+        xp: data.xp || 0,
+        level: data.level || 1,
+        levelName: data.levelName || "Novato",
+        progress: data.progress || 0,
+        streak: data.streak || 0,
+        lastAchievement: lastAchievement ? { name: lastAchievement.name, icon: lastAchievement.icon } : null,
+        weekSessions: data.ranking?.sessions_count || 0,
+        weekXp: data.ranking?.xp_earned || 0,
+        weekRank: data.rankPosition || null,
+      });
+    } catch { /* silently fail */ }
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -84,6 +157,32 @@ export default function DashboardPage() {
       if (cached?.survey) { setSurvey(cached.survey); if (cached.survey.weight) setCurrentWeight(cached.survey.weight); }
     }
     setLoading(false);
+  };
+
+  const loadWeeklyMuscles = async () => {
+    if (!user) return;
+    try {
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), diff).toISOString().split("T")[0];
+
+      const { data: logs } = await supabase
+        .from("exercise_logs")
+        .select("exercise_id")
+        .eq("user_id", user.id)
+        .gte("created_at", weekStart);
+
+      if (logs && logs.length > 0) {
+        const muscleMap: Record<string, number> = {};
+        const exerciseMap = new Map(EXERCISES.map(e => [e.id, e.muscleGroup]));
+        for (const log of logs) {
+          const group = exerciseMap.get(log.exercise_id);
+          if (group) muscleMap[group] = (muscleMap[group] || 0) + 1;
+        }
+        setTrainedMuscles(muscleMap);
+      }
+    } catch { /* silently fail */ }
   };
 
   const displayName = profile?.full_name?.split(" ")[0] || "Cliente";
@@ -134,6 +233,7 @@ export default function DashboardPage() {
           <div>
             <p className="text-xs text-primary font-semibold uppercase tracking-widest mb-1">{greeting}</p>
             <h1 className="text-3xl sm:text-4xl font-black tracking-tight">{displayName}</h1>
+            <p className="text-xs text-muted italic mt-1">{dailyMessage}</p>
           </div>
           <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0">
             {avatarUrl ? (
@@ -159,6 +259,59 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* GAMIFICATION WIDGET */}
+      {gamification && (
+        <Link href="/dashboard/ranking" className="block mb-6 group">
+          <div className="grid grid-cols-3 gap-2">
+            {/* Streak */}
+            <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+              <div className="text-2xl mb-1">{gamification.streak > 0 ? "🔥" : "💤"}</div>
+              <p className="text-lg font-black text-primary">{gamification.streak}</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider">{gamification.streak === 1 ? "Dia" : "Dias"} racha</p>
+            </div>
+            {/* Level */}
+            <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+              <div className="text-2xl mb-1">⚡</div>
+              <p className="text-lg font-black">{gamification.levelName}</p>
+              <div className="mt-1 h-1 bg-card-border/50 rounded-full overflow-hidden">
+                <div className="h-full gradient-primary rounded-full" style={{ width: `${Math.round(gamification.progress * 100)}%` }} />
+              </div>
+              <p className="text-[10px] text-muted mt-1">{gamification.xp} XP</p>
+            </div>
+            {/* Last Achievement */}
+            <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+              <div className="text-2xl mb-1">{gamification.lastAchievement?.icon || "🏆"}</div>
+              <p className="text-xs font-bold truncate">{gamification.lastAchievement?.name || "Sin logros"}</p>
+              <p className="text-[10px] text-muted uppercase tracking-wider mt-1">Ultimo logro</p>
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {/* WEEKLY SUMMARY */}
+      {gamification && gamification.weekSessions > 0 && (
+        <div className="card-premium rounded-2xl p-4 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-primary" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted">Tu Semana</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <p className="text-xl font-black text-primary">{gamification.weekSessions}</p>
+              <p className="text-[10px] text-muted">{gamification.weekSessions === 1 ? "Sesion" : "Sesiones"}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-black text-amber-400">+{gamification.weekXp}</p>
+              <p className="text-[10px] text-muted">XP ganado</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-black">{gamification.weekRank ? `#${gamification.weekRank}` : "-"}</p>
+              <p className="text-[10px] text-muted">Ranking</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TRIAL COUNTDOWN BANNER */}
       {isTrial && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
@@ -291,6 +444,11 @@ export default function DashboardPage() {
           <p className="font-bold">Tu entrenador esta preparando tu plan</p>
           <p className="text-sm text-muted mt-1">Pronto veras tus macros y plan personalizado.</p>
         </div>
+      )}
+
+      {/* MUSCLE HEATMAP */}
+      {Object.values(trainedMuscles).some(v => v > 0) && (
+        <MuscleHeatmap trainedMuscles={trainedMuscles} />
       )}
 
       {/* QUICK ACTIONS — full width buttons */}
