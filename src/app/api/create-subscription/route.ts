@@ -4,38 +4,43 @@ import { createClient } from "@supabase/supabase-js";
 // POST: Create a subscription for a user (uses service role to bypass RLS)
 export async function POST(request: NextRequest) {
   try {
-    // Auth check: require valid Bearer token
-    const authHeader = request.headers.get("authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return NextResponse.json({ error: "Token invalido" }, { status: 401 });
-    }
-
     const { userId, duration, amountPaid, currency } = await request.json();
     if (!userId || !duration) {
       return NextResponse.json({ error: "userId y duration requeridos" }, { status: 400 });
     }
 
-    // Verify the authenticated user matches the userId or is admin
-    const { data: authProfile } = await supabase
-      .from("profiles")
-      .select("id, role")
-      .eq("id", user.id)
-      .single();
+    // Auth check: require valid Bearer token OR allow trial creation for just-registered users
+    const authHeader = request.headers.get("authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
 
-    if (user.id !== userId && authProfile?.role !== "admin") {
-      return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+    if (token) {
+      // Validate token if provided
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !user) {
+        return NextResponse.json({ error: "Token invalido" }, { status: 401 });
+      }
+
+      // Verify the authenticated user matches the userId or is admin
+      const { data: authProfile } = await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", user.id)
+        .single();
+
+      if (user.id !== userId && authProfile?.role !== "admin") {
+        return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+      }
+    } else {
+      // No token: only allow free trial creation (7-dias, $0)
+      if (duration !== "7-dias" || (amountPaid && amountPaid > 0)) {
+        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+      }
     }
 
     // Verify the user exists

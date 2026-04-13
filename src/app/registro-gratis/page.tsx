@@ -37,14 +37,24 @@ export default function RegistroGratisPage() {
       const userId = authData.user.id;
 
       // 1.5 Auto-confirm email (bypass SMTP issues)
-      await fetch("/api/confirm-email", {
+      const confirmRes = await fetch("/api/confirm-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       });
 
-      // 1.6 Sign in immediately after confirming
-      await supabase.auth.signInWithPassword({ email, password });
+      if (!confirmRes.ok) {
+        console.warn("Email confirm failed, continuing anyway...");
+      }
+
+      // 1.6 Sign in immediately after confirming (retry once if needed)
+      let accessToken: string | undefined;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000));
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        accessToken = signInData?.session?.access_token;
+        if (accessToken) break;
+      }
 
       // 2. Update profile
       await supabase
@@ -53,9 +63,14 @@ export default function RegistroGratisPage() {
         .eq("id", userId);
 
       // 3. Create trial subscription (7 days, $0)
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
       const res = await fetch("/api/create-subscription", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           userId,
           duration: "7-dias",

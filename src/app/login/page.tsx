@@ -34,19 +34,52 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      let { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (authError) {
-        if (authError.message.includes("Invalid login")) {
+        if (authError.message.includes("Email not confirmed")) {
+          // Auto-confirm and retry sign in
+          try {
+            // We need the user ID to confirm - try to get it from a fresh signUp attempt
+            const { data: signUpData } = await supabase.auth.signUp({ email, password });
+            if (signUpData?.user?.id) {
+              await fetch("/api/confirm-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: signUpData.user.id }),
+              });
+              // Retry sign in
+              const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({ email, password });
+              if (!retryError && retryData.user) {
+                // Success - continue with the normal flow below
+                data = retryData;
+              } else {
+                setError("No pudimos confirmar tu email. Intentá de nuevo.");
+                setLoading(false);
+                return;
+              }
+            } else {
+              setError("No pudimos confirmar tu email. Intentá de nuevo.");
+              setLoading(false);
+              return;
+            }
+          } catch {
+            setError("Error al confirmar email. Intentá de nuevo.");
+            setLoading(false);
+            return;
+          }
+        } else if (authError.message.includes("Invalid login")) {
           setError("Email o contraseña incorrectos.");
+          setLoading(false);
+          return;
         } else {
           setError(authError.message);
+          setLoading(false);
+          return;
         }
-        setLoading(false);
-        return;
       }
 
       if (data.user) {

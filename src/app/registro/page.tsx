@@ -68,14 +68,22 @@ function RegistroForm() {
       }
 
       // 1.5 Auto-confirm email (bypass SMTP issues)
-      await fetch("/api/confirm-email", {
+      const confirmRes = await fetch("/api/confirm-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: authData.user.id }),
       });
 
-      // 1.6 Sign in immediately after confirming (so user has active session)
-      await supabase.auth.signInWithPassword({ email, password });
+      if (!confirmRes.ok) {
+        console.warn("Email confirm failed, continuing anyway...");
+      }
+
+      // 1.6 Sign in immediately after confirming (retry once if needed)
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000));
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInData?.session?.access_token) break;
+      }
 
       // 2. Update profile with phone
       if (phone) {
