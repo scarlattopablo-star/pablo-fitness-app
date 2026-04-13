@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { userId, duration, amountPaid, currency } = await request.json();
+    const { userId, duration, trialDays, amountPaid, currency } = await request.json();
     if (!userId || !duration) {
       return NextResponse.json({ error: "userId y duration requeridos" }, { status: 400 });
     }
@@ -37,13 +37,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
       }
     } else {
-      // No token: only allow free trial creation (7-dias, $0)
-      if (duration !== "7-dias" || (amountPaid && amountPaid > 0)) {
+      // No token: only allow free trial creation ($0)
+      if (amountPaid && amountPaid > 0) {
         return NextResponse.json({ error: "No autorizado" }, { status: 401 });
       }
     }
 
-    // Verify the user exists
+    // Verify the user exists in auth
+    const { data: { user: authUser }, error: userCheckErr } = await supabase.auth.admin.getUserById(userId);
+    if (userCheckErr || !authUser) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    // Ensure profile exists (create if missing - handles race conditions during signup)
     const { data: profile } = await supabase
       .from("profiles")
       .select("id")
@@ -51,16 +57,19 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile) {
-      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+      await supabase.from("profiles").upsert({
+        id: userId,
+        email: authUser.email,
+        full_name: authUser.user_metadata?.full_name || authUser.email?.split("@")[0] || "",
+      }, { onConflict: "id" });
     }
 
-    // Calculate end date based on duration
+    // Calculate end date based on duration (trialDays overrides for free trials)
     const startDate = new Date();
     const endDate = new Date();
-    switch (duration) {
-      case "7-dias":
-        endDate.setDate(endDate.getDate() + 7);
-        break;
+    if (trialDays && Number(trialDays) > 0) {
+      endDate.setDate(endDate.getDate() + Number(trialDays));
+    } else switch (duration) {
       case "1-mes":
         endDate.setMonth(endDate.getMonth() + 1);
         break;

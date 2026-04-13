@@ -85,13 +85,10 @@ function RegistroForm() {
         if (signInData?.session?.access_token) break;
       }
 
-      // 2. Update profile with phone
-      if (phone) {
-        await supabase
-          .from("profiles")
-          .update({ phone, full_name: fullName })
-          .eq("id", authData.user.id);
-      }
+      // 2. Ensure profile exists and update with phone
+      await supabase
+        .from("profiles")
+        .upsert({ id: authData.user.id, email, full_name: fullName, ...(phone ? { phone } : {}) }, { onConflict: "id" });
 
       // 2.5 Save pending survey from /encuesta if it exists
       const pendingSurvey = localStorage.getItem("pendingSurvey");

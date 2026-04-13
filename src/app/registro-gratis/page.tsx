@@ -56,13 +56,12 @@ export default function RegistroGratisPage() {
         if (accessToken) break;
       }
 
-      // 2. Update profile
+      // 2. Ensure profile exists and update name
       await supabase
         .from("profiles")
-        .update({ full_name: fullName })
-        .eq("id", userId);
+        .upsert({ id: userId, email, full_name: fullName }, { onConflict: "id" });
 
-      // 3. Create trial subscription (7 days, $0)
+      // 3. Create trial subscription (7 days free, stored as 1-mes with 7-day end date)
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (accessToken) {
         headers["Authorization"] = `Bearer ${accessToken}`;
@@ -73,7 +72,8 @@ export default function RegistroGratisPage() {
         headers,
         body: JSON.stringify({
           userId,
-          duration: "7-dias",
+          duration: "1-mes",
+          trialDays: 7,
           amountPaid: 0,
           currency: "UYU",
         }),
