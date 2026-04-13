@@ -2,11 +2,80 @@
 
 import confetti from "canvas-confetti";
 
+function generateCrowdApplause(ctx: AudioContext, startTime: number, duration: number) {
+  // Simulate a LARGE crowd applauding: many individual clappers at different rates
+  const sampleRate = ctx.sampleRate;
+  const samples = Math.floor(sampleRate * duration);
+  const buffer = ctx.createBuffer(2, samples, sampleRate);
+  const numClappers = 40; // 40 individual people clapping
+
+  // Pre-generate each clapper's random rate and phase
+  const clappers = Array.from({ length: numClappers }, () => ({
+    rate: 3 + Math.random() * 6,       // each person claps at different speed (3-9 Hz)
+    phase: Math.random() * Math.PI * 2, // random starting phase
+    volume: 0.3 + Math.random() * 0.7,  // some louder than others
+    pan: Math.random() * 2 - 1,         // stereo position (-1 to 1)
+  }));
+
+  for (let channel = 0; channel < 2; channel++) {
+    const data = buffer.getChannelData(channel);
+    for (let i = 0; i < samples; i++) {
+      const t = i / sampleRate;
+      // Overall envelope: quick fade in, sustain, gentle fade out
+      const fadeIn = Math.min(1, t * 3);
+      const fadeOut = Math.max(0, 1 - Math.max(0, t - duration + 0.8) * 1.25);
+      const envelope = fadeIn * fadeOut;
+
+      let sample = 0;
+      for (const clapper of clappers) {
+        // Each clapper produces short noise bursts at their own rate
+        const clapPhase = ((t * clapper.rate + clapper.phase) % 1);
+        // Sharp attack, quick decay = sounds like a single clap
+        const clapEnv = clapPhase < 0.08 ? Math.exp(-clapPhase * 50) : 0;
+        // Noise filtered per clapper
+        const noise = Math.random() * 2 - 1;
+        // Apply stereo panning (simple left/right balance)
+        const panGain = channel === 0
+          ? Math.min(1, 1 - clapper.pan * 0.5)
+          : Math.min(1, 1 + clapper.pan * 0.5);
+        sample += noise * clapEnv * clapper.volume * panGain;
+      }
+
+      data[i] = sample * envelope * 0.08; // normalize
+    }
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+
+  // Bandpass: real clapping is mid-high frequency (1kHz - 6kHz)
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.frequency.value = 3000;
+  filter.Q.value = 0.3;
+
+  // Second filter for more realism
+  const highShelf = ctx.createBiquadFilter();
+  highShelf.type = "highshelf";
+  highShelf.frequency.value = 4000;
+  highShelf.gain.value = 3;
+
+  const gain = ctx.createGain();
+  gain.gain.value = 1.2;
+
+  source.connect(filter);
+  filter.connect(highShelf);
+  highShelf.connect(gain);
+  gain.connect(ctx.destination);
+  source.start(startTime);
+}
+
 function playCelebrationSound() {
   try {
-    // 1. Three-note ascending jingle (the original sound you liked)
     const Ctx = window.AudioContext || (window as unknown as Record<string, unknown>).webkitAudioContext as typeof AudioContext;
     const ctx = new Ctx();
+
+    // 1. Three-note ascending jingle (do-mi-sol)
     [523, 659, 784].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -21,12 +90,8 @@ function playCelebrationSound() {
       osc.stop(ctx.currentTime + i * 0.12 + 0.4);
     });
 
-    // 2. Applause starts right after the jingle (~0.4s delay)
-    setTimeout(() => {
-      const audio = new Audio("/sounds/applause.mp3");
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-    }, 400);
+    // 2. Crowd applause (40 people clapping, synthesized - no external file dependency)
+    generateCrowdApplause(ctx, ctx.currentTime + 0.4, 2.5);
 
     if (navigator.vibrate) navigator.vibrate([150, 50, 150]);
   } catch { /* audio is best-effort */ }
