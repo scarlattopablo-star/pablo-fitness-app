@@ -83,9 +83,13 @@ function AccesoGratisForm() {
 
         if (loginData.user && code) {
           // Claim code for existing user
+          const session = loginData.session;
           const claimRes = await fetch("/api/free-access", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session?.access_token}`,
+            },
             body: JSON.stringify({ code, userId: loginData.user.id }),
           });
 
@@ -93,7 +97,10 @@ function AccesoGratisForm() {
             // Create subscription if they don't already have one active
             await fetch("/api/create-subscription", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session?.access_token}`,
+              },
               body: JSON.stringify({ userId: loginData.user.id, duration, amountPaid: 0, currency: "UYU" }),
             });
           }
@@ -134,10 +141,17 @@ function AccesoGratisForm() {
           body: JSON.stringify({ userId: authData.user.id }),
         });
 
+        // Sign in immediately to get a session token for the claim
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        const accessToken = signInData?.session?.access_token || authData.session?.access_token;
+
         // Atomically claim code (prevents race condition)
         const claimRes = await fetch("/api/free-access", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({ code, userId: authData.user.id }),
         });
         if (!claimRes.ok) {
@@ -149,7 +163,10 @@ function AccesoGratisForm() {
         // Create subscription via server-side API (bypasses RLS)
         const subRes = await fetch("/api/create-subscription", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({ userId: authData.user.id, duration, amountPaid: 0, currency: "UYU" }),
         });
         if (!subRes.ok) {
