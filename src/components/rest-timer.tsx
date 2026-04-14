@@ -9,23 +9,43 @@ interface RestTimerProps {
   autoStart?: boolean;
 }
 
-// Generate a short beep using Web Audio API
-function playBeep() {
+// Reusable AudioContext (created on first user interaction)
+let audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext | null {
   try {
-    const ctx = new AudioContext();
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
+
+// Generate a short beep using Web Audio API
+function playBeep(frequency = 880) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.frequency.value = 880;
+    osc.frequency.value = frequency;
     osc.type = "sine";
-    gain.gain.value = 0.3;
+    gain.gain.value = 0.5;
     osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    osc.stop(ctx.currentTime + 0.5);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.stop(ctx.currentTime + 0.4);
   } catch {
-    // Audio not supported
+    // Audio failed
   }
+}
+
+// Double beep for completion
+function playFinishBeep() {
+  playBeep(1047); // C6
+  setTimeout(() => playBeep(1319), 200); // E6
+  setTimeout(() => playBeep(1568), 400); // G6
 }
 
 function tryVibrate() {
@@ -40,6 +60,9 @@ export default function RestTimer({ seconds, onComplete, autoStart = true }: Res
   const [remaining, setRemaining] = useState(seconds);
   const [running, setRunning] = useState(autoStart);
   const [finished, setFinished] = useState(false);
+
+  // Initialize AudioContext on mount (user already interacted by clicking checkbox)
+  useEffect(() => { getAudioCtx(); }, []);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const completeCalled = useRef(false);
 
@@ -59,7 +82,7 @@ export default function RestTimer({ seconds, onComplete, autoStart = true }: Res
           stop();
           setRunning(false);
           setFinished(true);
-          playBeep();
+          playFinishBeep();
           tryVibrate();
           if (!completeCalled.current) {
             completeCalled.current = true;
