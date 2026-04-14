@@ -947,7 +947,10 @@ function PlanContent() {
                       <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
                       <div className="flex-1" />
                       {(() => {
-                        const recipe = suggestRecipe(meal.name);
+                        const mealFoods = meal.foodDetails
+                          ? meal.foodDetails.map((fd: { name: string }) => fd.name)
+                          : meal.foods;
+                        const recipe = suggestRecipe(meal.name, mealFoods as string[]);
                         if (!recipe) return null;
                         return (
                           <button

@@ -514,12 +514,74 @@ export function getRecipeById(id: string): Recipe | undefined {
   return RECIPES.find(r => r.id === id);
 }
 
-// Suggest a recipe based on meal name
-export function suggestRecipe(mealName: string): Recipe | null {
+// Match keywords from foods to find the best recipe
+const FOOD_KEYWORDS: Record<string, string[]> = {
+  "avena-proteica": ["avena", "proteina", "whey"],
+  "huevos-revueltos-tostada": ["huevo", "tostada", "pan integral"],
+  "smoothie-proteico": ["smoothie", "batido", "licuado", "frutilla"],
+  "yogurt-granola": ["yogurt", "granola"],
+  "tostadas-huevo-espinaca": ["espinaca", "huevo", "tostada"],
+  "pollo-arroz-verduras": ["pollo", "arroz", "brocoli", "verdura"],
+  "carne-batata-ensalada": ["carne", "batata", "boniato", "ensalada"],
+  "wrap-pollo": ["wrap", "tortilla", "pollo", "palta"],
+  "salmon-quinoa": ["salmon", "quinoa", "esparrago"],
+  "ensalada-atun": ["atun", "ensalada", "huevo duro"],
+  "tortilla-espinaca": ["tortilla", "espinaca", "queso"],
+  "pollo-wok": ["wok", "pollo", "morron", "pimiento", "soja"],
+  "merluza-pure": ["merluza", "pescado", "calabaza", "pure"],
+  "ensalada-tibia-pollo": ["garbanzo", "pollo", "ensalada tibia"],
+  "omelette-jamon-queso": ["omelette", "jamon", "queso"],
+  "batido-post-entreno": ["batido", "proteina", "banana", "post"],
+  "tostada-mantequilla-mani": ["mantequilla", "mani", "tostada"],
+  "yogurt-frutas-nueces": ["yogurt", "nuez", "almendra", "fruta"],
+  "huevos-duros-snack": ["huevo duro", "zanahoria", "hummus"],
+};
+
+// Suggest a recipe based on meal name AND the actual foods in the meal
+export function suggestRecipe(mealName: string, foods?: string[]): Recipe | null {
+  // First try to match by actual food contents
+  if (foods && foods.length > 0) {
+    const foodText = foods.join(" ").toLowerCase();
+    let bestMatch: Recipe | null = null;
+    let bestScore = 0;
+
+    for (const recipe of RECIPES) {
+      const keywords = FOOD_KEYWORDS[recipe.id] || [];
+      let score = 0;
+      for (const kw of keywords) {
+        if (foodText.includes(kw)) score++;
+      }
+      // Also check recipe ingredients against meal foods
+      for (const ing of recipe.ingredients) {
+        const ingLower = ing.toLowerCase();
+        for (const food of foods) {
+          const foodLower = food.toLowerCase();
+          if (foodLower.includes(ingLower.split(" ").pop() || "") || ingLower.includes(foodLower.split(" ").pop() || "")) {
+            score += 0.5;
+          }
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = recipe;
+      }
+    }
+    if (bestMatch && bestScore >= 1) return bestMatch;
+  }
+
+  // Fallback: match by meal type
   const lower = mealName.toLowerCase();
-  if (lower.includes("desayuno")) return getRecipesByType("desayuno")[Math.floor(Math.random() * 5)];
-  if (lower.includes("almuerzo")) return getRecipesByType("almuerzo")[Math.floor(Math.random() * 5)];
-  if (lower.includes("cena")) return getRecipesByType("cena")[Math.floor(Math.random() * 5)];
-  if (lower.includes("merienda") || lower.includes("colacion") || lower.includes("comida")) return getRecipesByType("snack")[Math.floor(Math.random() * 4)];
-  return null;
+  const type = lower.includes("desayuno") ? "desayuno"
+    : lower.includes("almuerzo") ? "almuerzo"
+    : lower.includes("cena") ? "cena"
+    : (lower.includes("merienda") || lower.includes("colacion") || lower.includes("comida")) ? "snack"
+    : null;
+
+  if (!type) return null;
+  const options = getRecipesByType(type);
+  if (options.length === 0) return null;
+
+  // Use date-based index so recipe doesn't change every render
+  const dayIdx = Math.floor(Date.now() / 86400000);
+  return options[dayIdx % options.length];
 }
