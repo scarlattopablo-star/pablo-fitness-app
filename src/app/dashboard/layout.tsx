@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, ClipboardList, TrendingUp,
-  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle, Gift, Trophy, Clock, Crown,
+  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle, Gift, Trophy, Clock, Crown, GraduationCap,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { InstagramIcon } from "@/components/icons";
@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/plan", icon: ClipboardList, label: "Mi Plan" },
   { href: "/dashboard/progreso", icon: TrendingUp, label: "Progreso" },
   { href: "/dashboard/ejercicios", icon: BookOpen, label: "Ejercicios" },
+  { href: "/dashboard/educacion", icon: GraduationCap, label: "Aprende" },
   { href: "/dashboard/ranking", icon: Trophy, label: "Ranking" },
   { href: "/dashboard/chat", icon: MessageCircle, label: "Gym Bro" },
   { href: "/dashboard/referidos", icon: Gift, label: "Invitar" },

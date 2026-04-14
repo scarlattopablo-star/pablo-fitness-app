@@ -5,8 +5,9 @@ import {
   Flame, TrendingUp, Camera, Dumbbell,
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
   Loader2, ChevronRight, Zap, CreditCard, Crown,
-  Trophy, Star,
+  Trophy, Star, Lightbulb,
 } from "lucide-react";
+import { getTodaysTip, CATEGORY_LABELS } from "@/lib/daily-tips";
 import { RatLoader } from "@/components/rat-loader";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
@@ -445,6 +446,29 @@ export default function DashboardPage() {
           <p className="text-sm text-muted mt-1">Pronto veras tus macros y plan personalizado.</p>
         </div>
       )}
+
+      {/* DAILY TIP */}
+      {(() => {
+        const tip = getTodaysTip();
+        const cat = CATEGORY_LABELS[tip.category];
+        return (
+          <div className="card-premium rounded-2xl p-4 mb-6 border border-accent/20">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <Lightbulb className="h-5 w-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] uppercase tracking-wider text-accent font-bold">Tip del dia</span>
+                  <span className="text-[10px] text-muted">{cat.emoji} {cat.label}</span>
+                </div>
+                <p className="font-bold text-sm mb-1">{tip.title}</p>
+                <p className="text-xs text-muted leading-relaxed">{tip.content}</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MUSCLE HEATMAP */}
       {Object.values(trainedMuscles).some(v => v > 0) && (
