@@ -126,7 +126,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Regenerate all plans button */}
+      {/* Regenerate all plans button - requires typing REGENERAR to confirm */}
       <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
         <div>
           <h3 className="font-bold text-sm">Regenerar Todos los Planes</h3>
@@ -134,7 +134,8 @@ export default function AdminDashboard() {
         </div>
         <button
           onClick={async () => {
-            if (!confirm("Esto regenerara los planes de TODOS los clientes. Continuar?")) return;
+            const typed = prompt("ATENCION: Esto sobreescribe los planes de TODOS los clientes.\n\nEscribi REGENERAR para confirmar:");
+            if (typed !== "REGENERAR") { alert("Cancelado."); return; }
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return alert("No hay sesion activa");
             const res = await fetch("/api/regenerate-all-plans", {
@@ -148,7 +149,7 @@ export default function AdminDashboard() {
               alert("Error: " + (data.error || "desconocido"));
             }
           }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-black hover:opacity-90 transition-opacity flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-500 transition-colors flex-shrink-0"
         >
           <RefreshCw className="h-4 w-4" />
           Regenerar
