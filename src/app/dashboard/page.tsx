@@ -8,6 +8,7 @@ import {
   Trophy, Star, Lightbulb,
 } from "lucide-react";
 import { getTodaysTip, CATEGORY_LABELS } from "@/lib/daily-tips";
+import { getWeeklyChallenges, getDaysRemaining } from "@/lib/weekly-challenges";
 import { RatLoader } from "@/components/rat-loader";
 import { InstagramIcon } from "@/components/icons";
 import { useAuth } from "@/lib/auth-context";
@@ -313,6 +314,57 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* WEEKLY CHALLENGES */}
+      {gamification && (() => {
+        const challenges = getWeeklyChallenges();
+        const daysLeft = getDaysRemaining();
+        return (
+          <div className="card-premium rounded-2xl p-4 mb-6 border border-accent/20">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏆</span>
+                <h3 className="font-bold text-sm">Retos de la Semana</h3>
+              </div>
+              <span className="text-[10px] text-muted">{daysLeft} {daysLeft === 1 ? "dia" : "dias"} restantes</span>
+            </div>
+            <div className="space-y-2.5">
+              {challenges.map(challenge => {
+                // Calculate progress based on challenge type
+                let current = 0;
+                if (challenge.type === "sessions") current = gamification.weekSessions || 0;
+                else if (challenge.type === "streak") current = gamification.streak || 0;
+                else if (challenge.type === "chat_message") current = 0; // would need chat count
+                const progress = Math.min(current / challenge.target, 1);
+                const completed = progress >= 1;
+
+                return (
+                  <div key={challenge.id} className={`rounded-xl p-3 ${completed ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-card-bg"}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{challenge.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm">{challenge.title}</p>
+                          {completed && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500 text-black font-bold">Completado!</span>}
+                        </div>
+                        <p className="text-[10px] text-muted">{challenge.description}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-bold text-accent">+{challenge.xpReward} XP</p>
+                        <p className="text-[10px] text-muted">{current}/{challenge.target}</p>
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-1.5 rounded-full bg-background overflow-hidden mt-2">
+                      <div className={`h-full rounded-full transition-all duration-500 ${completed ? "bg-emerald-500" : "bg-accent"}`} style={{ width: `${progress * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* TRIAL COUNTDOWN BANNER */}
       {isTrial && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
