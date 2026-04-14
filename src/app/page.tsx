@@ -340,7 +340,7 @@ export default function HomePage() {
                 <div className="absolute -inset-4 bg-accent/10 rounded-[3rem] blur-2xl opacity-60" />
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20 transition-transform duration-500 group-hover:scale-[1.02]">
                   {heroImages.map((img, i) => (
-                    <img key={img} src={img} alt="Pablo Scarlatto entrenando" className="w-full object-cover aspect-[3/4] absolute inset-0 transition-opacity duration-1000" style={{ opacity: heroIndex === i ? 1 : 0, position: i === 0 ? "relative" : "absolute" }} />
+                    <img key={img} src={img} alt="Pablo Scarlatto entrenando" className="w-full object-contain absolute inset-0 transition-opacity duration-1000" style={{ opacity: heroIndex === i ? 1 : 0, position: i === 0 ? "relative" : "absolute" }} />
                   ))}
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 </div>
