@@ -239,27 +239,30 @@ function PlanContent() {
   };
 
   const toggleSetComplete = (exId: string, setIdx: number, restTime: string) => {
-    setSessionData(prev => {
-      const updated = { ...prev };
-      updated[exId] = updated[exId].map((s, i) =>
-        i === setIdx ? { ...s, completed: !s.completed } : s
-      );
-      // If marking as complete, start rest timer
-      const justCompleted = updated[exId][setIdx]?.completed;
-      if (justCompleted) {
-        const allDone = updated[exId].every(s => s.completed);
-        if (!allDone) {
-          // Parse rest time (e.g. "90s", "3min", "60s")
-          let secs = 60;
-          if (restTime.includes("min")) secs = parseInt(restTime) * 60;
-          else secs = parseInt(restTime) || 60;
-          setRestTimer({ exerciseId: exId, seconds: secs });
-        } else {
-          setRestTimer(null);
-        }
+    const current = sessionData[exId];
+    if (!current) return;
+
+    const wasCompleted = current[setIdx]?.completed;
+    const updated = current.map((s, i) =>
+      i === setIdx ? { ...s, completed: !s.completed } : s
+    );
+
+    setSessionData(prev => ({ ...prev, [exId]: updated }));
+
+    // If marking as complete (not unchecking), start rest timer
+    if (!wasCompleted) {
+      const allDone = updated.every(s => s.completed);
+      if (!allDone) {
+        // Parse rest time (e.g. "90s", "3min", "60s", "2-3min")
+        let secs = 60;
+        const cleaned = restTime.replace(/[^0-9mins]/g, "");
+        if (cleaned.includes("min")) secs = (parseInt(cleaned) || 2) * 60;
+        else secs = parseInt(cleaned) || 60;
+        setRestTimer({ exerciseId: exId, seconds: secs });
+      } else {
+        setRestTimer(null);
       }
-      return updated;
-    });
+    }
   };
 
   const updateSessionSet = (exId: string, setIdx: number, field: "weight" | "reps", value: number) => {
