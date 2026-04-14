@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import {
   ArrowRight, Dumbbell, UtensilsCrossed, Smartphone,
   BarChart3, Zap, Target, Star, MessageCircle, Users,
-  ChevronLeft, ChevronRight, GripVertical,
+  ChevronLeft, ChevronRight, GripVertical, X,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { LanguageSelector } from "@/components/language-selector";
@@ -92,6 +92,30 @@ function useParallax(speed = 0.3) {
   return ref;
 }
 
+// Transformation images data (shared between grid and hero)
+const transformations = [
+  { src: "/images/transf-nueva-1.jpg", result: "Quema de grasa" },
+  { src: "/images/transf-nueva-3.jpg", result: "Quema de grasa" },
+  { src: "/images/transf-nueva-4.jpg", result: "Quema de grasa" },
+  { src: "/images/transf-nueva-5.jpg", result: "Tonificacion" },
+  { src: "/images/transf-nueva-6.jpg", result: "Definicion" },
+  { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
+  { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
+  { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
+  { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
+  { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
+  { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
+  { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
+];
+
+// Hero images that rotate
+const heroImages = [
+  "/images/pablo-curl.jpg",
+  "/images/pablo-gym.jpg",
+  "/images/pablo-gym2.jpg",
+  "/images/pablo-row.jpg",
+];
+
 // Before/After comparison slider
 function BeforeAfterSlider({ src, label }: { src: string; label: string }) {
   const [position, setPosition] = useState(50);
@@ -166,6 +190,16 @@ export default function HomePage() {
   const { t } = useI18n();
   const parallaxRef = useParallax(0.15);
 
+  // Hero image rotation
+  const [heroIndex, setHeroIndex] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setHeroIndex(i => (i + 1) % heroImages.length), 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Modal slider for transformations
+  const [sliderModal, setSliderModal] = useState<string | null>(null);
+
   // Navbar shrink on scroll
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -219,9 +253,18 @@ export default function HomePage() {
 
       {/* HERO — full viewport with parallax */}
       <section className="relative min-h-screen flex items-center px-4 overflow-hidden">
-        {/* Parallax background */}
+        {/* Video background */}
         <div ref={parallaxRef} className="absolute inset-0">
-          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15" style={{ backgroundImage: "url(/images/gym-bg.png)", filter: "grayscale(100%)" }} />
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-15"
+            style={{ filter: "grayscale(100%)" }}
+          >
+            <source src="/videos/hero-bg-1.mp4" type="video/mp4" />
+          </video>
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
         <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-accent/[0.04] rounded-full blur-[120px] animate-float-slow" />
@@ -291,16 +334,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Hero image */}
+            {/* Right — Hero image carousel */}
             <div className="hidden lg:block animate-fade-in-up animate-delay-300">
               <div className="relative group">
                 <div className="absolute -inset-4 bg-accent/10 rounded-[3rem] blur-2xl opacity-60" />
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20 transition-transform duration-500 group-hover:scale-[1.02]">
-                  <img src="/images/pablo-curl.jpg" alt="Pablo Scarlatto entrenando" className="w-full object-cover aspect-[3/4]" />
+                  {heroImages.map((img, i) => (
+                    <img key={img} src={img} alt="Pablo Scarlatto entrenando" className="w-full object-cover aspect-[3/4] absolute inset-0 transition-opacity duration-1000" style={{ opacity: heroIndex === i ? 1 : 0, position: i === 0 ? "relative" : "absolute" }} />
+                  ))}
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-                </div>
-                <div className="absolute -bottom-4 -left-4 bg-accent text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-accent/30 transition-transform duration-300 group-hover:translate-y-1 flex items-center gap-2">
-                  <Star className="h-4 w-4 fill-black" /> Campeon 2019
                 </div>
               </div>
             </div>
@@ -338,39 +380,21 @@ export default function HomePage() {
             <p className="text-sm text-muted mt-2">Transformaciones de alumnos reales</p>
           </ScrollReveal>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { src: "/images/transf-nueva-1.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-nueva-3.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-nueva-4.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-nueva-5.jpg", result: "Tonificacion" },
-              { src: "/images/transf-nueva-6.jpg", result: "Definicion" },
-              { src: "/images/transf-hombre-musculo.jpg", result: "Ganancia muscular" },
-              { src: "/images/transf-hombre-definicion.jpg", result: "Definicion" },
-              { src: "/images/transf-mujer3-frente.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-mujer-lateral.jpg", result: "Recomposicion" },
-              { src: "/images/transf-mujer4-espalda.jpg", result: "Tonificacion" },
-              { src: "/images/transf-mujer2-frontal.jpg", result: "Quema de grasa" },
-              { src: "/images/transf-mujer3-espalda.jpg", result: "Quema de grasa" },
-            ].map((item, i) => (
+            {transformations.map((item, i) => (
               <ScrollReveal key={i} delay={i * 80}>
-                <div className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/5">
+                <div
+                  className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/5 cursor-pointer"
+                  onClick={() => setSliderModal(item.src)}
+                >
                   <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.03] transition-transform duration-500" loading="lazy" />
                   <div className="p-3 text-center border-t border-card-border/30">
                     <p className="text-accent font-bold text-xs">{item.result}</p>
+                    <p className="text-[10px] text-muted mt-0.5">Toca para comparar</p>
                   </div>
                 </div>
               </ScrollReveal>
             ))}
           </div>
-
-          {/* Before/After Slider */}
-          <ScrollReveal className="mt-14 text-center">
-            <h3 className="text-xl sm:text-2xl font-black mb-2">
-              Desliza para <span className="text-accent">comparar</span>
-            </h3>
-            <p className="text-sm text-muted mb-6">Arrastra el control para ver el antes y despues</p>
-            <BeforeAfterSlider src="/images/transf-nueva-1.jpg" label="Transformacion" />
-          </ScrollReveal>
         </div>
       </section>
 
@@ -600,6 +624,19 @@ export default function HomePage() {
           </div>
         </ScrollReveal>
       </section>
+
+      {/* SLIDER MODAL */}
+      {sliderModal && (
+        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSliderModal(null)}>
+          <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" onClick={() => setSliderModal(null)}>
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <div className="w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <p className="text-center text-sm text-muted mb-4">Arrastra para comparar antes y despues</p>
+            <BeforeAfterSlider src={sliderModal} label="Transformacion" />
+          </div>
+        </div>
+      )}
 
       {/* FOOTER */}
       <footer className="border-t border-card-border/50 py-6 px-4">
