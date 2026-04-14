@@ -175,7 +175,7 @@ function getParams(objective: string): TrainingParams {
       return { sets: 4, reps: "4-6", restCompound: "3min", restIsolation: "90s", instructions: "Peso alto (80-90% 1RM). Tecnica perfecta. Descanso completo." };
     case "quema-grasa":
     case "recomposicion-corporal":
-      return { sets: 4, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Ritmo alto, descansos cortos. Mantener frecuencia cardiaca elevada." };
+      return { sets: 4, reps: "12-15", restCompound: "40s", restIsolation: "40s", instructions: "Ritmo alto, descansos de 40 segundos. Mantener frecuencia cardiaca elevada." };
     case "tonificacion":
     case "post-parto":
       return { sets: 4, reps: "12-15", restCompound: "60s", restIsolation: "45s", instructions: "Peso moderado. Movimientos controlados. Enfocarse en la contraccion." };
@@ -936,6 +936,13 @@ export function generateTrainingPlan(
   const p = getParams(objective);
   const isHome = objective === "entrenamiento-casa";
   const isBeginner = objective === "principiante-total";
+
+  // Sedentary/poco-activo users get longer rest even in fat-loss objectives
+  if ((activityLevel === "sedentario" || activityLevel === "poco-activo") && (objective === "quema-grasa" || objective === "recomposicion-corporal")) {
+    p.restCompound = "60s";
+    p.restIsolation = "45s";
+    p.instructions = p.instructions.replace("40 segundos", "45-60 segundos");
+  }
   const vol = getVolumeConfig(isBeginner ? "sedentario" : activityLevel, sex);
 
   // For women: default emphasis on glutes/legs if no specific emphasis chosen
