@@ -203,11 +203,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 6. GENTLE INACTIVITY — users who haven't trained in 3+ days (no active streak)
+    // 6. INTELLIGENT INACTIVITY — different messages based on how long they've been away
     const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0];
     const { data: inactiveStreaks } = await supabase
       .from("user_streaks")
-      .select("user_id, last_activity_date")
+      .select("user_id, last_activity_date, max_streak")
       .lte("last_activity_date", threeDaysAgo)
       .lte("current_streak", 1);
 
@@ -223,15 +223,81 @@ export async function POST(request: NextRequest) {
         const streak = inactiveStreaks.find(s => s.user_id === p.id);
         if (!streak) continue;
         const daysSince = Math.floor((Date.now() - new Date(streak.last_activity_date).getTime()) / 86400000);
-        if (daysSince > 14) continue; // Don't bother users inactive >2 weeks
+        if (daysSince > 21) continue; // Stop after 3 weeks
         const name = p.full_name?.split(" ")[0] || "Crack";
-        const msgs = [
-          `${name}, hace ${daysSince} dias que no entrenas. Tu plan te espera!`,
-          `${name}, un dia a la vez. Volvemos a entrenar?`,
-          `Hey ${name}! No pasa nada, lo importante es volver. Te esperamos!`,
-        ];
-        const msg = msgs[Math.floor(Math.random() * msgs.length)];
-        totalSent += await sendPushToUser(supabase, p.id, "Te extrañamos!", msg, "/dashboard/plan");
+
+        let title: string;
+        let msg: string;
+        let url = "/dashboard/plan";
+
+        if (daysSince <= 3) {
+          // 3 days: gentle nudge
+          const msgs = [
+            `${name}, hace ${daysSince} dias que no entrenas. Tu plan te espera!`,
+            `${name}, un dia a la vez. Volvemos a entrenar?`,
+            `${name}, tu rutina de hoy esta lista. Dale que podes!`,
+          ];
+          title = "Tu rutina te espera";
+          msg = msgs[Math.floor(Math.random() * msgs.length)];
+        } else if (daysSince <= 7) {
+          // 4-7 days: appeal to progress
+          title = "No pierdas tu progreso";
+          const msgs = [
+            `${name}, llevas ${daysSince} dias sin entrenar. Tu cuerpo pierde lo ganado despues de 7 dias. Volve hoy!`,
+            `${name}, tu racha maxima fue de ${streak.max_streak} dias. No dejes que se pierda!`,
+            `${name}, los resultados se construyen con consistencia. Hoy es un buen dia para volver.`,
+          ];
+          msg = msgs[Math.floor(Math.random() * msgs.length)];
+        } else if (daysSince <= 14) {
+          // 8-14 days: personal message from Pablo
+          title = "Pablo te mando un mensaje";
+          msg = `${name}, soy Pablo. Vi que hace unos dias no entrenas. Esta todo bien? Escribime por el chat si necesitas ajustar tu rutina. Estoy para ayudarte!`;
+          url = "/dashboard/chat";
+        } else {
+          // 15-21 days: last attempt with offer
+          title = "Te guardamos tu lugar";
+          msg = `${name}, tu plan personalizado sigue activo. Cuando quieras volver, todo esta listo. No necesitas empezar de cero!`;
+        }
+
+        totalSent += await sendPushToUser(supabase, p.id, title, msg, url);
+      }
+    }
+
+    // 7. NEW USER WELCOME — users who registered but never trained (no streak record)
+    const { data: allSubs } = await supabase
+      .from("subscriptions")
+      .select("user_id, created_at")
+      .eq("status", "active");
+
+    if (allSubs) {
+      for (const sub of allSubs) {
+        const daysSinceSignup = Math.floor((Date.now() - new Date(sub.created_at).getTime()) / 86400000);
+        if (daysSinceSignup < 1 || daysSinceSignup > 5) continue;
+
+        // Check if they have any exercise logs
+        const { data: logs } = await supabase
+          .from("exercise_logs")
+          .select("id")
+          .eq("user_id", sub.user_id)
+          .limit(1)
+          .maybeSingle();
+
+        if (!logs) {
+          // Never trained — send welcome nudge
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", sub.user_id)
+            .single();
+
+          const name = profile?.full_name?.split(" ")[0] || "Crack";
+          const msgs = [
+            `${name}, tu plan esta listo! Abri la app y empeza tu primera sesion.`,
+            `${name}, ya tenes todo armado. Solo falta que arranques! Dale que es facil.`,
+            `Hey ${name}! Tu rutina personalizada te esta esperando. Empezar es lo mas dificil, despues no paras!`,
+          ];
+          totalSent += await sendPushToUser(supabase, sub.user_id, "Tu plan esta listo!", msgs[daysSinceSignup % 3], "/dashboard/plan");
+        }
       }
     }
 
