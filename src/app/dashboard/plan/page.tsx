@@ -2,8 +2,9 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock } from "lucide-react";
 import RestTimer from "@/components/rest-timer";
+import { suggestRecipe, type Recipe } from "@/lib/recipes-database";
 import { RatLoader } from "@/components/rat-loader";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { getExerciseGif } from "@/lib/exercise-images";
@@ -139,6 +140,7 @@ function PlanContent() {
   const [hasSurvey, setHasSurvey] = useState(true);
   const [planPending, setPlanPending] = useState(false);
   const [expandedGif, setExpandedGif] = useState<{ src: string; name: string } | null>(null);
+  const [recipeModal, setRecipeModal] = useState<Recipe | null>(null);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
     foodIndex: number;
@@ -939,10 +941,24 @@ function PlanContent() {
                             </li>
                           ))}
                     </ul>
-                    <div className="flex gap-2 pt-2 border-t border-card-border/30">
+                    <div className="flex items-center gap-2 pt-2 border-t border-card-border/30">
                       <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {meal.approxProtein}g</span>
                       <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {meal.approxCarbs}g</span>
                       <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {meal.approxFats}g</span>
+                      <div className="flex-1" />
+                      {(() => {
+                        const recipe = suggestRecipe(meal.name);
+                        if (!recipe) return null;
+                        return (
+                          <button
+                            onClick={() => setRecipeModal(recipe)}
+                            className="flex items-center gap-1 text-[10px] text-accent font-bold hover:text-accent/80 transition-colors"
+                          >
+                            <ChefHat className="h-3 w-3" />
+                            Receta
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1089,6 +1105,68 @@ function PlanContent() {
       )}
 
       {/* Food Swap Modal */}
+      {/* RECIPE MODAL */}
+      {recipeModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setRecipeModal(null)}>
+          <div className="bg-card-bg border border-card-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-card-bg border-b border-card-border/30 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ChefHat className="h-5 w-5 text-accent" />
+                <h3 className="font-bold">{recipeModal.name}</h3>
+              </div>
+              <button onClick={() => setRecipeModal(null)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              {/* Info badges */}
+              <div className="flex gap-2 flex-wrap">
+                <span className="text-[10px] px-2.5 py-1 bg-accent/10 text-accent rounded-full font-bold flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {recipeModal.prepTime} min
+                </span>
+                <span className="text-[10px] px-2.5 py-1 bg-primary/10 text-primary rounded-full font-bold">
+                  {recipeModal.difficulty === "facil" ? "Facil" : "Medio"}
+                </span>
+                <span className="text-[10px] px-2.5 py-1 bg-white/10 text-muted rounded-full font-bold">
+                  {recipeModal.servings} porcion{recipeModal.servings > 1 ? "es" : ""}
+                </span>
+              </div>
+              {/* Macros */}
+              <div className="flex gap-2">
+                <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">{recipeModal.calories} kcal</span>
+                <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {recipeModal.protein}g</span>
+                <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {recipeModal.carbs}g</span>
+                <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {recipeModal.fat}g</span>
+              </div>
+              {/* Ingredients */}
+              <div>
+                <h4 className="font-bold text-sm mb-2">Ingredientes</h4>
+                <ul className="space-y-1">
+                  {recipeModal.ingredients.map((ing, i) => (
+                    <li key={i} className="text-sm text-muted flex items-start gap-2">
+                      <span className="text-accent mt-0.5">&#8226;</span>
+                      {ing}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* Steps */}
+              <div>
+                <h4 className="font-bold text-sm mb-2">Preparacion</h4>
+                <ol className="space-y-2">
+                  {recipeModal.steps.map((step, i) => (
+                    <li key={i} className="text-sm text-muted flex items-start gap-2">
+                      <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {swapTarget && (
         <FoodSwapModal
           mealName={swapTarget.mealName}
