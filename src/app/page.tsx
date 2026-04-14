@@ -211,10 +211,10 @@ export default function HomePage() {
   return (
     <main className="min-h-screen overflow-hidden">
       {/* NAVBAR — shrinks on scroll */}
-      <nav className={`fixed top-0 w-full z-50 backdrop-blur-md border-b border-accent/20 transition-all duration-300 ${scrolled ? "bg-background/90 h-14" : "bg-background/70 h-16"}`}>
+      <nav className={`fixed top-0 w-full z-50 backdrop-blur-md border-b border-accent/20 transition-all duration-300 ${scrolled ? "bg-background/90 h-16" : "bg-background/70 h-20"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
           <Link href="/" className="flex items-center">
-            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className={`w-auto transition-all duration-300 ${scrolled ? "h-10" : "h-14"}`} style={{ filter: "invert(1) brightness(0.85) sepia(1) hue-rotate(100deg) saturate(3)", mixBlendMode: "screen" }} />
+            <img src="/logo-pablo.jpg" alt="Pablo Scarlatto" className={`w-auto transition-all duration-300 ${scrolled ? "h-14" : "h-20"}`} style={{ filter: "invert(1) brightness(0.85) sepia(1) hue-rotate(100deg) saturate(3)", mixBlendMode: "screen" }} />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#resultados" className="text-xs text-muted hover:text-foreground transition-colors uppercase tracking-widest font-medium">
