@@ -209,9 +209,10 @@ function RegistroForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Teléfono (opcional)</label>
+            <label className="block text-sm font-medium mb-2">Teléfono</label>
             <input
               type="tel"
+              required
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+598 99 123 456"

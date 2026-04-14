@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 export default function RegistroGratisPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,7 @@ export default function RegistroGratisPage() {
         email,
         password,
         options: {
-          data: { full_name: fullName },
+          data: { full_name: fullName, phone },
         },
       });
 
@@ -56,10 +57,10 @@ export default function RegistroGratisPage() {
         if (accessToken) break;
       }
 
-      // 2. Ensure profile exists and update name
+      // 2. Ensure profile exists and update name + phone
       await supabase
         .from("profiles")
-        .upsert({ id: userId, email, full_name: fullName }, { onConflict: "id" });
+        .upsert({ id: userId, email, full_name: fullName, phone }, { onConflict: "id" });
 
       // 3. Create trial subscription (7 days free, stored as 1-mes with 7-day end date)
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -173,6 +174,18 @@ export default function RegistroGratisPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@email.com"
+              className="w-full px-4 py-3 rounded-xl bg-card-bg border border-card-border text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Teléfono</label>
+            <input
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+598 99 123 456"
               className="w-full px-4 py-3 rounded-xl bg-card-bg border border-card-border text-sm focus:outline-none focus:border-emerald-500/50 transition-colors"
             />
           </div>
