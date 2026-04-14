@@ -24,6 +24,48 @@
 // FAT LOSS: 3-4 sets x 12-15 reps, 50-65% 1RM, 30-60s rest
 // BEGINNER: 2-3 sets x 10-15 reps, 50-65% 1RM, 60-90s rest
 
+// Advanced training methods with explanations
+// Sources: NSCA Foundations of Fitness Programming, Schoenfeld (2018), ACSM Position Stand (2009)
+export type TrainingMethod = 'standard' | 'superset' | 'giant-set' | 'drop-set' | 'pyramid' | 'rest-pause' | 'cluster';
+
+export const TRAINING_METHOD_INFO: Record<TrainingMethod, { name: string; explanation: string; objectives: string[] }> = {
+  'standard': {
+    name: 'Series Normales',
+    explanation: 'Haces todas las series de un ejercicio con descanso entre cada una antes de pasar al siguiente.',
+    objectives: ['principiante-total', 'entrenamiento-casa', 'tonificacion', 'post-parto'],
+  },
+  'superset': {
+    name: 'Super Serie',
+    explanation: 'Dos ejercicios seguidos sin descanso entre ellos (ej: biceps + triceps). Descansas solo despues de completar ambos. Ahorra tiempo y aumenta la intensidad.',
+    objectives: ['ganancia-muscular', 'quema-grasa', 'recomposicion-corporal', 'tonificacion'],
+  },
+  'giant-set': {
+    name: 'Serie Gigante',
+    explanation: '3 o mas ejercicios del mismo musculo ejecutados sin pausa. Descansas 2-3 min despues de completar todos. Genera un gran bombeo muscular.',
+    objectives: ['ganancia-muscular', 'quema-grasa'],
+  },
+  'drop-set': {
+    name: 'Serie Descendente (Drop Set)',
+    explanation: 'Haces reps hasta el fallo, bajas el peso un 20-25% y seguis sin descanso. Podes hacer 2-3 bajadas. Ideal para el ultimo ejercicio de cada musculo.',
+    objectives: ['ganancia-muscular', 'tonificacion', 'recomposicion-corporal'],
+  },
+  'pyramid': {
+    name: 'Piramidal',
+    explanation: 'Empezas con peso liviano y muchas reps, cada serie subis el peso y bajas las reps (ej: 15, 12, 10, 8). Permite calentar progresivamente y llegar al maximo.',
+    objectives: ['fuerza-funcional', 'ganancia-muscular', 'competicion', 'rendimiento-deportivo'],
+  },
+  'rest-pause': {
+    name: 'Rest-Pause (Pausa-Descanso)',
+    explanation: 'Haces reps hasta casi el fallo, descansas 15-20 segundos, y seguis con mas reps con el mismo peso. Repetis 2-3 veces. Acumulas mas volumen en menos tiempo.',
+    objectives: ['ganancia-muscular', 'fuerza-funcional'],
+  },
+  'cluster': {
+    name: 'Series Cluster',
+    explanation: 'Dividis una serie larga en mini-series de 2-3 reps con 15-20s de pausa entre ellas. Permite mantener la fuerza y la tecnica con pesos altos.',
+    objectives: ['fuerza-funcional', 'competicion', 'rendimiento-deportivo'],
+  },
+};
+
 export interface TrainingExercise {
   id: string;
   name: string;
@@ -31,6 +73,9 @@ export interface TrainingExercise {
   reps: string;
   rest: string;
   notes?: string;
+  method?: TrainingMethod;
+  methodExplanation?: string;
+  pairedWith?: string; // exercise name for supersets
 }
 
 export interface TrainingDay {
@@ -406,19 +451,143 @@ function getEmphasisGroups(emphasis: string): string[] {
   }
 }
 
-// Pick random exercises from a pool
+// Pick random exercises from a pool, excluding already-used IDs within the session
 function pickExercises(
   pool: { compound: { id: string; name: string }[]; isolation: { id: string; name: string }[] },
   numCompound: number,
   numIsolation: number,
   p: TrainingParams,
+  usedIds?: Set<string>,
 ): TrainingExercise[] {
-  const compounds = pickRandom(pool.compound, numCompound);
-  const isolations = pickRandom(pool.isolation, numIsolation);
+  const available = {
+    compound: usedIds ? pool.compound.filter(e => !usedIds.has(e.id)) : pool.compound,
+    isolation: usedIds ? pool.isolation.filter(e => !usedIds.has(e.id)) : pool.isolation,
+  };
+  const compounds = pickRandom(available.compound, numCompound);
+  const isolations = pickRandom(available.isolation, numIsolation);
+  // Track picked IDs
+  if (usedIds) {
+    compounds.forEach(e => usedIds.add(e.id));
+    isolations.forEach(e => usedIds.add(e.id));
+  }
   return [
     ...compounds.map(e => ex(e.id, e.name, p, true)),
     ...isolations.map(e => ex(e.id, e.name, p, false)),
   ];
+}
+
+// ============================================================
+// ADVANCED TRAINING METHODS — Applied based on objective
+// Sources: NSCA, Schoenfeld (2018), ACSM Position Stand (2009)
+// ============================================================
+function getMethodsForObjective(objective: string): TrainingMethod[] {
+  switch (objective) {
+    case "ganancia-muscular":
+      return ['superset', 'drop-set', 'rest-pause', 'giant-set', 'pyramid'];
+    case "fuerza-funcional":
+    case "competicion":
+    case "rendimiento-deportivo":
+      return ['pyramid', 'cluster', 'rest-pause'];
+    case "quema-grasa":
+    case "recomposicion-corporal":
+      return ['superset', 'giant-set', 'drop-set'];
+    case "tonificacion":
+      return ['superset', 'drop-set'];
+    case "principiante-total":
+    case "entrenamiento-casa":
+    case "post-parto":
+    case "kitesurf":
+      return ['standard'];
+    default:
+      return ['superset', 'drop-set'];
+  }
+}
+
+function applyAdvancedMethods(plan: TrainingDay[], objective: string): TrainingDay[] {
+  const availableMethods = getMethodsForObjective(objective);
+
+  // Beginners/home/kitesurf: no advanced methods
+  if (availableMethods.length === 1 && availableMethods[0] === 'standard') return plan;
+
+  return plan.map(day => {
+    const exercises = [...day.exercises];
+    const nonCardio = exercises.filter(e => !CARDIO_IDS_SET.has(e.id) && !TIME_BASED_IDS.has(e.id));
+
+    if (nonCardio.length < 4) return day;
+
+    // Pick 1-2 methods per session to keep variety
+    const sessionMethods = pickRandom(availableMethods, Math.min(2, availableMethods.length));
+
+    for (const method of sessionMethods) {
+      const info = TRAINING_METHOD_INFO[method];
+
+      switch (method) {
+        case 'superset': {
+          // Pair exercises 1+2 as a superset (typically agonist-antagonist)
+          const e1 = nonCardio[0];
+          const e2 = nonCardio[1];
+          if (e1 && e2) {
+            const idx1 = exercises.findIndex(e => e.id === e1.id);
+            const idx2 = exercises.findIndex(e => e.id === e2.id);
+            if (idx1 >= 0) exercises[idx1] = { ...exercises[idx1], method: 'superset', methodExplanation: info.explanation, pairedWith: e2.name, rest: '0s', notes: `SUPER SERIE con ${e2.name}: hace ambos ejercicios seguidos, descansa 60-90s despues de completar los dos.` };
+            if (idx2 >= 0) exercises[idx2] = { ...exercises[idx2], method: 'superset', pairedWith: e1.name, rest: '60s', notes: `(Parte 2 de Super Serie con ${e1.name})` };
+          }
+          break;
+        }
+        case 'drop-set': {
+          // Apply to last isolation exercise
+          const lastIso = [...nonCardio].reverse().find(e => exercises.find(ex => ex.id === e.id));
+          if (lastIso) {
+            const idx = exercises.findIndex(e => e.id === lastIso.id);
+            if (idx >= 0) exercises[idx] = { ...exercises[idx], method: 'drop-set', methodExplanation: info.explanation, notes: `DROP SET: al terminar las reps, baja el peso 20-25% y segui sin descanso. Repeti 2-3 veces. Solo en la ultima serie.` };
+          }
+          break;
+        }
+        case 'pyramid': {
+          // Apply to first compound exercise
+          const firstCompound = nonCardio[0];
+          if (firstCompound) {
+            const idx = exercises.findIndex(e => e.id === firstCompound.id);
+            if (idx >= 0) exercises[idx] = { ...exercises[idx], method: 'pyramid', methodExplanation: info.explanation, reps: '15, 12, 10, 8', sets: 4, notes: `PIRAMIDAL: Serie 1: peso liviano x15. Serie 2: subi peso x12. Serie 3: mas peso x10. Serie 4: peso maximo x8.` };
+          }
+          break;
+        }
+        case 'rest-pause': {
+          // Apply to a compound exercise (2nd or 3rd)
+          const target = nonCardio[2] || nonCardio[1];
+          if (target) {
+            const idx = exercises.findIndex(e => e.id === target.id);
+            if (idx >= 0) exercises[idx] = { ...exercises[idx], method: 'rest-pause', methodExplanation: info.explanation, notes: `REST-PAUSE: hace reps hasta casi el fallo, descansa 15-20s, segui con mas reps. Repeti 2-3 veces. Usa el mismo peso.` };
+          }
+          break;
+        }
+        case 'cluster': {
+          // Apply to first heavy compound
+          const firstCompound = nonCardio[0];
+          if (firstCompound) {
+            const idx = exercises.findIndex(e => e.id === firstCompound.id);
+            if (idx >= 0) exercises[idx] = { ...exercises[idx], method: 'cluster', methodExplanation: info.explanation, reps: '2+2+2 (x4)', sets: 4, rest: '15s entre clusters, 3min entre series', notes: `CLUSTER: hace 2 reps, descansa 15s, hace 2 mas, descansa 15s, hace 2 mas. Eso es 1 serie. Descansa 3min y repeti.` };
+          }
+          break;
+        }
+        case 'giant-set': {
+          // Group 3 exercises for the same muscle
+          if (nonCardio.length >= 5) {
+            const e1 = nonCardio[0], e2 = nonCardio[1], e3 = nonCardio[2];
+            const idx1 = exercises.findIndex(e => e.id === e1.id);
+            if (idx1 >= 0) exercises[idx1] = { ...exercises[idx1], method: 'giant-set', methodExplanation: info.explanation, rest: '0s', notes: `SERIE GIGANTE: hace ${e1.name} + ${e2.name} + ${e3.name} sin descanso entre ellos. Descansa 2-3 min al completar los 3.` };
+            const idx2 = exercises.findIndex(e => e.id === e2.id);
+            if (idx2 >= 0) exercises[idx2] = { ...exercises[idx2], method: 'giant-set', rest: '0s', notes: `(Parte 2 de Serie Gigante)` };
+            const idx3 = exercises.findIndex(e => e.id === e3.id);
+            if (idx3 >= 0) exercises[idx3] = { ...exercises[idx3], method: 'giant-set', rest: '2-3min', notes: `(Parte 3 de Serie Gigante — descansa 2-3 min)` };
+          }
+          break;
+        }
+      }
+    }
+
+    return { ...day, exercises };
+  });
 }
 
 // Build an emphasis day with more exercises for the target group
@@ -820,6 +989,10 @@ export function generateTrainingPlan(
       }),
     };
   });
+
+  // Apply advanced training methods based on objective
+  // Sources: NSCA, Schoenfeld (2018) Strength & Conditioning Journal, ACSM (2009)
+  plan = applyAdvancedMethods(plan, objective);
 
   // Order is already correct from pickExercises:
   // 1. Large muscle (compounds then isolations)
