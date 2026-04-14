@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw } from "lucide-react";
+import RestTimer from "@/components/rest-timer";
 import { RatLoader } from "@/components/rat-loader";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { getExerciseGif } from "@/lib/exercise-images";
@@ -122,7 +123,7 @@ function PlanContent() {
   const [activeSession, setActiveSession] = useState<string | null>(() => {
     try { return JSON.parse(localStorage.getItem("active_session_day") || "null"); } catch { return null; }
   });
-  const [sessionData, setSessionData] = useState<Record<string, { set: number; weight: number; reps: number }[]>>(() => {
+  const [sessionData, setSessionData] = useState<Record<string, { set: number; weight: number; reps: number; completed?: boolean }[]>>(() => {
     try { return JSON.parse(localStorage.getItem("active_session_data") || "{}"); } catch { return {}; }
   });
   const [savingSession, setSavingSession] = useState(false);
@@ -213,8 +214,11 @@ function PlanContent() {
     }
   };
 
+  // Rest timer state
+  const [restTimer, setRestTimer] = useState<{ exerciseId: string; seconds: number } | null>(null);
+
   const startSession = (dayName: string, exercises: { id: string; sets: number | string; reps: string | number }[]) => {
-    const data: Record<string, { set: number; weight: number; reps: number }[]> = {};
+    const data: Record<string, { set: number; weight: number; reps: number; completed: boolean }[]> = {};
     exercises.forEach(ex => {
       const numSets = parseInt(String(ex.sets)) || 4;
       const lastWeight = exerciseLogs[ex.id]?.weight || 0;
@@ -223,11 +227,37 @@ function PlanContent() {
         set: i + 1,
         weight: lastWeight,
         reps: lastReps,
+        completed: false,
       }));
     });
     setSessionData(data);
     setActiveSession(dayName);
     setSessionSaved(false);
+    setRestTimer(null);
+  };
+
+  const toggleSetComplete = (exId: string, setIdx: number, restTime: string) => {
+    setSessionData(prev => {
+      const updated = { ...prev };
+      updated[exId] = updated[exId].map((s, i) =>
+        i === setIdx ? { ...s, completed: !s.completed } : s
+      );
+      // If marking as complete, start rest timer
+      const justCompleted = updated[exId][setIdx]?.completed;
+      if (justCompleted) {
+        const allDone = updated[exId].every(s => s.completed);
+        if (!allDone) {
+          // Parse rest time (e.g. "90s", "3min", "60s")
+          let secs = 60;
+          if (restTime.includes("min")) secs = parseInt(restTime) * 60;
+          else secs = parseInt(restTime) || 60;
+          setRestTimer({ exerciseId: exId, seconds: secs });
+        } else {
+          setRestTimer(null);
+        }
+      }
+      return updated;
+    });
   };
 
   const updateSessionSet = (exId: string, setIdx: number, field: "weight" | "reps", value: number) => {
@@ -686,20 +716,36 @@ function PlanContent() {
                     </div>
                   )}
 
-                  {/* Session mode: all exercises with weight inputs */}
-                  {isSession && (
+                  {/* Session mode: all exercises with weight inputs, checkboxes, timer */}
+                  {isSession && (() => {
+                    const allExercises = day.exercises;
+                    const totalEx = allExercises.filter(e => !["hiit-cinta", "hiit-casa", "burpees", "jumping-jacks", "high-knees", "saltar-cuerda"].includes(e.id)).length;
+                    const completedEx = allExercises.filter(e => {
+                      const sets = sessionData[e.id];
+                      return sets && sets.length > 0 && sets.every(s => s.completed);
+                    }).length;
+                    return (
                     <div className="p-4">
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        <p className="text-xs text-primary font-bold">SESION EN CURSO</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                          <p className="text-xs text-primary font-bold">SESION EN CURSO</p>
+                        </div>
+                        <span className="text-[10px] text-muted">{completedEx}/{totalEx} ejercicios</span>
+                      </div>
+                      {/* Session progress bar */}
+                      <div className="h-1.5 rounded-full bg-card-bg overflow-hidden mb-4">
+                        <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500" style={{ width: `${totalEx > 0 ? (completedEx / totalEx) * 100 : 0}%` }} />
                       </div>
                       <div className="space-y-4">
-                        {day.exercises.map((ex, i) => {
+                        {allExercises.map((ex, i) => {
                           const log = exerciseLogs[ex.id];
                           const sets = sessionData[ex.id] || [];
                           const isCardioEx = ["hiit-cinta", "hiit-casa", "burpees", "jumping-jacks", "high-knees", "saltar-cuerda"].includes(ex.id);
+                          const allSetsComplete = sets.length > 0 && sets.every(s => s.completed);
+                          const completedSets = sets.filter(s => s.completed).length;
                           return (
-                            <div key={i} className="bg-card-bg rounded-xl p-3">
+                            <div key={i} className={`rounded-xl p-3 transition-colors ${allSetsComplete ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-card-bg"}`}>
                               <div className="flex items-center gap-3 mb-2">
                                 {(() => { const gif = getExerciseGif(ex.id); return gif ? (
                                   <button onClick={() => setExpandedGif({ src: gif, name: ex.name })} className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 bg-white/10 hover:ring-2 hover:ring-primary/50 transition-all">
@@ -707,13 +753,19 @@ function PlanContent() {
                                   </button>
                                 ) : null; })()}
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-bold text-sm truncate">{ex.name}</p>
-                                  <p className="text-[10px] text-muted">{isCardioEx ? ex.reps : `${ex.sets}x${ex.reps} | ${ex.rest}`}</p>
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="font-bold text-sm truncate">{ex.name}</p>
+                                    {allSetsComplete && <Check className="h-4 w-4 text-emerald-400 shrink-0" />}
+                                  </div>
+                                  <p className="text-[10px] text-muted">
+                                    {isCardioEx ? ex.reps : `${ex.sets}x${ex.reps} | ${ex.rest}`}
+                                    {!isCardioEx && sets.length > 0 && ` — ${completedSets}/${sets.length} series`}
+                                  </p>
                                   {"notes" in ex && ex.notes && <p className="text-[9px] text-primary/70 italic">{String(ex.notes)}</p>}
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
                                   {!isCardioEx && log && (
-                                    <span className="text-[10px] text-muted">Anterior: {log.weight}kg</span>
+                                    <span className="text-[10px] text-muted">Ant: {log.weight}kg</span>
                                   )}
                                   <button onClick={() => setSelectedExercise(ex.id)} className="text-primary">
                                     <Info className="h-3.5 w-3.5" />
@@ -727,15 +779,21 @@ function PlanContent() {
                               ) : (
                               <div className="space-y-1.5">
                                 {sets.map((s, si) => (
-                                  <div key={si} className="flex items-center gap-2">
-                                    <span className="text-[10px] text-muted w-5 shrink-0">S{s.set}</span>
+                                  <div key={si} className={`flex items-center gap-2 rounded-lg px-1 py-0.5 transition-colors ${s.completed ? "bg-emerald-500/5" : ""}`}>
+                                    <button
+                                      onClick={() => toggleSetComplete(ex.id, si, ex.rest)}
+                                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors ${s.completed ? "bg-emerald-500 border-emerald-500" : "border-card-border hover:border-primary"}`}
+                                    >
+                                      {s.completed && <Check className="h-3 w-3 text-black" />}
+                                    </button>
+                                    <span className="text-[10px] text-muted w-4 shrink-0">S{s.set}</span>
                                     <input
                                       type="number"
                                       inputMode="decimal"
                                       value={s.weight || ""}
                                       onChange={e => updateSessionSet(ex.id, si, "weight", Number(e.target.value))}
                                       placeholder="kg"
-                                      className="flex-1 bg-background border border-card-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-primary"
+                                      className={`flex-1 bg-background border border-card-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-primary ${s.completed ? "opacity-60" : ""}`}
                                     />
                                     <span className="text-[10px] text-muted">x</span>
                                     <input
@@ -744,10 +802,17 @@ function PlanContent() {
                                       value={s.reps || ""}
                                       onChange={e => updateSessionSet(ex.id, si, "reps", Number(e.target.value))}
                                       placeholder="reps"
-                                      className="w-14 bg-background border border-card-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-primary"
+                                      className={`w-14 bg-background border border-card-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-primary ${s.completed ? "opacity-60" : ""}`}
                                     />
                                   </div>
                                 ))}
+                                {/* Rest timer for this exercise */}
+                                {restTimer?.exerciseId === ex.id && (
+                                  <RestTimer
+                                    seconds={restTimer.seconds}
+                                    onComplete={() => setRestTimer(null)}
+                                  />
+                                )}
                               </div>
                               )}
                             </div>
@@ -769,14 +834,15 @@ function PlanContent() {
                           )}
                         </button>
                         <button
-                          onClick={() => { setActiveSession(null); setSessionData({}); }}
+                          onClick={() => { setActiveSession(null); setSessionData({}); setRestTimer(null); }}
                           className="px-4 py-3 text-muted text-sm rounded-xl hover:text-white"
                         >
                           Cancelar
                         </button>
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })}
