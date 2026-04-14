@@ -407,8 +407,14 @@ export default function AdminChatPage() {
                             <p className="text-[11px] font-semibold text-primary mb-0.5">{msg.sender_name}</p>
                           )}
                           <p className="text-[13px] whitespace-pre-wrap break-words leading-snug">{msg.content}</p>
-                          <p className={`text-[10px] mt-0.5 text-right ${isMine ? "text-black/40" : "text-muted"}`}>
+                          <p className={`text-[10px] mt-0.5 text-right flex items-center justify-end gap-0 ${isMine ? "text-black/40" : "text-muted"}`}>
                             {formatTime(msg.created_at)}
+                            {isMine && (
+                              <svg viewBox="0 0 16 11" width="16" height="11" className="inline-block ml-1 -mb-0.5">
+                                <path d="M11.07 0.73L4.53 7.27 2.43 5.17 1.02 6.58 4.53 10.09 12.48 2.14z" fill={msg.read_at ? "#53bdeb" : "currentColor"} />
+                                <path d="M14.07 0.73L7.53 7.27 6.83 6.57 5.42 7.98 7.53 10.09 15.48 2.14z" fill={msg.read_at ? "#53bdeb" : "currentColor"} />
+                              </svg>
+                            )}
                           </p>
                         </div>
                       </div>

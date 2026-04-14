@@ -228,6 +228,7 @@ export default function ConversationPage() {
                 isSent={msg.sender_id === user?.id}
                 time={msg.created_at}
                 flagged={msg.flagged}
+                readAt={msg.read_at}
               />
             </div>
           );
