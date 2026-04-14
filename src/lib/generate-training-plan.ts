@@ -503,11 +503,15 @@ function getMethodsForObjective(objective: string): TrainingMethod[] {
   }
 }
 
-function applyAdvancedMethods(plan: TrainingDay[], objective: string): TrainingDay[] {
+function applyAdvancedMethods(plan: TrainingDay[], objective: string, activityLevel: string = "moderado"): TrainingDay[] {
   const availableMethods = getMethodsForObjective(objective);
 
   // Beginners/home/kitesurf: no advanced methods
   if (availableMethods.length === 1 && availableMethods[0] === 'standard') return plan;
+
+  // Only apply advanced methods for active/very active users
+  // Sedentary and moderate users get standard training only
+  if (activityLevel === "sedentario" || activityLevel === "poco-activo" || activityLevel === "moderado") return plan;
 
   return plan.map(day => {
     const exercises = [...day.exercises];
@@ -990,9 +994,9 @@ export function generateTrainingPlan(
     };
   });
 
-  // Apply advanced training methods based on objective
+  // Apply advanced training methods based on objective (only for active/very-active users)
   // Sources: NSCA, Schoenfeld (2018) Strength & Conditioning Journal, ACSM (2009)
-  plan = applyAdvancedMethods(plan, objective);
+  plan = applyAdvancedMethods(plan, objective, activityLevel);
 
   // Order is already correct from pickExercises:
   // 1. Large muscle (compounds then isolations)
