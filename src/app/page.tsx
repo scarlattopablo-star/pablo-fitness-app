@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import {
   ArrowRight, Dumbbell, UtensilsCrossed, Smartphone,
   BarChart3, Zap, Target, Star, MessageCircle, Users,
+  ChevronLeft, ChevronRight, GripVertical,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import { LanguageSelector } from "@/components/language-selector";
@@ -90,6 +91,76 @@ function useParallax(speed = 0.3) {
 
   return ref;
 }
+
+// Before/After comparison slider
+function BeforeAfterSlider({ src, label }: { src: string; label: string }) {
+  const [position, setPosition] = useState(50);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const updatePosition = useCallback((clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    setPosition((x / rect.width) * 100);
+  }, []);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!dragging.current) return;
+      e.preventDefault();
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      updatePosition(clientX);
+    };
+    const onUp = () => { dragging.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchend", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchend", onUp);
+    };
+  }, [updatePosition]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-[3/4] max-w-sm mx-auto rounded-2xl overflow-hidden cursor-ew-resize select-none border border-card-border"
+      onMouseDown={(e) => { dragging.current = true; updatePosition(e.clientX); }}
+      onTouchStart={(e) => { dragging.current = true; updatePosition(e.touches[0].clientX); }}
+    >
+      {/* After (full background) */}
+      <img src={src} alt={`${label} - Después`} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "right center" }} />
+      {/* Before (clipped) */}
+      <div className="absolute inset-0 overflow-hidden" style={{ width: `${position}%` }}>
+        <img src={src} alt={`${label} - Antes`} className="absolute inset-0 h-full object-cover" style={{ width: `${containerRef.current?.offsetWidth || 400}px`, objectPosition: "left center" }} />
+      </div>
+      {/* Handle */}
+      <div className="absolute top-0 bottom-0 z-10" style={{ left: `${position}%` }}>
+        <div className="absolute top-0 bottom-0 w-0.5 bg-accent -translate-x-1/2" />
+        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-accent flex items-center justify-center shadow-lg shadow-accent/40">
+          <GripVertical className="h-5 w-5 text-black" />
+        </div>
+      </div>
+      {/* Labels */}
+      <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 text-xs font-bold text-white backdrop-blur-sm">ANTES</div>
+      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-accent/90 text-xs font-bold text-black backdrop-blur-sm">DESPUES</div>
+    </div>
+  );
+}
+
+// Testimonials data
+const testimonials = [
+  { name: "Maria L.", result: "-12kg en 3 meses", quote: "Pablo me cambio la forma de entrenar. Nunca pense que iba a lograr estos resultados.", rating: 5 },
+  { name: "Juan R.", result: "+8kg musculo", quote: "El plan de nutricion fue clave. Todo super personalizado y facil de seguir.", rating: 5 },
+  { name: "Carolina A.", result: "-8kg en 2 meses", quote: "La app es increible, tengo todo en el celular. Los GIFs de ejercicios me salvan.", rating: 5 },
+  { name: "Diego P.", result: "Definicion total", quote: "Mejor inversion que hice. El seguimiento semanal te mantiene enfocado.", rating: 5 },
+  { name: "Lucia M.", result: "-15kg en 4 meses", quote: "Empece sin saber nada y hoy entreno con confianza. Pablo explica todo clarisimo.", rating: 5 },
+  { name: "Martin S.", result: "Recomposicion", quote: "Pase de no hacer nada a entrenar 5 veces por semana. El chat directo con Pablo es un golazo.", rating: 4 },
+];
 
 export default function HomePage() {
   const { t } = useI18n();
@@ -178,6 +249,21 @@ export default function HomePage() {
                 Pablo Scarlatto · Entrenador personal de fitness y musculacion · Campeon de fisicoculturismo 2019
               </p>
 
+              {/* Social proof - avatar stack */}
+              <div className="flex items-center gap-3 mb-6 animate-fade-in-up animate-delay-250">
+                <div className="flex -space-x-2">
+                  {["bg-emerald-500", "bg-accent", "bg-blue-500", "bg-pink-500", "bg-purple-500"].map((bg, i) => (
+                    <div key={i} className={`w-8 h-8 rounded-full ${bg} border-2 border-background flex items-center justify-center text-[10px] font-bold text-white`}>
+                      {["ML", "JR", "CA", "DP", "LM"][i]}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-sm font-bold text-accent">42+ alumnos activos</span>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up animate-delay-300 mb-10">
                 <Link href="/registro-gratis" className="btn-shimmer text-base px-8 py-4 rounded-full flex items-center justify-center gap-2 font-bold">
                   Empezar gratis <ArrowRight className="h-5 w-5" />
@@ -187,15 +273,16 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              {/* Animated counters */}
-              <div className="flex gap-8 animate-fade-in-up animate-delay-400">
+              {/* Animated counters - enhanced */}
+              <div className="flex gap-8 animate-fade-in-up animate-delay-400 border-t border-card-border/30 pt-6">
                 {[
-                  { target: 42, suffix: "+", label: "Alumnos" },
-                  { target: 100, suffix: "%", label: "Personalizado" },
-                  { target: 24, suffix: "/7", label: "App" },
+                  { target: 42, suffix: "+", label: "Alumnos", icon: Users },
+                  { target: 100, suffix: "%", label: "Personalizado", icon: Target },
+                  { target: 24, suffix: "/7", label: "App", icon: Smartphone },
                 ].map((item) => (
                   <div key={item.label} className="text-center">
-                    <span className="block text-2xl font-black text-accent">
+                    <item.icon className="h-4 w-4 text-muted mx-auto mb-1" />
+                    <span className="block text-3xl sm:text-4xl font-black text-accent">
                       <AnimatedCounter target={item.target} suffix={item.suffix} />
                     </span>
                     <span className="text-[10px] text-muted uppercase tracking-wider">{item.label}</span>
@@ -204,14 +291,16 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Hero image with hover tilt */}
+            {/* Right — Hero image */}
             <div className="hidden lg:block animate-fade-in-up animate-delay-300">
               <div className="relative group">
-                <div className="card-premium rounded-3xl overflow-hidden border border-accent/30 transition-transform duration-500 group-hover:scale-[1.02] group-hover:shadow-2xl group-hover:shadow-accent/10">
-                  <img src="/images/transf-nueva-2.jpg" alt="Mejor transformacion" className="w-full object-contain" />
+                <div className="absolute -inset-4 bg-accent/10 rounded-[3rem] blur-2xl opacity-60" />
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20 transition-transform duration-500 group-hover:scale-[1.02]">
+                  <img src="/images/pablo-curl.jpg" alt="Pablo Scarlatto entrenando" className="w-full object-cover aspect-[3/4]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 </div>
-                <div className="absolute -bottom-4 -left-4 bg-accent text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-accent/30 transition-transform duration-300 group-hover:translate-y-1">
-                  Resultado real
+                <div className="absolute -bottom-4 -left-4 bg-accent text-black font-black text-sm px-5 py-3 rounded-2xl shadow-lg shadow-accent/30 transition-transform duration-300 group-hover:translate-y-1 flex items-center gap-2">
+                  <Star className="h-4 w-4 fill-black" /> Campeon 2019
                 </div>
               </div>
             </div>
@@ -273,6 +362,59 @@ export default function HomePage() {
               </ScrollReveal>
             ))}
           </div>
+
+          {/* Before/After Slider */}
+          <ScrollReveal className="mt-14 text-center">
+            <h3 className="text-xl sm:text-2xl font-black mb-2">
+              Desliza para <span className="text-accent">comparar</span>
+            </h3>
+            <p className="text-sm text-muted mb-6">Arrastra el control para ver el antes y despues</p>
+            <BeforeAfterSlider src="/images/transf-nueva-1.jpg" label="Transformacion" />
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* TESTIMONIOS */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <ScrollReveal className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              Lo que dicen mis <span className="text-accent">alumnos</span>
+            </h2>
+            <p className="text-sm text-muted mt-2">Historias reales de transformacion</p>
+          </ScrollReveal>
+          <div className="relative">
+            {/* Fade edges */}
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+            {/* Scroll container */}
+            <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory -mx-4 px-4 scrollbar-thin">
+              {testimonials.map((t, i) => (
+                <ScrollReveal key={i} delay={i * 100} className="min-w-[280px] max-w-[320px] snap-center shrink-0">
+                  <div className="glass-card rounded-2xl p-6 h-full flex flex-col border border-card-border/50 hover:border-accent/30 transition-colors">
+                    {/* Stars */}
+                    <div className="flex gap-1 mb-3">
+                      {Array.from({ length: 5 }).map((_, j) => (
+                        <Star key={j} className={`h-4 w-4 ${j < t.rating ? "text-accent fill-accent" : "text-card-border"}`} />
+                      ))}
+                    </div>
+                    {/* Quote */}
+                    <p className="text-sm text-muted leading-relaxed mb-4 flex-1">&ldquo;{t.quote}&rdquo;</p>
+                    {/* Client */}
+                    <div className="flex items-center gap-3 border-t border-card-border/30 pt-4">
+                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
+                        {t.name.split(" ").map(n => n[0]).join("")}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">{t.name}</p>
+                        <p className="text-xs text-accent font-bold">{t.result}</p>
+                      </div>
+                    </div>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -303,6 +445,134 @@ export default function HomePage() {
                 </div>
               </ScrollReveal>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* APP PREVIEW — CSS phone mockups */}
+      <section className="py-16 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 bg-accent/[0.02]" />
+        <div className="max-w-5xl mx-auto relative">
+          <ScrollReveal className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+              Tu entrenamiento en el <span className="text-accent">bolsillo</span>
+            </h2>
+            <p className="text-sm text-muted mt-2">Todo lo que necesitas en una app</p>
+          </ScrollReveal>
+
+          <div className="flex justify-center items-end gap-4 sm:gap-8">
+            {/* Phone Left - Ejercicios */}
+            <ScrollReveal delay={100} className="hidden sm:block">
+              <div className="relative" style={{ transform: "perspective(1000px) rotateY(8deg)" }}>
+                <div className="absolute -inset-3 bg-primary/10 rounded-[2.5rem] blur-xl" />
+                <div className="relative w-[160px] sm:w-[180px] h-[340px] sm:h-[380px] bg-[#1a1a1a] rounded-[2rem] border border-card-border p-1.5 shadow-xl">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-[#1a1a1a] rounded-b-xl z-10" />
+                  <div className="w-full h-full rounded-[1.6rem] overflow-hidden bg-background p-3">
+                    <div className="text-[9px] font-bold mb-2 text-center">Ejercicios</div>
+                    {["Press banca", "Sentadilla", "Peso muerto", "Curl biceps"].map((ex, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-1.5 p-1.5 rounded-lg bg-card-bg border border-card-border/30">
+                        <div className="w-6 h-6 rounded bg-primary/20 flex-shrink-0" />
+                        <div>
+                          <div className="text-[7px] font-bold">{ex}</div>
+                          <div className="text-[6px] text-muted">3x12</div>
+                        </div>
+                        <div className="ml-auto w-2 h-2 rounded-full bg-primary" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Phone Center - Dashboard (largest) */}
+            <ScrollReveal delay={0}>
+              <div className="relative">
+                <div className="absolute -inset-4 bg-accent/15 rounded-[3rem] blur-2xl" />
+                <div className="relative w-[200px] sm:w-[240px] h-[420px] sm:h-[500px] bg-[#1a1a1a] rounded-[2.5rem] border-2 border-accent/30 p-2 shadow-2xl">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-6 bg-[#1a1a1a] rounded-b-2xl z-10" />
+                  <div className="w-full h-full rounded-[2rem] overflow-hidden bg-background p-3">
+                    <div className="text-[10px] font-bold mb-3 flex items-center justify-between">
+                      <span>Dashboard</span>
+                      <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    </div>
+                    {/* Stats row */}
+                    <div className="flex gap-1.5 mb-3">
+                      {[{ v: "Dia 23", l: "Racha" }, { v: "68kg", l: "Peso" }, { v: "1840", l: "kcal" }].map((s, i) => (
+                        <div key={i} className="flex-1 bg-card-bg rounded-lg p-1.5 text-center border border-card-border/30">
+                          <div className="text-[8px] font-black text-accent">{s.v}</div>
+                          <div className="text-[6px] text-muted">{s.l}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Progress bar */}
+                    <div className="mb-3">
+                      <div className="text-[7px] text-muted mb-1">Progreso semanal</div>
+                      <div className="h-2 rounded-full bg-card-bg overflow-hidden">
+                        <div className="h-full w-[70%] rounded-full bg-gradient-to-r from-primary to-accent" />
+                      </div>
+                    </div>
+                    {/* Workout cards */}
+                    {["Pecho + Triceps", "Espalda + Biceps", "Piernas"].map((w, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-1.5 p-2 rounded-lg bg-card-bg border border-card-border/30">
+                        <Dumbbell className="h-3 w-3 text-accent flex-shrink-0" />
+                        <div className="text-[7px] font-bold flex-1">{w}</div>
+                        <div className={`text-[6px] px-1.5 py-0.5 rounded-full ${i === 0 ? "bg-accent/20 text-accent" : "bg-card-border/30 text-muted"}`}>
+                          {i === 0 ? "Hoy" : i === 1 ? "Manana" : "Mie"}
+                        </div>
+                      </div>
+                    ))}
+                    {/* XP bar */}
+                    <div className="mt-2 p-1.5 rounded-lg bg-accent/10 border border-accent/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-[7px] font-bold text-accent">Nivel 5</div>
+                        <div className="text-[6px] text-muted">320/500 XP</div>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-card-bg overflow-hidden">
+                        <div className="h-full w-[64%] rounded-full bg-accent" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Phone Right - Chat */}
+            <ScrollReveal delay={200} className="hidden sm:block">
+              <div className="relative" style={{ transform: "perspective(1000px) rotateY(-8deg)" }}>
+                <div className="absolute -inset-3 bg-primary/10 rounded-[2.5rem] blur-xl" />
+                <div className="relative w-[160px] sm:w-[180px] h-[340px] sm:h-[380px] bg-[#1a1a1a] rounded-[2rem] border border-card-border p-1.5 shadow-xl">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-5 bg-[#1a1a1a] rounded-b-xl z-10" />
+                  <div className="w-full h-full rounded-[1.6rem] overflow-hidden bg-background p-3">
+                    <div className="text-[9px] font-bold mb-2 text-center">Chat con Pablo</div>
+                    {/* Chat bubbles */}
+                    <div className="space-y-2">
+                      <div className="bg-card-bg rounded-xl rounded-tl-sm p-2 max-w-[85%]">
+                        <div className="text-[7px]">Hola Pablo! Tengo una duda con la sentadilla</div>
+                        <div className="text-[5px] text-muted mt-0.5">10:30</div>
+                      </div>
+                      <div className="bg-primary/20 rounded-xl rounded-tr-sm p-2 max-w-[85%] ml-auto">
+                        <div className="text-[7px]">Claro! Manda un video y te corrijo la tecnica</div>
+                        <div className="text-[5px] text-muted mt-0.5 text-right">10:32</div>
+                      </div>
+                      <div className="bg-card-bg rounded-xl rounded-tl-sm p-2 max-w-[85%]">
+                        <div className="text-[7px]">Genial, ahi va!</div>
+                        <div className="text-[5px] text-muted mt-0.5">10:33</div>
+                      </div>
+                      <div className="bg-primary/20 rounded-xl rounded-tr-sm p-2 max-w-[85%] ml-auto">
+                        <div className="text-[7px]">Perfecto! Baja un poco mas y apreta gluteos arriba</div>
+                        <div className="text-[5px] text-muted mt-0.5 text-right">10:35</div>
+                      </div>
+                    </div>
+                    {/* Input bar */}
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="bg-card-bg rounded-full px-3 py-1.5 text-[7px] text-muted border border-card-border/30">
+                        Escribe un mensaje...
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
