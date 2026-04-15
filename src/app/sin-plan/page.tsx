@@ -1,9 +1,22 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Dumbbell, Sparkles, Clock, Target, Utensils } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function SinPlanPage() {
+  const router = useRouter();
+  const { hasActiveSubscription, loading } = useAuth();
+
+  // If user already has an active subscription, redirect them out
+  useEffect(() => {
+    if (!loading && hasActiveSubscription) {
+      router.replace("/dashboard");
+    }
+  }, [loading, hasActiveSubscription, router]);
+
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full text-center">

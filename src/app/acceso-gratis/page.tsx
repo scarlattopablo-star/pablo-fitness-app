@@ -259,29 +259,12 @@ function AccesoGratisForm() {
             <Check className="h-8 w-8 text-black" />
           </div>
           <h1 className="text-2xl font-black mb-2">¡Cuenta Creada!</h1>
-          <p className="text-muted mb-6">Tu plan {planName} esta reservado.</p>
+          <p className="text-muted mb-4">Tu plan {planName} esta activo.</p>
 
-          <div className="glass-card rounded-2xl p-6 mb-6 text-left">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                <span className="text-xl">📧</span>
-              </div>
-              <div>
-                <p className="font-bold text-sm">Revisa tu email</p>
-                <p className="text-xs text-primary font-medium">{email}</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted leading-relaxed">
-              Te enviamos un email de confirmacion. <strong className="text-foreground">Toca el link del email</strong> para activar tu cuenta y entrar directamente a completar tu encuesta.
-            </p>
-            <div className="mt-4 bg-warning/10 border border-warning/20 rounded-xl p-3">
-              <p className="text-xs text-warning font-bold">Si no lo ves, revisa la carpeta de spam o correo no deseado.</p>
-            </div>
+          <div className="flex items-center justify-center gap-2 text-muted text-sm">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Entrando a tu cuenta...</span>
           </div>
-
-          <a href="/login" className="text-primary text-sm hover:underline font-medium">
-            Ya confirme mi email → Iniciar sesion
-          </a>
         </div>
       </main>
     );
