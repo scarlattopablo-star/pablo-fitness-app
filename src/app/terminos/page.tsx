@@ -16,7 +16,7 @@ export default function TerminosPage() {
 
       <div className="max-w-3xl mx-auto px-4 pt-10 prose prose-invert prose-sm">
         <h1 className="text-2xl font-black mb-2">Términos y Condiciones</h1>
-        <p className="text-muted text-sm mb-8">Última actualización: 31 de marzo de 2026</p>
+        <p className="text-muted text-sm mb-8">Última actualización: 14 de abril de 2026</p>
 
         <div className="space-y-8 text-sm text-muted">
           <section>
@@ -105,6 +105,8 @@ export default function TerminosPage() {
               <li><strong className="text-white">NSCA (National Strength and Conditioning Association)</strong> — Essentials of Strength Training and Conditioning. Principios de periodización, priorización muscular e intensidad basada en series y repeticiones.</li>
               <li><strong className="text-white">Ainsworth BE et al. (2011)</strong> — Compendium of Physical Activities: A Second Update of Codes and MET Values. <em>Medicine & Science in Sports & Exercise</em>, 43(8), 1575-1581. Utilizado para la estimación de calorías quemadas por sesión.</li>
               <li><strong className="text-white">Schoenfeld BJ et al. (2016)</strong> — Effects of Resistance Training Frequency on Measures of Muscle Hypertrophy: A Systematic Review and Meta-Analysis. <em>Sports Medicine</em>, 46(11), 1689-1697. Base para la frecuencia de entrenamiento de 2x/semana por grupo muscular.</li>
+              <li><strong className="text-white">Schoenfeld BJ (2018)</strong> — Science and Development of Muscle Hypertrophy. <em>Strength & Conditioning Journal</em>. Base para metodos avanzados de entrenamiento: super series, drop sets, rest-pause, cluster sets, series gigantes y piramidal.</li>
+              <li><strong className="text-white">ACSM (2026)</strong> — Resistance Training Guidelines Update. Revision sistematica de 137 estudios con mas de 30.000 participantes. Actualizacion de rangos de series, repeticiones y frecuencia optima por nivel de experiencia.</li>
             </ul>
 
             <h3 className="text-white font-semibold mt-4 mb-2">Nutrición y Metabolismo</h3>
@@ -136,7 +138,54 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">11. Uso de la Aplicacion Movil</h2>
+            <h2 className="text-white font-bold text-lg mb-3">11. Sistema de Gamificacion</h2>
+            <p>La plataforma incluye un sistema de gamificacion con puntos de experiencia (XP), niveles, rachas, logros y ranking semanal/general. El sistema tiene fines motivacionales y no otorga beneficios economicos ni contractuales.</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Los puntos XP se obtienen por actividades como entrenar, registrar progreso, participar en el chat y completar retos semanales</li>
+              <li>Las rachas registran dias consecutivos de entrenamiento y se reinician si el usuario no entrena un dia</li>
+              <li>El ranking es publico entre los usuarios de la plataforma y muestra nombre y XP</li>
+              <li>Pablo Scarlatto Entrenamientos se reserva el derecho de ajustar los valores de XP, logros y reglas del sistema de gamificacion sin previo aviso</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-white font-bold text-lg mb-3">12. Chat y Comunicacion</h2>
+            <p>La plataforma incluye un sistema de chat con dos modalidades: Chat General (grupal) y Chat Privado (entre usuarios).</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Los mensajes del Chat General son visibles para todos los usuarios de la plataforma</li>
+              <li>Los mensajes privados son visibles unicamente para los participantes de la conversacion y el administrador</li>
+              <li>El chat cuenta con moderacion automatica que filtra contenido inapropiado, ofensivo o ilegal</li>
+              <li>El uso reiterado de lenguaje inapropiado puede resultar en la suspension temporal o permanente del acceso al chat</li>
+              <li>Pablo Scarlatto Entrenamientos se reserva el derecho de moderar, eliminar mensajes o suspender el acceso al chat a usuarios que incumplan las normas de uso</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-white font-bold text-lg mb-3">13. Supervision por el Entrenador</h2>
+            <p>El entrenador (administrador) puede realizar las siguientes acciones en la cuenta del usuario como parte del servicio de entrenamiento personalizado:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Crear y modificar planes de entrenamiento y nutricion</li>
+              <li>Registrar sesiones de entrenamiento en nombre del usuario (pesos, repeticiones) cuando entrena presencialmente con el cliente</li>
+              <li>Visualizar el progreso, estadisticas y registros del usuario</li>
+              <li>Enviar mensajes y notificaciones push al usuario</li>
+            </ul>
+            <p className="mt-2">Estas acciones son parte integral del servicio de entrenamiento personalizado y se realizan con el objetivo de optimizar la experiencia del usuario.</p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-bold text-lg mb-3">14. Prueba Gratuita</h2>
+            <p>Pablo Scarlatto Entrenamientos puede ofrecer periodos de prueba gratuita a nuevos usuarios.</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>La duracion de la prueba gratuita puede variar segun la promocion vigente</li>
+              <li>Durante la prueba gratuita, el usuario tiene acceso completo a las funcionalidades de la plataforma</li>
+              <li>Al finalizar la prueba, el usuario puede elegir un plan de pago para continuar usando el servicio</li>
+              <li>No se requiere tarjeta de credito para acceder a la prueba gratuita</li>
+              <li>La prueba gratuita es personal e intransferible, limitada a una por persona</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-white font-bold text-lg mb-3">15. Uso de la Aplicacion Movil</h2>
             <p>La aplicacion movil de Pablo Scarlatto Entrenamientos funciona como un cliente que accede al servicio web principal. Su uso esta sujeto a las siguientes condiciones:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>La aplicacion requiere conexion a internet para funcionar correctamente</li>
@@ -150,7 +199,7 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">12. Contacto</h2>
+            <h2 className="text-white font-bold text-lg mb-3">16. Contacto</h2>
             <p>Para consultas sobre estos términos: <a href="https://instagram.com/pabloscarlattoentrenamientos" className="text-primary">@pabloscarlattoentrenamientos</a></p>
           </section>
         </div>

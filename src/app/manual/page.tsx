@@ -166,8 +166,22 @@ export default function ManualPage() {
               <Step number={3} title="Guarda la sesion" desc="Al terminar, toca 'Guardar Sesion'. Tus datos quedan registrados para ver tu progreso de fuerza." />
             </div>
 
+            <p className="text-foreground font-semibold mt-3 flex items-center gap-2"><Play className="h-4 w-4 text-primary" /> Timer de descanso</p>
+            <p>Al marcar una serie como completada, se activa automaticamente un timer de descanso con sonido y vibracion. Podes pausar o saltar el timer si preferis descansar mas o menos.</p>
+
+            <p className="text-foreground font-semibold mt-3">Metodos avanzados de entrenamiento</p>
+            <p>Dependiendo de tu nivel y objetivo, tu plan puede incluir metodos avanzados:</p>
+            <ul className="list-disc pl-5 space-y-1 text-xs mt-1">
+              <li><strong className="text-foreground">Super Series:</strong> dos ejercicios seguidos sin descanso</li>
+              <li><strong className="text-foreground">Drop Sets:</strong> al terminar, baja el peso 20-25% y segui sin descanso</li>
+              <li><strong className="text-foreground">Rest-Pause:</strong> reps hasta casi el fallo, descansa 15-20s, segui</li>
+              <li><strong className="text-foreground">Cluster Sets:</strong> 2 reps, descansa 15s, 2 reps mas, descansa 15s, 2 mas</li>
+              <li><strong className="text-foreground">Series Gigantes:</strong> 3+ ejercicios seguidos sin descanso</li>
+              <li><strong className="text-foreground">Piramidal:</strong> subi el peso y baja las reps cada serie</li>
+            </ul>
+
             <p className="text-foreground font-semibold mt-3 flex items-center gap-2"><Search className="h-4 w-4 text-primary" /> Biblioteca de ejercicios</p>
-            <p>En la seccion Ejercicios podes buscar cualquier ejercicio por nombre o filtrar por grupo muscular (pecho, espalda, piernas, etc.). Cada ejercicio tiene descripcion, pasos de ejecucion y video demostrativo.</p>
+            <p>En la seccion Ejercicios podes buscar cualquier ejercicio por nombre o filtrar por grupo muscular (pecho, espalda, piernas, etc.). Cada ejercicio tiene descripcion, pasos de ejecucion y GIF animado.</p>
 
             <Tip>Tu ultimo peso registrado aparece en verde si mejoraste respecto a la sesion anterior. Usa esto como guia para progresion.</Tip>
           </Section>
@@ -190,6 +204,24 @@ export default function ManualPage() {
             </div>
 
             <Tip>Podes cambiar alimentos todas las veces que quieras sin alterar los macros de tu plan. La app recalcula todo automaticamente.</Tip>
+          </Section>
+
+          {/* 4B. CONTENIDO EXTRA */}
+          <Section
+            icon={<Star className="h-5 w-5 text-black" />}
+            title="Tips, Recetas y Retos"
+          >
+            <p className="text-foreground font-semibold">Tips Diarios</p>
+            <p>Cada dia ves un tip nuevo en tu dashboard sobre entrenamiento, nutricion, recuperacion o mentalidad. Son 60 tips rotativos basados en evidencia cientifica.</p>
+
+            <p className="text-foreground font-semibold mt-3">Recetas</p>
+            <p>En tu plan de nutricion, algunos alimentos tienen una receta sugerida. Toca el icono del chef para ver la receta completa con ingredientes y preparacion.</p>
+
+            <p className="text-foreground font-semibold mt-3">Retos Semanales</p>
+            <p>Cada lunes se renuevan 2 retos nuevos. Completar retos te da XP bonus. Los retos pueden ser de entrenamiento, nutricion o habitos saludables.</p>
+
+            <p className="text-foreground font-semibold mt-3">Aprende</p>
+            <p>La seccion Educacion tiene 15 articulos sobre temas de fitness, nutricion y bienestar. Ideal para entender mejor tu proceso.</p>
           </Section>
 
           {/* 5. PROGRESO */}

@@ -16,7 +16,7 @@ export default function PrivacidadPage() {
 
       <div className="max-w-3xl mx-auto px-4 pt-10 prose prose-invert prose-sm">
         <h1 className="text-2xl font-black mb-2">Política de Privacidad</h1>
-        <p className="text-muted text-sm mb-2">Última actualización: 31 de marzo de 2026</p>
+        <p className="text-muted text-sm mb-2">Última actualización: 14 de abril de 2026</p>
         <p className="text-muted text-sm mb-8">En cumplimiento de la Ley N° 18.331 de Protección de Datos Personales y Acción de Habeas Data de la República Oriental del Uruguay.</p>
 
         <div className="space-y-8 text-sm text-muted">
@@ -60,6 +60,20 @@ export default function PrivacidadPage() {
               <li>Registros de peso y medidas corporales</li>
               <li>Fotografías de progreso (frente, perfil y espalda)</li>
               <li>Notas personales sobre el proceso</li>
+            </ul>
+
+            <h3 className="text-white font-medium mt-4 mb-2">Datos de entrenamiento:</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Registros de sesiones de entrenamiento (ejercicios, pesos, repeticiones)</li>
+              <li>Datos de gamificacion (XP, nivel, rachas, logros desbloqueados)</li>
+              <li>Posicion en ranking semanal y general (nombre y XP son visibles para otros usuarios)</li>
+            </ul>
+
+            <h3 className="text-white font-medium mt-4 mb-2">Datos de comunicacion:</h3>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Mensajes enviados en el Chat General (visibles para todos los usuarios)</li>
+              <li>Mensajes en conversaciones privadas (visibles solo para los participantes y el administrador)</li>
+              <li>Preferencias de notificaciones push</li>
             </ul>
 
             <h3 className="text-white font-medium mt-4 mb-2">Datos de pago:</h3>
@@ -139,6 +153,7 @@ export default function PrivacidadPage() {
             <p className="mt-2">No transferimos datos a terceros, salvo:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>MercadoPago: exclusivamente para procesar pagos</li>
+              <li>Firebase (Google): para notificaciones push y analiticas de uso de la app movil. Solo se comparten identificadores anonimos del dispositivo</li>
               <li>Cuando sea requerido por orden judicial o autoridad competente</li>
             </ul>
           </section>
@@ -155,7 +170,20 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">13. Cookies y Datos de Navegación</h2>
+            <h2 className="text-white font-bold text-lg mb-3">13. Acceso del Entrenador</h2>
+            <p>Como parte del servicio de entrenamiento personalizado, el administrador (Pablo Scarlatto) tiene acceso a:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Datos de la encuesta y macros calculados</li>
+              <li>Registros de entrenamiento (ejercicios, pesos, repeticiones)</li>
+              <li>Fotografias y medidas de progreso</li>
+              <li>Mensajes del chat (general y privado)</li>
+              <li>Estadisticas de actividad (rachas, XP, frecuencia de entrenamiento)</li>
+            </ul>
+            <p className="mt-2">El entrenador puede registrar sesiones de entrenamiento en nombre del usuario cuando entrena presencialmente con el cliente. Estos datos se almacenan en la cuenta del usuario de la misma manera que los registros propios.</p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-bold text-lg mb-3">14. Cookies y Datos de Navegación</h2>
             <p>La plataforma utiliza almacenamiento local (localStorage) para:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Mantener la sesión del usuario activa</li>
@@ -166,18 +194,18 @@ export default function PrivacidadPage() {
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">14. Órgano de Control</h2>
+            <h2 className="text-white font-bold text-lg mb-3">15. Órgano de Control</h2>
             <p>El órgano competente para recibir denuncias o reclamos en materia de protección de datos en Uruguay es la <strong className="text-white">Unidad Reguladora y de Control de Datos Personales (URCDP)</strong>.</p>
             <p className="mt-2">Sitio web: <a href="https://www.gub.uy/unidad-reguladora-control-datos-personales/" className="text-primary" target="_blank" rel="noopener noreferrer">www.gub.uy/unidad-reguladora-control-datos-personales</a></p>
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">15. Modificaciones</h2>
+            <h2 className="text-white font-bold text-lg mb-3">16. Modificaciones</h2>
             <p>Esta política puede ser actualizada periódicamente. Cualquier cambio será notificado a través de la plataforma. El uso continuado del servicio después de las modificaciones implica la aceptación de la política actualizada.</p>
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">16. Contacto</h2>
+            <h2 className="text-white font-bold text-lg mb-3">17. Contacto</h2>
             <p>Para cualquier consulta sobre esta política de privacidad o el tratamiento de sus datos personales:</p>
             <p className="mt-2">Instagram: <a href="https://instagram.com/pabloscarlattoentrenamientos" className="text-primary">@pabloscarlattoentrenamientos</a></p>
           </section>
