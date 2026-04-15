@@ -5,10 +5,20 @@ import { use, useState, useEffect } from "react";
 import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
   Heart, Shield, RefreshCw, Users, Medal, Home, Wind,
-  ArrowLeft, Check, ArrowRight, Clock, Target, Zap,
+  ArrowLeft, Check, ArrowRight, Clock, Target, Zap, Star,
+  Shield as ShieldIcon,
 } from "lucide-react";
 import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
+import CountdownTimer from "@/components/countdown-timer";
 import type { Duration } from "@/types";
+
+const PROMO_END = "2026-04-30T23:59:59-03:00";
+
+const CHECKOUT_TESTIMONIOS = [
+  { name: "Martin R.", text: "Baje 12kg en 4 meses. El seguimiento personalizado hace toda la diferencia." },
+  { name: "Lucia S.", text: "Nunca pense que iba a disfrutar entrenar. Pablo te cambia la mentalidad." },
+  { name: "Diego M.", text: "La app es super completa y el chat directo con Pablo es lo mejor." },
+];
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
@@ -132,7 +142,21 @@ export default function PlanDetailPage({
           {/* RIGHT: Pricing Card */}
           <div className="lg:col-span-2">
             <div className="glass-card rounded-2xl p-6 sticky top-24">
-              <h3 className="font-bold text-lg mb-4">Elegí tu duración</h3>
+              {/* Free month badge */}
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mb-4 text-center">
+                <p className="text-sm font-bold text-emerald-400">Primer mes GRATIS</p>
+                <p className="text-[10px] text-muted">Proba todo sin compromiso. Despues elegis si continuar.</p>
+              </div>
+
+              {/* Countdown */}
+              <CountdownTimer
+                targetDate={PROMO_END}
+                label="Oferta termina en"
+                variant="card"
+                className="mb-4"
+              />
+
+              <h3 className="font-bold text-lg mb-4">Elegi tu duracion</h3>
 
               <div className="space-y-2 mb-6">
                 {DURATIONS.map((d) => {
@@ -215,14 +239,49 @@ export default function PlanDetailPage({
 
               <Link
                 href={`/encuesta?plan=${plan.slug}&duration=${selectedDuration}${referralCode ? `&ref=${referralCode}` : ""}`}
-                className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity text-lg"
               >
-                {referralCode ? "Comenzar con 15% OFF" : "Comenzar Ahora"} <ArrowRight className="h-5 w-5" />
+                {referralCode ? "Empezar Gratis con 15% OFF" : "Empeza tu Transformacion"} →
               </Link>
 
               <p className="text-xs text-muted text-center mt-3">
-                Pago seguro con MercadoPago
+                Pago seguro con MercadoPago — Primer mes sin cargo
               </p>
+
+              {/* Guarantee */}
+              <div className="flex items-center gap-2 mt-4 p-3 bg-emerald-500/5 rounded-xl">
+                <ShieldIcon className="h-4 w-4 text-emerald-400 shrink-0" />
+                <p className="text-[11px] text-muted">
+                  <strong className="text-emerald-400">Garantia:</strong> Si no te convence, no pagas. Sin compromiso.
+                </p>
+              </div>
+
+              {/* Cupos */}
+              <div className="flex items-center gap-2 mt-3 text-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                <p className="text-[11px] text-red-400 font-medium">Solo 15 cupos disponibles este mes</p>
+              </div>
+
+              {/* Mini testimonials */}
+              <div className="mt-5 space-y-3 border-t border-card-border pt-4">
+                <p className="text-[10px] text-muted font-bold tracking-wider">LO QUE DICEN NUESTROS CLIENTES</p>
+                {CHECKOUT_TESTIMONIOS.map((t, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[8px] font-bold text-primary">{t.name[0]}</span>
+                    </div>
+                    <div>
+                      <div className="flex gap-0.5 mb-0.5">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-muted">&quot;{t.text}&quot;</p>
+                      <p className="text-[9px] text-muted/50">{t.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

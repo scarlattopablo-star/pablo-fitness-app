@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "396192536104",
+    "project_id": "gymrat-pablo-scarlatto",
+    "storage_bucket": "gymrat-pablo-scarlatto.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:396192536104:android:4939435eb4e336336e871d",
+        "android_client_info": {
+          "package_name": "com.pabloscarlattoentrenamientos.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATTWRsdgiyvpMYN4yWjMPmbcMxPhIORg8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

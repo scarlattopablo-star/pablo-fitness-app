@@ -471,6 +471,12 @@ export default function ClienteDetailPage({
             >
               <Edit className="h-4 w-4" /> Crear/Editar Plan
             </Link>
+            <Link
+              href={`/admin/clientes/${id}/entrenar`}
+              className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-emerald-500/20 transition-colors"
+            >
+              <Dumbbell className="h-4 w-4" /> Entrenar cliente
+            </Link>
             <button
               onClick={() => { setChangingObjective(!changingObjective); setNewObjective(survey?.objective || ""); setRegenerateMsg(""); }}
               className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-400 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-500/20 transition-colors"
