@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, GripVertical, X,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
+import WhatsAppButton from "@/components/whatsapp-button";
 import { LanguageSelector } from "@/components/language-selector";
 import { useI18n } from "@/lib/i18n";
 
@@ -654,6 +655,9 @@ export default function HomePage() {
           <p className="text-[10px] text-muted/60">&copy; 2026 Pablo Scarlatto Entrenamientos</p>
         </div>
       </footer>
+
+      {/* WhatsApp floating button */}
+      <WhatsAppButton />
     </main>
   );
 }

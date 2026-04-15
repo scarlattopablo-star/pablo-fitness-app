@@ -153,6 +153,18 @@ export default function ConversationPage() {
           `/dashboard/chat/${conversationId}`
         ).catch((err) => console.error("[Push] Failed to send:", err));
       }
+
+      // If messaging Pablo (admin), trigger bot after 30s if he doesn't respond
+      const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
+      if (partner?.id === ADMIN_ID) {
+        setTimeout(() => {
+          fetch("/api/chat-bot", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ conversationId, userId: user.id, message: content }),
+          }).catch(() => {});
+        }, 30000);
+      }
     } catch {
       // Ignore send errors
     }
