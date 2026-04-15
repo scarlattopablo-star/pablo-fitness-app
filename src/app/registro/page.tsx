@@ -26,6 +26,7 @@ function RegistroForm() {
   const [error, setError] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedComms, setAcceptedComms] = useState(false);
 
   const searchParams = useSearchParams();
   const planSlug = searchParams.get("plan") || "";
@@ -277,9 +278,21 @@ function RegistroForm() {
             </span>
           </label>
 
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedComms}
+              onChange={(e) => setAcceptedComms(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-card-border accent-primary"
+            />
+            <span className="text-xs text-muted">
+              Acepto recibir comunicaciones sobre mi plan de entrenamiento por email, notificaciones push, chat y WhatsApp.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading || !acceptedTerms || !acceptedPrivacy}
+            disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedComms}
             className="w-full gradient-primary text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {loading ? "Procesando..." : plan ? `Crear Cuenta y Pagar $${formatPrice(price)}` : "Crear Cuenta"}

@@ -16,6 +16,7 @@ export default function RegistroGratisPage() {
   const [success, setSuccess] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedComms, setAcceptedComms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -253,13 +254,25 @@ export default function RegistroGratisPage() {
             </span>
           </label>
 
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedComms}
+              onChange={(e) => setAcceptedComms(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-card-border accent-emerald-500"
+            />
+            <span className="text-xs text-muted">
+              Acepto recibir comunicaciones sobre mi plan de entrenamiento por email, notificaciones push, chat y WhatsApp.
+            </span>
+          </label>
+
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading || !acceptedTerms || !acceptedPrivacy}
+            disabled={loading || !acceptedTerms || !acceptedPrivacy || !acceptedComms}
             className="w-full h-12 rounded-2xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creando cuenta..." : "Empezar Prueba Gratis"}

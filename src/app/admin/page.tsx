@@ -265,6 +265,34 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* Nudge inactive clients */}
+      <div className="glass-card rounded-2xl p-5 flex items-center justify-between mb-4">
+        <div>
+          <h3 className="font-bold text-sm">Notificar Inactivos</h3>
+          <p className="text-xs text-muted">Manda push + chat + email a clientes que no entrenan hace 3+ dias</p>
+        </div>
+        <button
+          onClick={async () => {
+            if (!confirm("Enviar notificaciones a todos los clientes inactivos?")) return;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return alert("No hay sesion activa");
+            const res = await fetch("/api/admin/nudge-inactive", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            const data = await res.json();
+            if (data.ok) {
+              alert(`Notificaciones enviadas!\n\nSuave (3-5 dias): ${data.results.gentle}\nUrgente (6-10 dias): ${data.results.urgent}\nPersonal (11+ dias): ${data.results.personal}\nSaltados (activos/ya notificados): ${data.results.skipped}\nErrores: ${data.results.errors}`);
+            } else {
+              alert("Error: " + (data.error || "desconocido"));
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-orange-500 text-black hover:bg-orange-400 transition-colors flex-shrink-0"
+        >
+          <Send className="h-4 w-4" /> Notificar
+        </button>
+      </div>
+
       {/* Regenerate all plans */}
       <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
         <div>
