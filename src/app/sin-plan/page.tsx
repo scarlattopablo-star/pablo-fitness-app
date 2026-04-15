@@ -1,21 +1,41 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Dumbbell, Sparkles, Clock, Target, Utensils } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 export default function SinPlanPage() {
-  const router = useRouter();
-  const { hasActiveSubscription, loading } = useAuth();
+  const { user, hasActiveSubscription, loading } = useAuth();
 
-  // If user already has an active subscription, redirect them out
+  // Redirect if user already has an active subscription (via auth context)
   useEffect(() => {
     if (!loading && hasActiveSubscription) {
-      router.replace("/dashboard");
+      window.location.href = "/dashboard";
     }
-  }, [loading, hasActiveSubscription, router]);
+  }, [loading, hasActiveSubscription]);
+
+  // Fallback: also check subscription directly in case auth context is slow
+  useEffect(() => {
+    async function checkSub() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data: sub } = await supabase
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+
+      if (sub) {
+        window.location.href = "/dashboard";
+      }
+    }
+    checkSub();
+  }, []);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-10">
