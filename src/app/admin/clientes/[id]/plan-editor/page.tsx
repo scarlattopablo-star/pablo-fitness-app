@@ -190,6 +190,58 @@ export default function PlanEditorPage({
     setTrainingDays(updated);
   };
 
+  // Detect muscle groups from exercises and build day label + instructions
+  const MUSCLE_LABELS: Record<string, string> = {
+    pecho: "Pecho", espalda: "Espalda", piernas: "Piernas",
+    hombros: "Hombros", biceps: "Bíceps", triceps: "Tríceps", abdomen: "Abdomen",
+    cardio: "Cardio",
+  };
+
+  function buildDayLabel(dayIdx: number, exercises: TrainingExercise[]): string {
+    const groups: string[] = [];
+    for (const ex of exercises) {
+      const found = EXERCISES.find(e => e.id === ex.exerciseId);
+      if (found?.muscleGroup && !groups.includes(found.muscleGroup)) {
+        groups.push(found.muscleGroup);
+      }
+    }
+    if (groups.length === 0) return DAYS[dayIdx] || `Día ${dayIdx + 1}`;
+    const labels = groups.map(g => MUSCLE_LABELS[g] || g).join(" y ");
+    return `${DAYS[dayIdx] || `Día ${dayIdx + 1}`} - ${labels}`;
+  }
+
+  function buildDayInstructions(exercises: TrainingExercise[]): string {
+    const groups: string[] = [];
+    for (const ex of exercises) {
+      const found = EXERCISES.find(e => e.id === ex.exerciseId);
+      if (found?.muscleGroup && !groups.includes(found.muscleGroup)) {
+        groups.push(found.muscleGroup);
+      }
+    }
+    if (groups.length === 0) return "";
+    const labels = groups.map(g => MUSCLE_LABELS[g] || g).join(", ");
+    const focus = `Enfoque: ${labels}.`;
+    // Add objective-based tip
+    switch (objective) {
+      case "ganancia-muscular":
+        return `${focus} Fase excentrica lenta (2-3s). Peso moderado-alto.`;
+      case "quema-grasa":
+      case "recomposicion-corporal":
+        return `${focus} Ritmo alto, descansos cortos. Mantener frecuencia cardiaca elevada.`;
+      case "fuerza-funcional":
+      case "competicion":
+      case "rendimiento-deportivo":
+        return `${focus} Peso alto. Tecnica perfecta. Descanso completo.`;
+      case "tonificacion":
+      case "post-parto":
+        return `${focus} Peso moderado. Movimientos controlados.`;
+      case "principiante-total":
+        return `${focus} Peso liviano, aprender tecnica. Aumentar gradualmente.`;
+      default:
+        return `${focus} Peso moderado. Buena tecnica.`;
+    }
+  }
+
   const updateExercise = (dayIdx: number, exIdx: number, field: keyof TrainingExercise, value: string | number) => {
     const updated = [...trainingDays];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -197,6 +249,9 @@ export default function PlanEditorPage({
     if (field === "exerciseId") {
       const ex = EXERCISES.find(e => e.id === value);
       if (ex) updated[dayIdx].exercises[exIdx].name = ex.name;
+      // Auto-update day name and instructions based on muscle groups
+      updated[dayIdx].day = buildDayLabel(dayIdx, updated[dayIdx].exercises);
+      updated[dayIdx].instructions = buildDayInstructions(updated[dayIdx].exercises);
     }
     setTrainingDays(updated);
   };
