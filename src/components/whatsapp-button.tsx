@@ -2,7 +2,7 @@
 
 import { MessageCircle } from "lucide-react";
 
-const WHATSAPP_NUMBER = "59891883719"; // Pablo's number
+const WHATSAPP_NUMBER = "59897336318"; // Pablo's number
 const DEFAULT_MESSAGE = "Hola Pablo! Te escribo desde la app GymRat. ";
 
 interface WhatsAppButtonProps {
