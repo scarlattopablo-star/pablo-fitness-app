@@ -14,6 +14,7 @@ import { syncPushSubscription, isPushSupported, requestPushPermission } from "@/
 import { supabase } from "@/lib/supabase";
 import ChatNotificationToast, { triggerChatNotification } from "@/components/chat-notification-toast";
 import WhatsAppButton from "@/components/whatsapp-button";
+import VoiceButton from "@/components/voice-button";
 import AchievementToast from "@/components/achievement-toast";
 import { PresenceProvider } from "@/hooks/use-presence";
 
@@ -375,6 +376,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">{children}</div>
         </PresenceProvider>
       </main>
+
+      {/* Voice chat button */}
+      <VoiceButton />
 
       {/* WhatsApp floating button */}
       <WhatsAppButton />

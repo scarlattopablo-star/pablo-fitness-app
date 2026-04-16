@@ -1,0 +1,25 @@
+"use client";
+
+import { useState } from "react";
+import { Phone } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const VoiceChat = dynamic(() => import("./voice-chat"), { ssr: false });
+
+export default function VoiceButton() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-40 right-4 z-40 w-14 h-14 bg-primary hover:bg-primary/80 rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transition-all hover:scale-110"
+        aria-label="Hablar con Pablo"
+      >
+        <Phone className="h-6 w-6 text-black" />
+      </button>
+
+      {open && <VoiceChat onClose={() => setOpen(false)} />}
+    </>
+  );
+}
