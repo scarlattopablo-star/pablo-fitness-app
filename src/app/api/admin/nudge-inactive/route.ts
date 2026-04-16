@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
     // Configure web push
     webpush.setVapidDetails(
       `mailto:${process.env.VAPID_CONTACT_EMAIL}`,
-      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-      process.env.VAPID_PRIVATE_KEY!
+      (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "").replace(/[=\s]+$/g, "").trim(),
+      (process.env.VAPID_PRIVATE_KEY || "").replace(/[=\s]+$/g, "").trim()
     );
 
     const resend = new Resend(process.env.RESEND_API_KEY);

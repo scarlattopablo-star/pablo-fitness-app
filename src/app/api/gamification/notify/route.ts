@@ -97,8 +97,8 @@ async function sendPushToUser(supabase: any, userId: string, title: string, body
       const webpush = require("web-push");
       webpush.setVapidDetails(
         "mailto:scarlattopablo@gmail.com",
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-        process.env.VAPID_PRIVATE_KEY!
+        (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "").replace(/[=\s]+$/g, "").trim(),
+        (process.env.VAPID_PRIVATE_KEY || "").replace(/[=\s]+$/g, "").trim()
       );
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
