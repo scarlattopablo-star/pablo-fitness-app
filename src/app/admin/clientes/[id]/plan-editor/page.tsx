@@ -4,10 +4,11 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, Trash2, Save, Dumbbell, UtensilsCrossed,
-  GripVertical, Check,
+  GripVertical, Check, RefreshCw,
 } from "lucide-react";
 import { EXERCISES } from "@/lib/exercises-data";
 import { supabase } from "@/lib/supabase";
+import { generateTrainingPlan } from "@/lib/generate-training-plan";
 
 interface TrainingExercise {
   exerciseId: string;
@@ -38,6 +39,28 @@ const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "
 
 const EMPTY_MEAL: Meal = { name: "", time: "", foods: [""] };
 
+const OBJECTIVE_OPTIONS = [
+  { value: "ganancia-muscular", label: "Ganancia Muscular" },
+  { value: "quema-grasa", label: "Quema Grasa" },
+  { value: "tonificacion", label: "Tonificación" },
+  { value: "fuerza-funcional", label: "Fuerza Funcional" },
+  { value: "principiante-total", label: "Principiante Total" },
+  { value: "recomposicion-corporal", label: "Recomposición Corporal" },
+  { value: "rendimiento-deportivo", label: "Rendimiento Deportivo" },
+  { value: "post-parto", label: "Post-Parto" },
+  { value: "entrenamiento-casa", label: "Entrenamiento en Casa" },
+];
+
+const EMPHASIS_OPTIONS = [
+  { value: "ninguno", label: "Equilibrado", desc: "Todas las zonas por igual" },
+  { value: "pecho", label: "Pecho", desc: "Pecho y brazos" },
+  { value: "espalda", label: "Espalda", desc: "Espalda y hombros" },
+  { value: "piernas", label: "Piernas", desc: "Piernas y glúteos" },
+  { value: "abdomen", label: "Abdomen", desc: "Core y abdominales" },
+  { value: "tren-superior", label: "Tren Superior", desc: "Pecho, espalda, brazos" },
+  { value: "tren-inferior", label: "Tren Inferior", desc: "Piernas, glúteos, core" },
+];
+
 export default function PlanEditorPage({
   params,
 }: {
@@ -53,6 +76,14 @@ export default function PlanEditorPage({
   const [trainingDays, setTrainingDays] = useState<TrainingDay[]>([
     { day: "Lunes", exercises: [{ ...EMPTY_EXERCISE }], instructions: "" },
   ]);
+
+  // Plan generation config (loaded from survey)
+  const [objective, setObjective] = useState("ganancia-muscular");
+  const [emphasis, setEmphasis] = useState("ninguno");
+  const [clientWeight, setClientWeight] = useState(70);
+  const [clientSex, setClientSex] = useState("hombre");
+  const [clientActivityLevel, setClientActivityLevel] = useState("moderado");
+  const [regenerating, setRegenerating] = useState(false);
 
   // Nutrition state
   const [meals, setMeals] = useState<Meal[]>([
@@ -88,6 +119,14 @@ export default function PlanEditorPage({
             const plans = await res.json();
             trainingData = plans.trainingPlan;
             nutritionData = plans.nutritionPlan;
+            // Load survey config for plan generation
+            if (plans.survey) {
+              if (plans.survey.objective) setObjective(plans.survey.objective);
+              if (plans.survey.emphasis) setEmphasis(plans.survey.emphasis);
+              if (plans.survey.weight) setClientWeight(Number(plans.survey.weight));
+              if (plans.survey.sex) setClientSex(plans.survey.sex);
+              if (plans.survey.activity_level) setClientActivityLevel(plans.survey.activity_level);
+            }
           }
         }
 
@@ -203,6 +242,31 @@ export default function PlanEditorPage({
   };
   const removeNote = (idx: number) => setNutritionNotes(nutritionNotes.filter((_, i) => i !== idx));
 
+  // Regenerate training plan from config
+  const handleRegenerate = () => {
+    setRegenerating(true);
+    try {
+      const numDays = trainingDays.length || 5;
+      const generated = generateTrainingPlan(numDays, objective, emphasis, clientWeight, clientSex, clientActivityLevel);
+      // Map generated format (id) to editor format (exerciseId)
+      const mapped: TrainingDay[] = generated.map(day => ({
+        day: day.day,
+        instructions: day.instructions || "",
+        exercises: day.exercises.map(ex => ({
+          exerciseId: ex.id,
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          rest: ex.rest,
+          notes: ex.notes || (ex.method && ex.method !== "standard" ? `${ex.methodExplanation || ""}${ex.pairedWith ? ` (con ${ex.pairedWith})` : ""}` : ""),
+        })),
+      }));
+      setTrainingDays(mapped);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   // Save via server-side API (bypasses RLS)
   const handleSave = async () => {
     setSaving(true);
@@ -289,6 +353,48 @@ export default function PlanEditorPage({
       {/* TRAINING EDITOR */}
       {tab === "entrenamiento" && (
         <div className="space-y-6">
+          {/* Config panel */}
+          <div className="glass-card rounded-2xl p-4 border-l-4 border-primary">
+            <p className="font-bold text-primary text-sm mb-3">CONFIGURACION DEL PLAN</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="text-xs text-muted mb-1 block">Objetivo</label>
+                <select
+                  value={objective}
+                  onChange={(e) => setObjective(e.target.value)}
+                  className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                >
+                  {OBJECTIVE_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-muted mb-1 block">Enfasis muscular</label>
+                <select
+                  value={emphasis}
+                  onChange={(e) => setEmphasis(e.target.value)}
+                  className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                >
+                  {EMPHASIS_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label} — {o.desc}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
+            >
+              {regenerating
+                ? <><RefreshCw className="h-4 w-4 animate-spin" /> Generando...</>
+                : <><RefreshCw className="h-4 w-4" /> Regenerar Entrenamiento</>
+              }
+            </button>
+            <p className="text-xs text-muted mt-2 text-center">Regenera todos los ejercicios segun el objetivo y enfasis. Podes ajustar manualmente despues.</p>
+          </div>
+
           {trainingDays.map((day, dayIdx) => (
             <div key={dayIdx} className="glass-card rounded-2xl overflow-hidden">
               <div className="p-4 border-b border-card-border flex items-center gap-3">

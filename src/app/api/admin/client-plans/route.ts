@@ -50,5 +50,14 @@ export async function GET(request: NextRequest) {
     .limit(1)
     .maybeSingle();
 
-  return NextResponse.json({ trainingPlan, nutritionPlan });
+  // Load survey data for plan generation params
+  const { data: survey } = await adminClient
+    .from("surveys")
+    .select("objective, emphasis, weight, sex, activity_level, training_days")
+    .eq("user_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return NextResponse.json({ trainingPlan, nutritionPlan, survey });
 }
