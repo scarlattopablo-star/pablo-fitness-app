@@ -230,7 +230,7 @@ export default function HomePage() {
               {t("nav.login")}
             </Link>
             <Link href="/registro-gratis" className="btn-shimmer text-sm px-5 py-2 rounded-full">
-              7 dias gratis
+              30 dias gratis
             </Link>
           </div>
           <div className="flex md:hidden items-center gap-3">
@@ -277,7 +277,7 @@ export default function HomePage() {
             <div>
               <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 animate-fade-in-up">
                 <Star className="h-4 w-4 text-accent fill-accent" />
-                <span className="text-sm font-bold text-accent">7 DIAS GRATIS</span>
+                <span className="text-sm font-bold text-accent">30 DIAS GRATIS</span>
                 <span className="text-xs text-muted">sin compromiso</span>
               </div>
 
@@ -613,7 +613,7 @@ export default function HomePage() {
             <span className="text-gradient">transformacion hoy</span>
           </h2>
           <p className="text-muted mb-8 max-w-md mx-auto">
-            7 dias gratis. Sin tarjeta. Sin compromiso. Entrena con un plan hecho para vos.
+            30 dias gratis. Sin tarjeta. Sin compromiso. Entrena con un plan hecho para vos.
           </p>
           <Link href="/registro-gratis" className="btn-shimmer inline-flex items-center gap-2 text-lg px-10 py-4 rounded-full font-bold hover:scale-105 transition-transform">
             Empezar gratis <ArrowRight className="h-5 w-5" />

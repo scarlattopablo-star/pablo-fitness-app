@@ -188,16 +188,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // For free ($0) non-direct-client subscriptions: enforce 7-day trial limit
+  // For free ($0) non-direct-client subscriptions: enforce 30-day trial limit
   const isFreeSubscription = !!subscription && subscription.amount_paid === 0 && !isDirectClient;
 
   let effectiveEndDate: Date | null = null;
   if (subscription) {
     if (isFreeSubscription) {
-      // Existing free users (before 2026-04-12) get 30 days; new free users get 7 days
-      const cutoffDate = new Date("2026-04-12");
-      const startDate = new Date(subscription.start_date);
-      const trialDays = startDate < cutoffDate ? 30 : 7;
+      // All free users get 30 days (primer mes gratis)
+      const trialDays = 30;
       const trialEnd = new Date(subscription.start_date + "T23:59:59");
       trialEnd.setDate(trialEnd.getDate() + trialDays);
       effectiveEndDate = trialEnd;

@@ -120,7 +120,7 @@ const SLIDES: Slide[] = [
     title: "Empezá",
     subtitle: "Ahora",
     description:
-      "Elegí tu plan personalizado o probá gratis por 7 días. Tu transformación empieza hoy.",
+      "Elegi tu plan personalizado o proba gratis por 30 dias. Tu transformacion empieza hoy.",
     icon: <Rocket className="w-16 h-16 text-emerald-400" />,
     gradient: "from-emerald-500/20 to-transparent",
   },

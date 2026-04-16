@@ -63,7 +63,7 @@ export default function RegistroGratisPage() {
         .from("profiles")
         .upsert({ id: userId, email, full_name: fullName, phone }, { onConflict: "id" });
 
-      // 3. Create trial subscription (7 days free, stored as 1-mes with 7-day end date)
+      // 3. Create trial subscription (30 days free — primer mes gratis)
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (accessToken) {
         headers["Authorization"] = `Bearer ${accessToken}`;
@@ -75,7 +75,7 @@ export default function RegistroGratisPage() {
         body: JSON.stringify({
           userId,
           duration: "1-mes",
-          trialDays: 7,
+          trialDays: 30,
           amountPaid: 0,
           currency: "UYU",
         }),
@@ -113,7 +113,7 @@ export default function RegistroGratisPage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">¡Cuenta creada!</h1>
           <p className="text-muted mb-2">
-            Tenés 7 días gratis para explorar la app.
+            Tenes 30 dias gratis para explorar la app.
           </p>
           <p className="text-muted text-sm">Redirigiendo al dashboard...</p>
         </div>
@@ -131,7 +131,7 @@ export default function RegistroGratisPage() {
           </div>
           <h1 className="text-2xl font-bold mb-1">Probá Gratis</h1>
           <p className="text-muted text-sm">
-            7 días gratis para explorar la app. Sin tarjeta de crédito.
+            30 dias gratis para explorar la app. Sin tarjeta de credito.
           </p>
         </div>
 
