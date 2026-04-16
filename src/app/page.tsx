@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import WhatsAppButton from "@/components/whatsapp-button";
-import VoiceButton from "@/components/voice-button";
 import { LanguageSelector } from "@/components/language-selector";
 import { useI18n } from "@/lib/i18n";
 
@@ -657,8 +656,7 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* Floating buttons */}
-      <VoiceButton />
+      {/* WhatsApp floating button */}
       <WhatsAppButton />
     </main>
   );
