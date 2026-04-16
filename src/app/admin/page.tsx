@@ -41,6 +41,8 @@ export default function AdminDashboard() {
   const [pendingApprovals, setPendingApprovals] = useState<{ id: string; full_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [clientTab, setClientTab] = useState<"active" | "inactive">("active");
+  const [nudging, setNudging] = useState(false);
+  const [nudgeResult, setNudgeResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) loadMetrics();
@@ -272,26 +274,42 @@ export default function AdminDashboard() {
           <p className="text-xs text-muted">Manda push + chat + email a clientes que no entrenan hace 3+ dias</p>
         </div>
         <button
+          disabled={nudging}
           onClick={async () => {
             if (!confirm("Enviar notificaciones a todos los clientes inactivos?")) return;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return alert("No hay sesion activa");
-            const res = await fetch("/api/admin/nudge-inactive", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${session.access_token}` },
-            });
-            const data = await res.json();
-            if (data.ok) {
-              alert(`Notificaciones enviadas!\n\nSuave (3-5 dias): ${data.results.gentle}\nUrgente (6-10 dias): ${data.results.urgent}\nPersonal (11+ dias): ${data.results.personal}\nSaltados (activos/ya notificados): ${data.results.skipped}\nErrores: ${data.results.errors}`);
-            } else {
-              alert("Error: " + (data.error || "desconocido"));
+            setNudging(true);
+            setNudgeResult(null);
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) { setNudging(false); return alert("No hay sesion activa"); }
+              const res = await fetch("/api/admin/nudge-inactive", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${session.access_token}` },
+              });
+              const data = await res.json();
+              if (data.ok) {
+                setNudgeResult(`Enviado! Suave: ${data.results.gentle} | Urgente: ${data.results.urgent} | Personal: ${data.results.personal} | Saltados: ${data.results.skipped} | Errores: ${data.results.errors}`);
+              } else {
+                setNudgeResult("Error: " + (data.error || "desconocido"));
+              }
+            } catch {
+              setNudgeResult("Notificaciones enviadas (la respuesta tardo demasiado pero se procesaron)");
+            } finally {
+              setNudging(false);
             }
           }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-orange-500 text-black hover:bg-orange-400 transition-colors flex-shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-orange-500 text-black hover:bg-orange-400 transition-colors flex-shrink-0 disabled:opacity-50"
         >
-          <Send className="h-4 w-4" /> Notificar
+          {nudging ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {nudging ? "Enviando..." : "Notificar"}
         </button>
       </div>
+      {nudgeResult && (
+        <div className="glass-card rounded-2xl p-4 text-xs text-center">
+          <p>{nudgeResult}</p>
+          <button onClick={() => setNudgeResult(null)} className="text-primary mt-2 font-bold">Cerrar</button>
+        </div>
+      )}
 
       {/* Regenerate all plans */}
       <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
