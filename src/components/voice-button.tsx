@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 import { Phone } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import dynamic from "next/dynamic";
 
 const VoiceChat = dynamic(() => import("./voice-chat"), { ssr: false });
 
 export default function VoiceButton() {
   const [open, setOpen] = useState(false);
+  const { subscription, hasActiveSubscription } = useAuth();
+
+  // Only show for paid clients or direct QR clients
+  const isPaid = subscription && Number(subscription.amount_paid) > 0;
+  const isDirect = subscription?.plan_slug === "direct-client";
+
+  if (!hasActiveSubscription || (!isPaid && !isDirect)) return null;
 
   return (
     <>
