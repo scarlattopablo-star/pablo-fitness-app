@@ -96,14 +96,25 @@ export async function POST(request: NextRequest) {
       else tier = "personal";
 
       // Don't nudge the same user more than once per 3 days — check last nudge
-      const { data: lastNudge } = await sb
-        .from("chat_messages")
-        .select("created_at")
-        .eq("conversation_id", `${ADMIN_ID}_${profile.id}`)
-        .eq("sender_id", ADMIN_ID)
-        .order("created_at", { ascending: false })
-        .limit(1)
+      const [nu1, nu2] = ADMIN_ID < profile.id ? [ADMIN_ID, profile.id] : [profile.id, ADMIN_ID];
+      const { data: existingConv } = await sb.from("conversations")
+        .select("id")
+        .eq("user1_id", nu1)
+        .eq("user2_id", nu2)
         .maybeSingle();
+
+      let lastNudge = null;
+      if (existingConv) {
+        const { data: nudgeMsg } = await sb
+          .from("messages")
+          .select("created_at")
+          .eq("conversation_id", existingConv.id)
+          .eq("sender_id", ADMIN_ID)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        lastNudge = nudgeMsg;
+      }
 
       if (lastNudge) {
         const daysSinceNudge = Math.floor((now - new Date(lastNudge.created_at).getTime()) / (1000 * 60 * 60 * 24));
@@ -127,19 +138,36 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // 2. Send chat message
-        const convId = [ADMIN_ID, profile.id].sort().join("_");
-        await sb.from("chat_messages").insert({
-          conversation_id: convId,
-          sender_id: ADMIN_ID,
-          content: msg.chat,
-        });
-        // Ensure conversation exists
-        await sb.from("conversations").upsert({
-          id: convId,
-          participant_1: ADMIN_ID < profile.id ? ADMIN_ID : profile.id,
-          participant_2: ADMIN_ID < profile.id ? profile.id : ADMIN_ID,
-        }, { onConflict: "id" });
+        // 2. Send chat message — ensure conversation exists first
+        const [u1, u2] = ADMIN_ID < profile.id ? [ADMIN_ID, profile.id] : [profile.id, ADMIN_ID];
+        const { data: conv } = await sb.from("conversations")
+          .select("id")
+          .eq("user1_id", u1)
+          .eq("user2_id", u2)
+          .maybeSingle();
+
+        let convId: string;
+        if (conv) {
+          convId = conv.id;
+        } else {
+          const { data: newConv } = await sb.from("conversations")
+            .insert({ user1_id: u1, user2_id: u2 })
+            .select("id")
+            .single();
+          convId = newConv?.id;
+        }
+
+        if (convId) {
+          await sb.from("messages").insert({
+            conversation_id: convId,
+            sender_id: ADMIN_ID,
+            content: msg.chat,
+          });
+          await sb.from("conversations").update({
+            last_message_at: new Date().toISOString(),
+            last_message_preview: msg.chat.slice(0, 100),
+          }).eq("id", convId);
+        }
 
         // 3. Send email
         if (profile.email) {
