@@ -17,6 +17,22 @@ interface TemplateDef {
 
 // ============= HELPERS =============
 
+// Polyfill for ctx.roundRect — not available in iOS < 15.4
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
   const words = text.split(" ");
   let line = "";
@@ -42,16 +58,14 @@ function drawPhoneMockup(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.strokeStyle = "#333";
   ctx.lineWidth = 4;
   const r = 40;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
+  roundRect(ctx, x, y, w, h, r);
   ctx.fill();
   ctx.stroke();
 
   // Screen
   const sx = x + 14, sy = y + 14, sw = w - 28, sh = h - 28;
   ctx.fillStyle = "#0a0a0a";
-  ctx.beginPath();
-  ctx.roundRect(sx, sy, sw, sh, r - 10);
+  roundRect(ctx, sx, sy, sw, sh, r - 10);
   ctx.fill();
 
   // App content mock
@@ -293,8 +307,7 @@ const TEMPLATES: TemplateDef[] = [
       ctx.fillStyle = "rgba(251, 191, 36, 0.1)";
       ctx.strokeStyle = "#fbbf24";
       ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(90, 720, 900, 120, 16);
+      roundRect(ctx, 90, 720, 900, 120, 16);
       ctx.fill();
       ctx.stroke();
 
