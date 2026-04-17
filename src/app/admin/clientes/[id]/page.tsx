@@ -7,7 +7,7 @@ import {
   Calendar, Target, Scale, Mail, Phone, Edit,
   Dumbbell, UtensilsCrossed, Camera, Loader2, Trash2,
   ChevronDown, ChevronUp, Ruler, Image, Save, Plus, X, Check,
-  ArrowRightLeft, AtSign, RefreshCw,
+  ArrowRightLeft, AtSign, RefreshCw, Copy,
 } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
@@ -51,6 +51,7 @@ interface SurveyData {
 
 interface SubscriptionData {
   id: string;
+  plan_slug: string;
   duration: string;
   status: string;
   start_date: string;
@@ -107,6 +108,11 @@ export default function ClienteDetailPage({
   const [approvingPlan, setApprovingPlan] = useState(false);
   const [editingTraining, setEditingTraining] = useState(false);
   const [editTrainingData, setEditTrainingData] = useState<any[]>([]);
+  const [convertingToDirect, setConvertingToDirect] = useState(false);
+  const [convertMsg, setConvertMsg] = useState("");
+  const [copiedRoutine, setCopiedRoutine] = useState<{ days: any[]; clientName?: string } | null>(null);
+  const [pastingRoutine, setPastingRoutine] = useState(false);
+  const [pasteMsg, setPasteMsg] = useState("");
   const [savingTraining, setSavingTraining] = useState(false);
   const [editingNutrition, setEditingNutrition] = useState(false);
   const [editNutritionData, setEditNutritionData] = useState<any[]>([]);
@@ -189,6 +195,70 @@ export default function ClienteDetailPage({
     if (exLogs) setExerciseLogs(exLogs);
 
     setLoading(false);
+  };
+
+  const convertToDirectClient = async () => {
+    if (!subscription) return;
+    setConvertingToDirect(true);
+    setConvertMsg("");
+    try {
+      // Set plan_slug to direct-client, duration to custom, end_date to 10 years from now
+      const farFuture = new Date();
+      farFuture.setFullYear(farFuture.getFullYear() + 10);
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({
+          plan_slug: "direct-client",
+          duration: "custom",
+          end_date: farFuture.toISOString(),
+          status: "active",
+        })
+        .eq("id", subscription.id);
+      if (error) throw error;
+      setSubscription({ ...subscription, plan_slug: "direct-client", duration: "custom", status: "active" });
+      setConvertMsg("✓ Convertido a cliente directo");
+    } catch (err) {
+      setConvertMsg("Error: " + String(err));
+    } finally {
+      setConvertingToDirect(false);
+    }
+  };
+
+  // Load clipboard from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem("admin-routine-clipboard");
+    if (stored) {
+      try { setCopiedRoutine(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+  }, []);
+
+  const copyRoutine = () => {
+    if (!trainingPlan?.data?.days) return;
+    const payload = { days: trainingPlan.data.days, clientName: client?.full_name || "cliente" };
+    localStorage.setItem("admin-routine-clipboard", JSON.stringify(payload));
+    setCopiedRoutine(payload);
+  };
+
+  const pasteRoutine = async () => {
+    if (!copiedRoutine?.days) return;
+    if (!confirm(`¿Pegar la rutina de "${copiedRoutine.clientName}" en este cliente? Se reemplazará el plan actual.`)) return;
+    setPastingRoutine(true);
+    setPasteMsg("");
+    try {
+      const newData = { ...(trainingPlan?.data || {}), days: copiedRoutine.days };
+      const { error } = await supabase
+        .from("training_plans")
+        .upsert({ user_id: id, data: newData, plan_approved: false }, { onConflict: "user_id" });
+      if (error) throw error;
+      setTrainingPlan({ ...(trainingPlan || {}), data: newData, plan_approved: false });
+      setPasteMsg("✓ Rutina pegada");
+      setTimeout(() => setPasteMsg(""), 3000);
+    } catch (err) {
+      setPasteMsg("Error: " + String(err));
+    } finally {
+      setPastingRoutine(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -681,6 +751,7 @@ export default function ClienteDetailPage({
           Suscripcion
         </h3>
         {subscription ? (
+          <>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-sm">
             <div>
               <p className="text-xs text-muted">Estado</p>
@@ -705,8 +776,32 @@ export default function ClienteDetailPage({
               <p className="font-medium">${subscription.amount_paid}</p>
             </div>
           </div>
+
+          {/* Convert to direct client */}
+          {subscription.plan_slug !== "direct-client" ? (
+            <div className="mt-4 pt-4 border-t border-card-border">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={convertToDirectClient}
+                  disabled={convertingToDirect}
+                  className="text-xs px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition font-semibold disabled:opacity-50"
+                >
+                  {convertingToDirect ? "Convirtiendo..." : "Convertir a Cliente Directo"}
+                </button>
+                {convertMsg && (
+                  <p className={`text-xs font-medium ${convertMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
+                    {convertMsg}
+                  </p>
+                )}
+              </div>
+              <p className="text-[10px] text-muted mt-1">Cambia el plan a cliente directo sin vencimiento. No se pierde ninguna información.</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-primary font-semibold">✓ Cliente Directo</p>
+          )}
+          </>
         ) : (
-          <p className="text-sm text-muted">Sin suscripcion</p>
+          <p className="text-sm text-muted">Sin suscripción activa.</p>
         )}
       </div>
 
@@ -754,15 +849,42 @@ export default function ClienteDetailPage({
                 </div>
               </div>
             ))}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditTrainingData(JSON.parse(JSON.stringify(trainingDays)));
+                  setEditingTraining(true);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 text-sm text-primary font-bold py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+              >
+                <Edit className="h-4 w-4" /> Editar
+              </button>
+              <button
+                onClick={copyRoutine}
+                className="flex-1 flex items-center justify-center gap-2 text-sm text-muted font-semibold py-2 border border-card-border rounded-xl hover:bg-white/5 transition-colors"
+                title="Copiar rutina al portapapeles"
+              >
+                <Copy className="h-4 w-4" /> Copiar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Paste routine from clipboard */}
+        {!editingTraining && copiedRoutine && (
+          <div className="mt-3 pt-3 border-t border-card-border flex items-center gap-3">
             <button
-              onClick={() => {
-                setEditTrainingData(JSON.parse(JSON.stringify(trainingDays)));
-                setEditingTraining(true);
-              }}
-              className="w-full flex items-center justify-center gap-2 text-sm text-primary font-bold py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+              onClick={pasteRoutine}
+              disabled={pastingRoutine}
+              className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition font-semibold disabled:opacity-50"
             >
-              <Edit className="h-4 w-4" /> Editar Rutina
+              {pastingRoutine ? "Pegando..." : `Pegar rutina de "${copiedRoutine.clientName}"`}
             </button>
+            {pasteMsg && (
+              <p className={`text-xs font-medium ${pasteMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
+                {pasteMsg}
+              </p>
+            )}
           </div>
         )}
 
