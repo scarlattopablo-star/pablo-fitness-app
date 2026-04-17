@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, Users, ClipboardList,
   CreditCard, BookOpen, LogOut, Menu, X, Gift, Download, Smartphone, Share, Trash2,
-  MessageCircle,
+  MessageCircle, Wand2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/admin/pagos", icon: CreditCard, label: "Pagos" },
   { href: "/admin/chat", icon: MessageCircle, label: "Chat" },
   { href: "/admin/acceso-gratis", icon: Gift, label: "Acceso Gratis" },
+  { href: "/admin/contenido", icon: Wand2, label: "Contenido" },
   { href: "/admin/papelera", icon: Trash2, label: "Papelera" },
 ];
 
