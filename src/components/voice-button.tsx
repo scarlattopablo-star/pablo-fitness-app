@@ -9,9 +9,10 @@ const VoiceChat = dynamic(() => import("./voice-chat"), { ssr: false });
 
 export default function VoiceButton() {
   const [open, setOpen] = useState(false);
-  const { hasActiveSubscription } = useAuth();
+  const { user } = useAuth();
 
-  if (!hasActiveSubscription) return null;
+  // Solo requiere estar logueado
+  if (!user) return null;
 
   return (
     <>
