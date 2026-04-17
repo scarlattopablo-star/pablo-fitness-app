@@ -1,5 +1,5 @@
-const CACHE_NAME = "ps-entrena-v9";
-const STATIC_CACHE = "ps-static-v9";
+const CACHE_NAME = "ps-entrena-v10";
+const STATIC_CACHE = "ps-static-v10";
 
 self.addEventListener("install", (event) => {
   // Activate immediately, don't wait
@@ -97,17 +97,19 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/dashboard/chat";
+  const path = event.notification.data?.url || "/dashboard/chat";
+  const fullUrl = self.location.origin + path;
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      // If app already open, navigate existing window
       for (const client of windowClients) {
-        if (client.url.includes("/dashboard") && "focus" in client) {
-          client.navigate(url);
-          return client.focus();
+        if ("navigate" in client && "focus" in client) {
+          return client.navigate(fullUrl).then(() => client.focus());
         }
       }
-      return clients.openWindow(url);
+      // Otherwise open new window
+      return clients.openWindow(fullUrl);
     })
   );
 });
