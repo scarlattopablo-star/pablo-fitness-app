@@ -42,10 +42,13 @@ export async function POST(req: NextRequest) {
       })
       .eq("id", subscriptionId);
 
-    if (error) throw error;
+    if (error) {
+      return NextResponse.json({ error: error.message || JSON.stringify(error) }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true, end_date: farFuture.toISOString() });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
