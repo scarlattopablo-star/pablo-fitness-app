@@ -1,79 +1,86 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { getOrCreateConversation, getUnreadCount } from "@/lib/chat-helpers";
 
-const WHATSAPP_NUMBER = "59897336318"; // Pablo's number
-const DEFAULT_MESSAGE = "Hola Pablo! Te escribo desde la app GymRat. ";
+const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
 
 interface WhatsAppButtonProps {
-  /** Custom message to pre-fill */
-  message?: string;
-  /** Phone number override */
-  phone?: string;
-  /** Style variant */
   variant?: "floating" | "inline" | "small";
-  /** Additional classes */
   className?: string;
-  /** Label text (for inline) */
   label?: string;
 }
 
 export default function WhatsAppButton({
-  message = DEFAULT_MESSAGE,
-  phone = WHATSAPP_NUMBER,
   variant = "floating",
   className = "",
-  label = "WhatsApp",
+  label = "Chat con Pablo",
 }: WhatsAppButtonProps) {
-  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  const router = useRouter();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [unread, setUnread] = useState(0);
+
+  // Check unread messages from admin
+  useEffect(() => {
+    if (!user) return;
+    getUnreadCount(user.id).then(setUnread);
+  }, [user]);
+
+  const handleOpen = async () => {
+    if (!user || loading) return;
+    setLoading(true);
+    try {
+      const conversationId = await getOrCreateConversation(user.id, ADMIN_ID);
+      router.push(`/dashboard/chat/${conversationId}`);
+    } catch {
+      router.push("/dashboard/chat");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (variant === "small") {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        onClick={handleOpen}
         className={`flex items-center gap-1 text-xs text-emerald-400 font-medium px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors shrink-0 ${className}`}
       >
-        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.347 0-4.518-.809-6.237-2.163l-.436-.348-2.648.888.888-2.648-.348-.436A9.948 9.948 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
-        </svg>
+        <MessageCircle className="h-3 w-3" />
         {label}
-      </a>
+      </button>
     );
   }
 
   if (variant === "inline") {
     return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        onClick={handleOpen}
         className={`flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors ${className}`}
       >
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.347 0-4.518-.809-6.237-2.163l-.436-.348-2.648.888.888-2.648-.348-.436A9.948 9.948 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
-        </svg>
+        <MessageCircle className="h-5 w-5" />
         {label}
-      </a>
+      </button>
     );
   }
 
-  // Floating button (bottom-right)
+  // Floating button
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`fixed bottom-24 right-4 z-40 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 transition-all hover:scale-110 ${className}`}
-      aria-label="Contactar por WhatsApp"
+    <button
+      onClick={handleOpen}
+      disabled={loading}
+      className={`fixed bottom-24 right-4 z-40 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 transition-all hover:scale-110 disabled:opacity-70 ${className}`}
+      aria-label="Chat con Pablo"
     >
-      <svg className="h-7 w-7 text-white" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.347 0-4.518-.809-6.237-2.163l-.436-.348-2.648.888.888-2.648-.348-.436A9.948 9.948 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/>
-      </svg>
-    </a>
+      <MessageCircle className="h-7 w-7 text-white" />
+      {unread > 0 && (
+        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
+    </button>
   );
 }
