@@ -32,6 +32,18 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
 
   if (!open) return null;
 
+  const seekTo = (video: HTMLVideoElement, time: number): Promise<void> =>
+    new Promise((resolve) => {
+      const timeout = setTimeout(resolve, 2000); // fallback: don't hang forever
+      const handler = () => {
+        clearTimeout(timeout);
+        video.removeEventListener("seeked", handler);
+        resolve();
+      };
+      video.addEventListener("seeked", handler);
+      video.currentTime = time;
+    });
+
   const handleFile = async (file: File) => {
     setError(null);
     setAnalysis(null);
@@ -39,46 +51,68 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
     setVideoUrl(url);
     setStatus("extracting");
 
-    // Wait for video metadata to load
-    await new Promise<void>((resolve) => {
-      const v = videoRef.current;
-      if (!v) return resolve();
-      v.src = url;
-      v.onloadedmetadata = () => resolve();
-    });
-
     const video = videoRef.current;
     if (!video) { setStatus("error"); setError("No se pudo cargar el video"); return; }
 
+    // Set src and force load
+    video.preload = "auto";
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    video.load();
+
+    // Wait for metadata — with fallback timeout
+    await new Promise<void>((resolve) => {
+      if (video.readyState >= 1) { resolve(); return; }
+      const timeout = setTimeout(resolve, 5000);
+      const handler = () => { clearTimeout(timeout); video.removeEventListener("loadedmetadata", handler); resolve(); };
+      video.addEventListener("loadedmetadata", handler);
+    });
+
+    // Try to also get enough data to seek
+    await new Promise<void>((resolve) => {
+      if (video.readyState >= 3) { resolve(); return; }
+      const timeout = setTimeout(resolve, 5000);
+      const handler = () => { clearTimeout(timeout); video.removeEventListener("canplay", handler); resolve(); };
+      video.addEventListener("canplay", handler);
+    });
+
     const duration = video.duration;
     if (!isFinite(duration) || duration <= 0) {
-      setStatus("error"); setError("Video invalido"); return;
+      // Fallback: just capture the current frame at t=0 and send one frame
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext("2d");
+      if (ctx) ctx.drawImage(video, 0, 0, 512, 512);
+      const frames = [canvas.toDataURL("image/jpeg", 0.75)];
+      await analyzeFrames(frames);
+      return;
     }
 
     const framesCount = Math.min(5, Math.max(3, Math.floor(duration)));
     const timestamps = Array.from({ length: framesCount }, (_, i) => ((i + 1) / (framesCount + 1)) * duration);
 
     const canvas = document.createElement("canvas");
-    const frames: string[] = [];
     const W = 512;
-    const aspect = video.videoHeight / video.videoWidth || 16 / 9;
+    const aspect = video.videoHeight > 0 ? video.videoHeight / video.videoWidth : 16 / 9;
     canvas.width = W;
     canvas.height = Math.round(W * aspect);
     const ctx = canvas.getContext("2d");
     if (!ctx) { setStatus("error"); setError("No se pudo procesar"); return; }
 
+    const frames: string[] = [];
     for (const t of timestamps) {
-      await new Promise<void>((resolve) => {
-        const onSeeked = () => { video.removeEventListener("seeked", onSeeked); resolve(); };
-        video.addEventListener("seeked", onSeeked);
-        video.currentTime = t;
-      });
+      await seekTo(video, t);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push(canvas.toDataURL("image/jpeg", 0.75));
     }
 
-    setStatus("analyzing");
+    await analyzeFrames(frames);
+  };
 
+  const analyzeFrames = async (frames: string[]) => {
+    setStatus("analyzing");
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setStatus("error"); setError("No autenticado"); return; }
@@ -130,7 +164,14 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
         </div>
 
         <div className="p-4">
-          <video ref={videoRef} className="hidden" playsInline muted />
+          {/* Hidden video element for frame extraction */}
+          <video
+            ref={videoRef}
+            className="hidden"
+            playsInline
+            muted
+            preload="auto"
+          />
 
           {status === "idle" && (
             <label className="block w-full aspect-video rounded-xl border-2 border-dashed border-card-border hover:border-primary/50 cursor-pointer transition-all flex items-center justify-center">

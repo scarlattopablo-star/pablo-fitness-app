@@ -202,20 +202,19 @@ export default function ClienteDetailPage({
     setConvertingToDirect(true);
     setConvertMsg("");
     try {
-      // Set plan_slug to direct-client, duration to custom, end_date to 10 years from now
-      const farFuture = new Date();
-      farFuture.setFullYear(farFuture.getFullYear() + 10);
-      const { error } = await supabase
-        .from("subscriptions")
-        .update({
-          plan_slug: "direct-client",
-          duration: "custom",
-          end_date: farFuture.toISOString(),
-          status: "active",
-        })
-        .eq("id", subscription.id);
-      if (error) throw error;
-      setSubscription({ ...subscription, plan_slug: "direct-client", duration: "custom", status: "active" });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No autenticado");
+      const res = await fetch("/api/admin/convert-direct", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al convertir");
+      setSubscription({ ...subscription, plan_slug: "direct-client", duration: "custom", status: "active", end_date: data.end_date });
       setConvertMsg("✓ Convertido a cliente directo");
     } catch (err) {
       setConvertMsg("Error: " + String(err));
