@@ -9,13 +9,9 @@ const VoiceChat = dynamic(() => import("./voice-chat"), { ssr: false });
 
 export default function VoiceButton() {
   const [open, setOpen] = useState(false);
-  const { subscription, hasActiveSubscription } = useAuth();
+  const { hasActiveSubscription } = useAuth();
 
-  // Only show for paid clients or direct QR clients
-  const isPaid = subscription && Number(subscription.amount_paid) > 0;
-  const isDirect = subscription?.plan_slug === "direct-client";
-
-  if (!hasActiveSubscription || (!isPaid && !isDirect)) return null;
+  if (!hasActiveSubscription) return null;
 
   return (
     <>
