@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { PhoneOff, Mic, MicOff, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { PhoneOff, Phone } from "lucide-react";
 
-// Web Speech API types
 type SpeechRecognitionCtor = new () => {
   lang: string;
   interimResults: boolean;
@@ -24,40 +23,30 @@ declare global {
   }
 }
 
-interface VoiceChatProps {
-  onClose?: () => void;
-}
+interface Message { role: "user" | "assistant"; content: string; }
+interface VoiceChatProps { onClose?: () => void; }
+type Phase = "ringing" | "greeting" | "listening" | "processing" | "speaking";
 
-type Phase = "idle" | "recording" | "processing" | "speaking";
+const GREETING = "Hola! Cómo estás? En qué te puedo ayudar?";
 
 export default function VoiceChat({ onClose }: VoiceChatProps) {
-  const [phase, setPhase] = useState<Phase>("idle");
+  const [phase, setPhase] = useState<Phase>("ringing");
   const [callDuration, setCallDuration] = useState(0);
   const [supported, setSupported] = useState(true);
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
-  const endedRef = useRef(false);
+  const endedRef   = useRef(false);
+  const phaseRef   = useRef<Phase>("ringing");
   const recognitionRef = useRef<InstanceType<SpeechRecognitionCtor> | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const phaseRef = useRef<Phase>("idle");
+  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
+  const historyRef = useRef<Message[]>([]); // conversation history
 
-  // Keep phaseRef in sync so callbacks have fresh value without stale closure
-  const setPhaseSync = (p: Phase) => {
-    phaseRef.current = p;
-    setPhase(p);
-  };
+  const setPhaseSync = (p: Phase) => { phaseRef.current = p; setPhase(p); };
 
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setSupported(false); return; }
-
-    // Pre-load voices
     window.speechSynthesis.getVoices();
     window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-
-    // Start call timer
-    timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
-
     return () => {
       endedRef.current = true;
       if (timerRef.current) clearInterval(timerRef.current);
@@ -66,17 +55,7 @@ export default function VoiceChat({ onClose }: VoiceChatProps) {
     };
   }, []);
 
-  /** Unlock audio synthesis — must be called from a direct user tap */
-  const unlockAudio = () => {
-    if (audioUnlocked) return;
-    // Speak a silent utterance to unlock iOS audio context
-    const u = new SpeechSynthesisUtterance(" ");
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-    setAudioUnlocked(true);
-  };
-
-  const getBestSpanishVoice = (): SpeechSynthesisVoice | null => {
+  const getBestVoice = (): SpeechSynthesisVoice | null => {
     const voices = window.speechSynthesis.getVoices();
     return (
       voices.find(v => v.lang === "es-UY") ||
@@ -87,105 +66,147 @@ export default function VoiceChat({ onClose }: VoiceChatProps) {
     );
   };
 
-  const speak = (text: string) => {
+  const startListeningRef = useRef<() => void>(() => {});
+
+  const speak = useCallback((text: string, onDone?: () => void) => {
     if (endedRef.current) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "es-UY";
-    utterance.rate = 1.05;
-    utterance.pitch = 0.9;
-    const voice = getBestSpanishVoice();
-    if (voice) utterance.voice = voice;
 
-    utterance.onstart = () => { if (!endedRef.current) setPhaseSync("speaking"); };
-    utterance.onend = () => { if (!endedRef.current) setPhaseSync("idle"); };
-    utterance.onerror = () => { if (!endedRef.current) setPhaseSync("idle"); };
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "es-UY";
+    u.rate = 1.05;
+    u.pitch = 0.9;
+    const voice = getBestVoice();
+    if (voice) u.voice = voice;
 
-    // Chrome keepalive — cuts out at ~15s without this
+    setPhaseSync("speaking");
+
+    u.onend = () => { if (!endedRef.current) onDone?.(); };
+    u.onerror = () => { if (!endedRef.current) onDone?.(); };
+
+    // Chrome cuts off after ~15s without this keepalive
     const keepAlive = setInterval(() => {
       if (endedRef.current || !window.speechSynthesis.speaking) { clearInterval(keepAlive); return; }
       window.speechSynthesis.pause();
       window.speechSynthesis.resume();
     }, 10000);
 
-    window.speechSynthesis.speak(utterance);
-  };
+    window.speechSynthesis.speak(u);
+  }, []);
 
-  const sendMessage = async (text: string) => {
-    if (endedRef.current || !text.trim()) { setPhaseSync("idle"); return; }
+  const sendMessage = useCallback(async (userText: string) => {
+    if (endedRef.current) return;
     setPhaseSync("processing");
+
+    // Add user message to history
+    historyRef.current = [...historyRef.current, { role: "user", content: userText }];
+
     try {
       const res = await fetch("/api/voice-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          message: userText,
+          history: historyRef.current.slice(0, -1), // history without the last user msg
+        }),
       });
       if (endedRef.current) return;
       const data = await res.json() as { response?: string };
       const reply = data.response || "Perdón, no te entendí.";
-      speak(reply);
+
+      // Add assistant reply to history
+      historyRef.current = [...historyRef.current, { role: "assistant", content: reply }];
+
+      speak(reply, () => startListeningRef.current());
     } catch {
-      if (!endedRef.current) { speak("Problema de conexión."); }
+      if (!endedRef.current) speak("Problema de conexión.", () => startListeningRef.current());
     }
-  };
+  }, [speak]);
 
-  const startRecording = () => {
-    if (endedRef.current || phaseRef.current !== "idle") return;
-
-    // Unlock audio on this user gesture
-    unlockAudio();
-
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-
-    // Stop any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const recognition = new SR();
-    recognitionRef.current = recognition;
-    recognition.lang = "es-UY";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = false;
-
-    recognition.onstart = () => { if (!endedRef.current) setPhaseSync("recording"); };
-
-    recognition.onresult = (event) => {
+  useEffect(() => {
+    startListeningRef.current = () => {
       if (endedRef.current) return;
-      const text = event.results[0]?.[0]?.transcript?.trim();
-      if (text) sendMessage(text);
-      else setPhaseSync("idle");
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return;
+
+      try { recognitionRef.current?.abort(); } catch { /* ignore */ }
+
+      const recognition = new SR();
+      recognitionRef.current = recognition;
+      recognition.lang = "es-UY";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+
+      recognition.onstart = () => { if (!endedRef.current) setPhaseSync("listening"); };
+
+      recognition.onresult = (event) => {
+        if (endedRef.current) return;
+        const text = event.results[0]?.[0]?.transcript?.trim();
+        if (text) {
+          sendMessage(text);
+        } else {
+          setTimeout(() => { if (!endedRef.current) startListeningRef.current(); }, 200);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        if (endedRef.current || event.error === "aborted") return;
+        if (event.error === "not-allowed") { endCall(); return; }
+        // no-speech, network, etc — restart
+        setTimeout(() => {
+          if (!endedRef.current && phaseRef.current === "listening") startListeningRef.current();
+        }, 300);
+      };
+
+      recognition.onend = () => {
+        if (endedRef.current) return;
+        // If no result came, restart listening
+        if (phaseRef.current === "listening") {
+          setTimeout(() => {
+            if (!endedRef.current && phaseRef.current === "listening") startListeningRef.current();
+          }, 200);
+        }
+      };
+
+      try { recognition.start(); } catch { /* already running */ }
     };
+  }, [sendMessage]);
 
-    recognition.onerror = (event) => {
-      if (endedRef.current) return;
-      if (event.error === "not-allowed") {
-        endCall();
-      } else {
-        // no-speech, aborted, network, etc — just go back to idle
-        setPhaseSync("idle");
-      }
-    };
-
-    recognition.onend = () => {
-      if (endedRef.current) return;
-      // If still recording and no result came, go back to idle
-      if (phaseRef.current === "recording") setPhaseSync("idle");
-    };
-
-    try { recognition.start(); } catch { setPhaseSync("idle"); }
-  };
-
-  const stopRecording = () => {
-    try { recognitionRef.current?.stop(); } catch { /* ignore */ }
-  };
-
-  const endCall = () => {
+  const endCall = useCallback(() => {
     endedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     try { recognitionRef.current?.abort(); } catch { /* ignore */ }
     window.speechSynthesis.cancel();
     onClose?.();
+  }, [onClose]);
+
+  // MUST be called from a direct user tap so iOS unlocks audio
+  const answerCall = () => {
+    if (endedRef.current) return;
+    setPhaseSync("greeting");
+    timerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
+
+    // Unlock iOS audio: queue silent utterance + greeting in same click handler
+    const unlock = new SpeechSynthesisUtterance(" ");
+    unlock.volume = 0.001;
+    unlock.rate = 10;
+    window.speechSynthesis.speak(unlock);
+
+    const greet = new SpeechSynthesisUtterance(GREETING);
+    greet.lang = "es-UY";
+    greet.rate = 1.05;
+    greet.pitch = 0.9;
+    const voice = getBestVoice();
+    if (voice) greet.voice = voice;
+
+    // Add greeting to history so the model has context
+    historyRef.current = [{ role: "assistant", content: GREETING }];
+
+    greet.onend = () => { if (!endedRef.current) startListeningRef.current(); };
+    greet.onerror = () => { if (!endedRef.current) startListeningRef.current(); };
+
+    window.speechSynthesis.speak(greet);
   };
 
   const formatDuration = (s: number) => {
@@ -208,86 +229,111 @@ export default function VoiceChat({ onClose }: VoiceChatProps) {
 
   return (
     <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center">
-      <div className="w-full max-w-xs flex flex-col items-center gap-10 px-6">
+      <div className="w-full max-w-xs flex flex-col items-center gap-8 px-6">
 
         {/* Avatar */}
-        <div className="flex flex-col items-center gap-3">
-          <div className={`relative w-28 h-28 rounded-full border-4 transition-all duration-500 overflow-hidden ${
-            phase === "speaking" ? "border-emerald-400 shadow-[0_0_30px_8px_rgba(52,211,153,0.25)]" :
-            phase === "recording" ? "border-red-400 shadow-[0_0_20px_4px_rgba(248,113,113,0.25)]" :
-            phase === "processing" ? "border-primary/60" : "border-gray-700"
+        <div className="flex flex-col items-center gap-4">
+          <div className={`relative w-32 h-32 rounded-full border-4 overflow-hidden transition-all duration-500 ${
+            phase === "speaking"  ? "border-emerald-400 shadow-[0_0_40px_10px_rgba(52,211,153,0.2)]" :
+            phase === "listening" ? "border-primary shadow-[0_0_25px_6px_rgba(200,255,0,0.15)]" :
+            phase === "ringing"   ? "border-primary/60" :
+            "border-gray-700"
           }`}>
             <div className="w-full h-full bg-gradient-to-br from-primary to-emerald-600 flex items-center justify-center">
-              <span className="text-black font-black text-4xl">P</span>
+              <span className="text-black font-black text-5xl">P</span>
             </div>
             {phase === "speaking" && (
-              <div className="absolute -inset-2 rounded-full border-2 border-emerald-400/30 animate-ping" />
+              <div className="absolute -inset-3 rounded-full border-2 border-emerald-400/25 animate-ping pointer-events-none" />
             )}
-            {phase === "recording" && (
-              <div className="absolute -inset-2 rounded-full border-2 border-red-400/30 animate-pulse" />
+            {phase === "listening" && (
+              <>
+                <div className="absolute -inset-2 rounded-full border border-primary/25 animate-ping pointer-events-none" />
+                <div className="absolute -inset-5 rounded-full border border-primary/10 animate-pulse pointer-events-none" />
+              </>
+            )}
+            {phase === "ringing" && (
+              <div className="absolute -inset-3 rounded-full border-2 border-primary/30 animate-pulse pointer-events-none" />
             )}
           </div>
 
-          <p className="text-white font-bold text-lg">Pablo</p>
-          <p className="text-gray-400 text-sm min-h-[20px] text-center">
-            {phase === "idle" && "Toca el mic para hablar"}
-            {phase === "recording" && "Escuchando... toca para enviar"}
-            {phase === "processing" && "Pensando..."}
-            {phase === "speaking" && "Respondiendo..."}
-          </p>
+          <div className="text-center">
+            <p className="text-white font-bold text-xl">Pablo</p>
+            <p className="text-gray-400 text-sm">
+              {phase === "ringing"    && "Llamada entrante..."}
+              {phase === "greeting"   && "Hablando..."}
+              {phase === "listening"  && "Escuchando..."}
+              {phase === "processing" && "Pensando..."}
+              {phase === "speaking"   && "Respondiendo..."}
+            </p>
+          </div>
         </div>
 
         {/* Timer */}
-        <p className="text-gray-600 text-sm font-mono -mt-4">{formatDuration(callDuration)}</p>
+        {phase !== "ringing" && (
+          <p className="text-gray-600 text-sm font-mono">{formatDuration(callDuration)}</p>
+        )}
 
         {/* Processing dots */}
         {phase === "processing" && (
-          <div className="flex gap-1.5 -mt-4">
-            {[0, 150, 300].map(d => (
-              <div key={d} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
+          <div className="flex gap-2">
+            {[0, 160, 320].map(d => (
+              <div key={d} className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${d}ms` }} />
             ))}
           </div>
         )}
 
-        {/* Mic button + hang up */}
-        <div className="flex items-center gap-8">
-          {/* Hang up */}
+        {/* Listening wave bars */}
+        {phase === "listening" && (
+          <div className="flex gap-1 items-end h-8">
+            {[0.6, 1.0, 0.7, 1.0, 0.5].map((h, i) => (
+              <div
+                key={i}
+                className="w-1.5 rounded-full bg-primary"
+                style={{
+                  height: `${h * 28}px`,
+                  animation: `pulse ${0.5 + i * 0.08}s ease-in-out infinite alternate`,
+                  animationDelay: `${i * 90}ms`,
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Buttons */}
+        {phase === "ringing" ? (
+          <div className="flex items-end gap-16 mt-2">
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={endCall}
+                className="w-16 h-16 bg-red-500 hover:bg-red-400 active:scale-90 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 transition-all"
+              >
+                <PhoneOff className="h-6 w-6 text-white" />
+              </button>
+              <span className="text-gray-500 text-xs">Rechazar</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={answerCall}
+                className="w-16 h-16 bg-emerald-500 hover:bg-emerald-400 active:scale-90 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30 transition-all animate-bounce"
+              >
+                <Phone className="h-6 w-6 text-white" />
+              </button>
+              <span className="text-gray-400 text-xs font-medium">Contestar</span>
+            </div>
+          </div>
+        ) : (
           <button
-            onPointerDown={endCall}
-            className="w-14 h-14 bg-red-500 hover:bg-red-400 active:scale-90 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 transition-all"
+            onClick={endCall}
+            className="w-16 h-16 bg-red-500 hover:bg-red-400 active:scale-90 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 transition-all mt-2"
             aria-label="Colgar"
           >
-            <PhoneOff className="h-6 w-6 text-white" />
+            <PhoneOff className="h-7 w-7 text-white" />
           </button>
+        )}
 
-          {/* Mic — hold or tap to record, tap again to send */}
-          {phase === "idle" || phase === "speaking" ? (
-            <button
-              onPointerDown={startRecording}
-              className="w-20 h-20 bg-primary hover:bg-primary/80 active:scale-90 rounded-full flex items-center justify-center shadow-lg shadow-primary/30 transition-all"
-              aria-label="Hablar"
-            >
-              <Mic className="h-9 w-9 text-black" />
-            </button>
-          ) : phase === "recording" ? (
-            <button
-              onPointerDown={stopRecording}
-              className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40 transition-all animate-pulse"
-              aria-label="Enviar"
-            >
-              <MicOff className="h-9 w-9 text-white" />
-            </button>
-          ) : (
-            <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            </div>
-          )}
-        </div>
-
-        <p className="text-gray-700 text-xs text-center">
-          {phase === "idle" ? "Toca el mic → hablá → toca para enviar" : ""}
-        </p>
-
+        {phase === "ringing" && (
+          <p className="text-gray-700 text-xs">Asistente IA · Pablo Scarlatto</p>
+        )}
       </div>
     </div>
   );
