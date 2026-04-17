@@ -25,6 +25,7 @@ export function RankingShareModal({
 
   useEffect(() => {
     if (!open || !canvasRef.current) return;
+    setRendered(false);
     const canvas = canvasRef.current;
     canvas.width = 1080;
     canvas.height = 1920;
@@ -122,11 +123,16 @@ export function RankingShareModal({
       const file = new File([blob], "ranking.png", { type: "image/png" });
       const nav = navigator as Navigator & { canShare?: (d: { files?: File[] }) => boolean };
       if (nav.canShare && nav.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Puesto #${rank} — Pablo Scarlatto Entrenamientos`,
-          text: `Mi ranking esta semana`,
-        });
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Puesto #${rank} — Pablo Scarlatto Entrenamientos`,
+            text: `Mi ranking esta semana`,
+          });
+        } catch (err: unknown) {
+          const name = (err as { name?: string })?.name;
+          if (name !== "AbortError") handleDownload();
+        }
       } else {
         handleDownload();
       }
