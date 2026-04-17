@@ -460,6 +460,139 @@ const TEMPLATES: TemplateDef[] = [
   },
 ];
 
+// ── CAROUSEL ───────────────────────────────────────────────────────────
+interface CarouselSlide {
+  slide: number;
+  eyebrow: string;
+  headline: string;
+  body: string;
+  highlight?: string;
+  cta?: string;
+  isCover?: boolean;
+  isCta?: boolean;
+}
+
+function renderCarouselSlide(
+  canvas: HTMLCanvasElement,
+  slide: CarouselSlide,
+  total: number,
+) {
+  const W = 1080, H = 1080;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  // BG
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, "#0d0d0d");
+  bg.addColorStop(1, "#000");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Cover gets a stronger glow, CTA slide a different accent
+  const glowColor = slide.isCover
+    ? "rgba(205,255,0,0.18)"
+    : slide.isCta
+    ? "rgba(251,191,36,0.14)"
+    : "rgba(205,255,0,0.08)";
+  const glow = ctx.createRadialGradient(540, 400, 80, 540, 400, 780);
+  glow.addColorStop(0, glowColor);
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  // Left accent bar
+  const barColor = slide.isCta ? "#fbbf24" : "#CDFF00";
+  ctx.fillStyle = barColor;
+  ctx.fillRect(0, 0, 8, H);
+
+  // Slide counter (top right)
+  ctx.fillStyle = "#333";
+  ctx.font = "500 28px system-ui";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "top";
+  ctx.fillText(`${slide.slide} / ${total}`, W - 60, 60);
+
+  // Eyebrow
+  ctx.fillStyle = barColor;
+  ctx.font = "bold 28px system-ui";
+  ctx.textAlign = "left";
+  ctx.fillText((slide.eyebrow || "").toUpperCase(), 60, 100);
+
+  if (slide.isCover) {
+    // Cover: big centered headline
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 86px system-ui";
+    ctx.textBaseline = "top";
+    const headH = wrapText(ctx, slide.headline || "", 60, 220, 960, 96);
+
+    if (slide.body) {
+      ctx.fillStyle = "#888";
+      ctx.font = "400 36px system-ui";
+      wrapText(ctx, slide.body, 60, 220 + headH + 40, 960, 50);
+    }
+
+    // "Swipe →" hint bottom
+    ctx.fillStyle = barColor;
+    ctx.font = "bold 30px system-ui";
+    ctx.textAlign = "right";
+    ctx.fillText("Deslizá →", W - 60, H - 80);
+  } else if (slide.isCta) {
+    // CTA slide
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 72px system-ui";
+    ctx.textBaseline = "top";
+    const headH = wrapText(ctx, slide.headline || "", 60, 220, 960, 82);
+
+    ctx.fillStyle = "#aaa";
+    ctx.font = "400 36px system-ui";
+    const bodyH = wrapText(ctx, slide.body || "", 60, 220 + headH + 30, 960, 50);
+
+    // CTA box
+    const ctaY = 220 + headH + bodyH + 80;
+    ctx.fillStyle = barColor;
+    ctx.fillRect(60, ctaY, 960, 4);
+    ctx.fillStyle = barColor;
+    ctx.font = "bold 42px system-ui";
+    ctx.textAlign = "left";
+    ctx.fillText(slide.cta || "Seguime para más", 60, ctaY + 24);
+  } else {
+    // Content slide
+    // Step number badge
+    ctx.fillStyle = barColor;
+    ctx.font = "900 100px system-ui";
+    ctx.textBaseline = "top";
+    ctx.fillText(String(slide.slide - 1), 60, 160);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "900 66px system-ui";
+    const headH = wrapText(ctx, slide.headline || "", 60, 310, 960, 76);
+
+    ctx.fillStyle = "#aaa";
+    ctx.font = "400 34px system-ui";
+    const bodyH = wrapText(ctx, slide.body || "", 60, 310 + headH + 20, 960, 48);
+
+    if (slide.highlight && slide.highlight.trim()) {
+      const hy = 310 + headH + bodyH + 50;
+      ctx.fillStyle = "rgba(205,255,0,0.08)";
+      ctx.fillRect(60, hy, 960, 80);
+      ctx.fillStyle = "#CDFF00";
+      ctx.font = "600 30px system-ui";
+      ctx.textBaseline = "middle";
+      ctx.fillText(slide.highlight, 80, hy + 40);
+      ctx.textBaseline = "top";
+    }
+  }
+
+  // Footer branding
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#2a2a2a";
+  ctx.font = "700 26px system-ui";
+  ctx.textBaseline = "bottom";
+  ctx.fillText("PABLO SCARLATTO · @pabloscarlattoentrenamientos", W - 60, H - 40);
+}
+
 function initFields(id: Template): Record<string, string> {
   const tpl = TEMPLATES.find(t => t.id === id)!;
   const init: Record<string, string> = {};
@@ -479,6 +612,12 @@ export default function ContenidoPage() {
   const [aiFormat, setAiFormat] = useState<"square" | "story">("square");
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [aiMode, setAiMode] = useState<"single" | "carousel">("single");
+  const [carouselSlides, setCarouselSlides] = useState<CarouselSlide[]>([]);
+  const [carouselNumSlides, setCarouselNumSlides] = useState(5);
+  const [carouselGenerating, setCarouselGenerating] = useState(false);
+  const [carouselError, setCarouselError] = useState("");
+  const carouselRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
   const generateWithAI = async () => {
     setAiGenerating(true);
@@ -510,6 +649,60 @@ export default function ContenidoPage() {
       setAiError(String(e));
     } finally {
       setAiGenerating(false);
+    }
+  };
+
+  const generateCarousel = async () => {
+    setCarouselGenerating(true);
+    setCarouselError("");
+    setCarouselSlides([]);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/generate-carousel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ category: aiCategory, topic: aiTopic || undefined, numSlides: carouselNumSlides }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCarouselError(data.error || "Error"); return; }
+      setCarouselSlides(data.slides || []);
+    } catch (e) {
+      setCarouselError(String(e));
+    } finally {
+      setCarouselGenerating(false);
+    }
+  };
+
+  // Render carousel slides whenever they change
+  useEffect(() => {
+    carouselSlides.forEach((slide, i) => {
+      const canvas = carouselRefs.current[i];
+      if (canvas) renderCarouselSlide(canvas, slide, carouselSlides.length);
+    });
+  }, [carouselSlides]);
+
+  const downloadAllSlides = async () => {
+    for (let i = 0; i < carouselSlides.length; i++) {
+      const canvas = carouselRefs.current[i];
+      if (!canvas) continue;
+      await new Promise<void>(resolve => {
+        canvas.toBlob(blob => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `carrusel-slide-${i + 1}-de-${carouselSlides.length}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+          resolve();
+        }, "image/png");
+      });
+      // Small delay between downloads so browser doesn't block them
+      await new Promise(r => setTimeout(r, 300));
     }
   };
 
@@ -584,15 +777,23 @@ export default function ContenidoPage() {
         <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" /> Generar contenido con IA
         </h2>
+
+        {/* Mode toggle */}
+        <div className="flex gap-2 mb-4">
+          {(["single", "carousel"] as const).map(m => (
+            <button key={m} onClick={() => setAiMode(m)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold border transition-all ${aiMode === m ? "border-primary bg-primary/10 text-primary" : "border-card-border text-muted"}`}>
+              {m === "single" ? "📷 Post único" : "🎠 Carrusel"}
+            </button>
+          ))}
+        </div>
+
         <div className="grid sm:grid-cols-3 gap-3 mb-3">
           {/* Category */}
           <div>
             <label className="text-xs text-muted block mb-1">Categoría</label>
-            <select
-              value={aiCategory}
-              onChange={e => setAiCategory(e.target.value)}
-              className="w-full p-2.5 rounded-lg bg-card-bg border border-card-border text-sm focus:border-primary outline-none"
-            >
+            <select value={aiCategory} onChange={e => setAiCategory(e.target.value)}
+              className="w-full p-2.5 rounded-lg bg-card-bg border border-card-border text-sm focus:border-primary outline-none">
               <option value="motivacion">💪 Motivación</option>
               <option value="tip-entreno">🏋️ Tip de entrenamiento</option>
               <option value="tip-nutricion">🥗 Tip de nutrición</option>
@@ -600,48 +801,112 @@ export default function ContenidoPage() {
               <option value="pregunta">❓ Pregunta interactiva</option>
               <option value="mito">⚡ Mito vs Realidad</option>
               <option value="antes-despues">📸 Antes / Después</option>
+              <option value="rutina">📋 Estructura de rutina</option>
+              <option value="recuperacion">😴 Recuperación y descanso</option>
+              <option value="suplementos">💊 Suplementación</option>
             </select>
           </div>
           {/* Topic */}
           <div>
             <label className="text-xs text-muted block mb-1">Tema específico (opcional)</label>
-            <input
-              type="text"
-              value={aiTopic}
-              onChange={e => setAiTopic(e.target.value)}
-              placeholder="ej: sentadilla, proteína, descanso..."
-              className="w-full p-2.5 rounded-lg bg-card-bg border border-card-border text-sm focus:border-primary outline-none"
-            />
+            <input type="text" value={aiTopic} onChange={e => setAiTopic(e.target.value)}
+              placeholder="ej: sentadilla, proteína, sueño..."
+              className="w-full p-2.5 rounded-lg bg-card-bg border border-card-border text-sm focus:border-primary outline-none" />
           </div>
-          {/* Format */}
-          <div>
-            <label className="text-xs text-muted block mb-1">Formato</label>
-            <div className="flex gap-2">
-              {(["square", "story"] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setAiFormat(f)}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
-                    aiFormat === f ? "border-primary bg-primary/10 text-primary" : "border-card-border text-muted"
-                  }`}
-                >
-                  {f === "square" ? "Feed 1:1" : "Story 9:16"}
-                </button>
-              ))}
+          {/* Format (single) or Num slides (carousel) */}
+          {aiMode === "single" ? (
+            <div>
+              <label className="text-xs text-muted block mb-1">Formato</label>
+              <div className="flex gap-2">
+                {(["square", "story"] as const).map(f => (
+                  <button key={f} onClick={() => setAiFormat(f)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${aiFormat === f ? "border-primary bg-primary/10 text-primary" : "border-card-border text-muted"}`}>
+                    {f === "square" ? "Feed 1:1" : "Story 9:16"}
+                  </button>
+                ))}
+              </div>
             </div>
+          ) : (
+            <div>
+              <label className="text-xs text-muted block mb-1">Cantidad de slides</label>
+              <div className="flex gap-2">
+                {[3, 5, 7].map(n => (
+                  <button key={n} onClick={() => setCarouselNumSlides(n)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-bold border transition-all ${carouselNumSlides === n ? "border-primary bg-primary/10 text-primary" : "border-card-border text-muted"}`}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {aiMode === "single" ? (
+          <>
+            <button onClick={generateWithAI} disabled={aiGenerating}
+              className="gradient-primary text-black font-bold py-2.5 px-6 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              {aiGenerating ? "Generando..." : "Generar post"}
+            </button>
+            {aiError && <p className="mt-2 text-xs text-red-400">{aiError}</p>}
+            <p className="mt-2 text-[11px] text-muted">Carga el template automáticamente. Editá antes de descargar.</p>
+          </>
+        ) : (
+          <>
+            <button onClick={generateCarousel} disabled={carouselGenerating}
+              className="gradient-primary text-black font-bold py-2.5 px-6 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              {carouselGenerating ? "Generando carrusel..." : `Generar carrusel (${carouselNumSlides} slides)`}
+            </button>
+            {carouselError && <p className="mt-2 text-xs text-red-400">{carouselError}</p>}
+            <p className="mt-2 text-[11px] text-muted">Genera {carouselNumSlides} imágenes 1:1 listas para subir como carrusel de Instagram.</p>
+          </>
+        )}
+      </div>
+
+      {/* ── CAROUSEL PREVIEW ─────────────────────── */}
+      {carouselSlides.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-sm">Carrusel — {carouselSlides.length} slides</h2>
+            <button onClick={downloadAllSlides}
+              className="gradient-primary text-black font-bold py-2 px-4 rounded-xl text-sm inline-flex items-center gap-2">
+              <Download className="h-4 w-4" /> Descargar todos
+            </button>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-3">
+            {carouselSlides.map((slide, i) => (
+              <div key={i} className="shrink-0 w-48">
+                <div className="rounded-xl overflow-hidden bg-black border border-card-border mb-2">
+                  <canvas
+                    ref={el => { carouselRefs.current[i] = el; }}
+                    className="w-full h-auto block"
+                  />
+                </div>
+                <p className="text-[10px] text-muted text-center mb-1 truncate px-1">{slide.headline}</p>
+                <button
+                  onClick={() => {
+                    const canvas = carouselRefs.current[i];
+                    if (!canvas) return;
+                    canvas.toBlob(blob => {
+                      if (!blob) return;
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `slide-${i + 1}.png`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }, "image/png");
+                  }}
+                  className="w-full py-1.5 rounded-lg border border-card-border text-[11px] font-semibold hover:bg-card-bg flex items-center justify-center gap-1"
+                >
+                  <Download className="h-3 w-3" /> Slide {i + 1}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
-        <button
-          onClick={generateWithAI}
-          disabled={aiGenerating}
-          className="gradient-primary text-black font-bold py-2.5 px-6 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-2"
-        >
-          <Sparkles className="h-4 w-4" />
-          {aiGenerating ? "Generando..." : "Generar con IA"}
-        </button>
-        {aiError && <p className="mt-2 text-xs text-red-400">{aiError}</p>}
-        <p className="mt-2 text-[11px] text-muted">Genera el texto y carga automáticamente el template. Podés editar antes de descargar.</p>
-      </div>
+      )}
 
       {/* Template selector */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
