@@ -18,6 +18,8 @@ import { supabase } from "@/lib/supabase";
 import { OfflineBanner } from "@/components/offline-banner";
 import { cacheData, getCachedData } from "@/lib/offline-cache";
 import MuscleHeatmap from "@/components/muscle-heatmap";
+import { Goal7dCard } from "@/components/goal-7d-card";
+import { MonthlyChallengeCard } from "@/components/monthly-challenge-card";
 import { EXERCISES } from "@/lib/exercises-data";
 
 interface SurveyData {
@@ -261,6 +263,12 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* 7-day goal from onboarding */}
+      {user && <Goal7dCard userId={user.id} />}
+
+      {/* Monthly group challenge */}
+      <MonthlyChallengeCard />
 
       {/* GAMIFICATION WIDGET */}
       {gamification && (

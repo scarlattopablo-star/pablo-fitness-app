@@ -3,6 +3,14 @@
     {
       "path": "/api/push/motivational",
       "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 23 * * 0"
+    },
+    {
+      "path": "/api/cron/coach-ai-nudge",
+      "schedule": "0 18 * * *"
     }
   ]
 }

@@ -183,10 +183,10 @@ export default function EncuestaDirectaPage() {
           <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutricion.</p>
           <p className="text-sm text-muted mb-6">Ingresa a tu plan para ver tus macros y descargar la app.</p>
           <a
-            href="/dashboard"
+            href="/dashboard/bienvenida"
             className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4 w-full text-center"
           >
-            Ir a Mi Plan
+            Empezar mi experiencia
           </a>
           <div className="glass-card rounded-xl p-4 text-left mt-3">
             <p className="font-bold text-sm mb-2">Descarga la app en tu celular</p>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Play, X, ChevronDown } from "lucide-react";
+import { Search, Play, X, ChevronDown, Sparkles } from "lucide-react";
 import { EXERCISES, MUSCLE_GROUP_LABELS, getVideoUrl } from "@/lib/exercises-data";
 import type { Exercise } from "@/types";
+import { TechniqueAnalyzer } from "@/components/technique-analyzer";
 
 const ALL_GROUPS = Object.keys(MUSCLE_GROUP_LABELS);
 
@@ -11,6 +12,7 @@ export default function EjerciciosPage() {
   const [selectedGroup, setSelectedGroup] = useState<string>("todos");
   const [search, setSearch] = useState("");
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [analyzingExercise, setAnalyzingExercise] = useState<Exercise | null>(null);
 
   const filtered = EXERCISES.filter((ex) => {
     const matchesGroup = selectedGroup === "todos" || ex.muscleGroup === selectedGroup;
@@ -116,7 +118,7 @@ export default function EjerciciosPage() {
               href={getVideoUrl(selectedExercise)}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 bg-card-bg rounded-xl p-4 mb-6 hover:bg-white/5 transition-colors"
+              className="flex items-center gap-3 bg-card-bg rounded-xl p-4 mb-3 hover:bg-white/5 transition-colors"
             >
               <div className="w-12 h-12 rounded-lg gradient-primary flex items-center justify-center">
                 <Play className="h-6 w-6 text-black" />
@@ -126,6 +128,19 @@ export default function EjerciciosPage() {
                 <p className="text-xs text-muted">Ejecución correcta paso a paso</p>
               </div>
             </a>
+
+            <button
+              onClick={() => setAnalyzingExercise(selectedExercise)}
+              className="w-full flex items-center gap-3 bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/30 rounded-xl p-4 mb-6 hover:from-primary/25 transition-all text-left"
+            >
+              <div className="w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium">Analizar mi técnica con IA</p>
+                <p className="text-xs text-muted">Grabá un video, Pablo te da feedback</p>
+              </div>
+            </button>
 
             <h4 className="font-bold mb-3">Ejecución Paso a Paso</h4>
             <ol className="space-y-3">
@@ -140,6 +155,14 @@ export default function EjerciciosPage() {
             </ol>
           </div>
         </div>
+      )}
+
+      {analyzingExercise && (
+        <TechniqueAnalyzer
+          open
+          onClose={() => setAnalyzingExercise(null)}
+          exerciseName={analyzingExercise.name}
+        />
       )}
     </div>
   );
