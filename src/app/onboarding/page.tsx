@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { motion, AnimatePresence, type PanInfo } from "framer-motion";
 import { Dumbbell, Users, TrendingUp, Rocket, ChevronRight, ChevronLeft, UtensilsCrossed } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GymRatLogo } from "@/components/gymrat-logo";
 
 // --- SPLASH SCREEN (photo + animated logo, fades into carousel) ---
@@ -128,12 +128,14 @@ const SLIDES: Slide[] = [
 
 const SWIPE_THRESHOLD = 50;
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [hasSeenBefore, setHasSeenBefore] = useState(false);
   const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState(0);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next");
   const isLast = current === SLIDES.length - 1;
 
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function OnboardingPage() {
 
   const finish = () => {
     localStorage.setItem("hasSeenOnboarding", "true");
-    router.push("/planes");
+    router.push(nextUrl || "/planes");
   };
 
   const slide = SLIDES[current];
@@ -179,7 +181,8 @@ export default function OnboardingPage() {
           <SplashScreen
             onFinish={() => {
               setShowSplash(false);
-              if (hasSeenBefore) {
+              // If already seen and no first-login flow, skip to destination
+              if (hasSeenBefore && !nextUrl) {
                 router.push("/planes");
               }
             }}
@@ -289,5 +292,13 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingContent />
+    </Suspense>
   );
 }

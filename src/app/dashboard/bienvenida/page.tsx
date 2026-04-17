@@ -239,10 +239,11 @@ export default function BienvenidaPage() {
                 <Camera className="h-6 w-6 text-primary" />
                 <h2 className="text-2xl font-black">Tu foto &ldquo;antes&rdquo;</h2>
               </div>
-              <p className="text-muted text-sm mb-6">
+              <p className="text-muted text-sm mb-1">
                 Una foto hoy. Una foto en 60 dias. La diferencia que vas a ver te va a shockear.
                 Nadie la ve excepto vos y yo.
               </p>
+              <p className="text-xs text-muted/60 mb-6">Opcional — podés subirla después desde Progreso.</p>
 
               <label
                 className={`block w-full aspect-[3/4] max-h-80 rounded-2xl border-2 border-dashed cursor-pointer transition-all flex items-center justify-center mb-4 ${
@@ -287,18 +288,18 @@ export default function BienvenidaPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep("checklist")}
-                  className="flex-1 py-4 rounded-xl text-muted border border-card-border hover:text-foreground transition"
-                >
-                  Omitir
-                </button>
-                <button
-                  onClick={() => setStep("checklist")}
                   disabled={!photoUploaded}
-                  className="flex-[2] gradient-primary text-black font-bold py-4 rounded-xl inline-flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-40"
+                  className="flex-1 gradient-primary text-black font-bold py-4 rounded-xl inline-flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-40"
                 >
                   Continuar <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
+              <button
+                onClick={() => setStep("checklist")}
+                className="w-full mt-2 py-3 text-sm text-muted hover:text-foreground transition text-center"
+              >
+                Saltar por ahora
+              </button>
             </motion.div>
           )}
 

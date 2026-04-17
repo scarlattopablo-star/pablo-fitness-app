@@ -50,6 +50,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [loading, user]);
 
+  // Show onboarding splash on first open (once per device)
+  useEffect(() => {
+    if (loading || !user) return;
+    const hasSeen = localStorage.getItem("hasSeenOnboarding") === "true";
+    if (!hasSeen) {
+      router.replace("/onboarding?next=/dashboard/bienvenida");
+    }
+  }, [loading, user, router]);
+
   // Global realtime listener for chat notifications (toast + sound)
   const pathnameRef = useRef(pathname);
   useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
