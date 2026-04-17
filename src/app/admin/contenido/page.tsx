@@ -135,40 +135,42 @@ const TEMPLATES: TemplateDef[] = [
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, 1080, 1080);
 
-      // Lime accent bar top
+      // Phone mockup RIGHT side — draw FIRST so text renders on top
+      drawPhoneMockup(ctx, 600, 140, 420, 620);
+
+      // Left column text (constrained to 520px to never overlap the phone)
       ctx.fillStyle = "#CDFF00";
       ctx.fillRect(60, 60, 80, 5);
-
       ctx.fillStyle = "#CDFF00";
-      ctx.font = "bold 22px system-ui";
+      ctx.font = "bold 20px system-ui";
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
       ctx.fillText("PABLO SCARLATTO · FEATURE NUEVA", 60, 80);
 
-      // Headline
+      // Headline — clip to left half so it never bleeds over phone
+      ctx.save();
+      ctx.rect(0, 0, 580, 1080);
+      ctx.clip();
       ctx.fillStyle = "#fff";
-      ctx.font = "900 68px system-ui";
-      ctx.fillText(f.headline1, 60, 160);
-      ctx.fillText(f.headline2, 60, 230);
+      ctx.font = "900 56px system-ui";
+      ctx.fillText(f.headline1 || "", 60, 160);
+      ctx.fillText(f.headline2 || "", 60, 220);
       ctx.fillStyle = "#CDFF00";
-      ctx.fillText(f.headline3, 60, 300);
+      ctx.fillText(f.headline3 || "", 60, 280);
       ctx.fillStyle = "#fff";
-      ctx.fillText(f.headline4, 60, 370);
+      ctx.fillText(f.headline4 || "", 60, 340);
+      ctx.restore();
 
-      // Phone mockup right side
-      drawPhoneMockup(ctx, 620, 170, 400, 580);
-
-      // Subtitle
+      // Subtitle and CTA (left column)
       ctx.fillStyle = "#aaa";
-      ctx.font = "500 26px system-ui";
-      wrapText(ctx, f.subtitle, 60, 520, 500, 36);
+      ctx.font = "500 24px system-ui";
+      wrapText(ctx, f.subtitle, 60, 490, 500, 34);
 
-      // CTA bottom
       ctx.fillStyle = "#CDFF00";
-      ctx.font = "bold 24px system-ui";
-      ctx.fillText(f.cta, 60, 990);
+      ctx.font = "bold 22px system-ui";
+      ctx.fillText(f.cta || "", 60, 990);
       ctx.fillStyle = "#666";
-      ctx.font = "500 16px system-ui";
+      ctx.font = "500 14px system-ui";
       ctx.fillText("pabloscarlattoentrenamientos.com", 60, 1025);
     },
   },
