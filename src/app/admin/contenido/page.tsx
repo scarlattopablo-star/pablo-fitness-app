@@ -33,8 +33,8 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-  const words = text.split(" ");
+function wrapText(ctx: CanvasRenderingContext2D, text: string | undefined, x: number, y: number, maxWidth: number, lineHeight: number) {
+  const words = (text ?? "").split(" ");
   let line = "";
   let offsetY = 0;
   for (const word of words) {
@@ -204,7 +204,7 @@ const TEMPLATES: TemplateDef[] = [
 
       ctx.fillStyle = "#fff";
       ctx.font = "900 110px system-ui";
-      wrapText(ctx, f.heading.toUpperCase(), 80, 320, 920, 120);
+      wrapText(ctx, (f.heading || "").toUpperCase(), 80, 320, 920, 120);
 
       ctx.fillStyle = "#aaa";
       ctx.font = "500 40px system-ui";
@@ -325,9 +325,17 @@ const TEMPLATES: TemplateDef[] = [
   },
 ];
 
+function initFields(id: Template): Record<string, string> {
+  const tpl = TEMPLATES.find(t => t.id === id)!;
+  const init: Record<string, string> = {};
+  for (const f of tpl.fields) init[f.key] = f.default;
+  return init;
+}
+
 export default function ContenidoPage() {
   const [templateId, setTemplateId] = useState<Template>("ia-tecnica");
-  const [fields, setFields] = useState<Record<string, string>>({});
+  // Initialize fields immediately with defaults so canvas never sees undefined values
+  const [fields, setFields] = useState<Record<string, string>>(() => initFields("ia-tecnica"));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -361,11 +369,9 @@ export default function ContenidoPage() {
   const template = TEMPLATES.find(t => t.id === templateId)!;
   const size = template.format === "story" ? { w: 1080, h: 1920 } : { w: 1080, h: 1080 };
 
-  // Initialize fields when template changes
+  // Re-initialize fields when template changes
   useEffect(() => {
-    const init: Record<string, string> = {};
-    for (const f of template.fields) init[f.key] = f.default;
-    setFields(init);
+    setFields(initFields(templateId));
   }, [templateId]);
 
   // Re-render on any change
@@ -459,11 +465,7 @@ export default function ContenidoPage() {
               </div>
             ))}
             <button
-              onClick={() => {
-                const init: Record<string, string> = {};
-                for (const f of template.fields) init[f.key] = f.default;
-                setFields(init);
-              }}
+              onClick={() => setFields(initFields(templateId))}
               className="text-xs text-muted hover:text-primary flex items-center gap-1"
             >
               <RefreshCw className="h-3 w-3" /> Resetear al texto original
