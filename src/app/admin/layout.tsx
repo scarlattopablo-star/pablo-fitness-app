@@ -10,6 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { syncPushSubscription, requestPushPermission, isPushSupported } from "@/lib/push-notifications";
 
 const NAV_ITEMS = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -45,6 +46,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setVerified(true);
     }
   }, [pathname, router]);
+
+  // Register push notifications for admin so messages arrive as notifications
+  useEffect(() => {
+    if (typeof window === "undefined" || pathname === "/admin/verify") return;
+    if (!isPushSupported()) return;
+    if (Notification.permission === "granted") {
+      syncPushSubscription();
+    } else if (Notification.permission === "default") {
+      requestPushPermission().then((granted) => {
+        if (granted) syncPushSubscription();
+      });
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
