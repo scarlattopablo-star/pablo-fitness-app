@@ -25,7 +25,7 @@ export default function CompraExitosaPage() {
 
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select("is_admin, onboarding_completed_at")
           .eq("id", session.user.id)
           .single();
 
@@ -35,7 +35,7 @@ export default function CompraExitosaPage() {
         const destination = profile?.is_admin
           ? "/admin"
           : survey
-            ? "/dashboard"
+            ? (profile?.onboarding_completed_at ? "/dashboard" : "/dashboard/bienvenida")
             : "/encuesta-directa";
 
         const timer = setInterval(() => {
@@ -89,7 +89,16 @@ export default function CompraExitosaPage() {
                     .eq("user_id", session.user.id)
                     .limit(1)
                     .maybeSingle();
-                  router.push(survey ? "/dashboard" : "/encuesta-directa");
+                  const { data: prof } = await supabase
+                    .from("profiles")
+                    .select("onboarding_completed_at")
+                    .eq("id", session.user.id)
+                    .single();
+                  router.push(
+                    survey
+                      ? (prof?.onboarding_completed_at ? "/dashboard" : "/dashboard/bienvenida")
+                      : "/encuesta-directa"
+                  );
                 } else {
                   router.push("/login");
                 }

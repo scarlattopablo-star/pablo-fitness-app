@@ -1,10 +1,12 @@
 "use client";
 
-import { Dumbbell } from "lucide-react";
+import { useState } from "react";
+import { Dumbbell, Trophy, Flame, Share2 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
+import { PRShareModal } from "@/components/pr-share-modal";
 
 interface ProgressEntry {
   id: string;
@@ -271,7 +273,17 @@ interface ExerciseLog {
   date: string;
 }
 
-export function ExerciseProgressCharts({ logs }: { logs: ExerciseLog[] }) {
+export function ExerciseProgressCharts({
+  logs,
+  userName,
+  avatarUrl,
+}: {
+  logs: ExerciseLog[];
+  userName?: string;
+  avatarUrl?: string | null;
+}) {
+  const [sharingPR, setSharingPR] = useState<{ name: string; weight: number; previousMax: number } | null>(null);
+
   if (!logs || logs.length === 0) return null;
 
   const byExercise: Record<string, { name: string; sessions: { date: string; weight: number }[] }> = {};
@@ -283,23 +295,84 @@ export function ExerciseProgressCharts({ logs }: { logs: ExerciseLog[] }) {
     byExercise[log.exercise_id].sessions.push({ date: log.date, weight: maxSet.weight });
   }
 
+  // For each exercise, compute: PR flag per session + all-time max + whether latest is a PR
   const exercises = Object.entries(byExercise)
-    .map(([id, data]) => ({
-      id,
-      name: data.name,
-      sessions: data.sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    }))
+    .map(([id, data]) => {
+      const sessions = data.sessions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      let runningMax = 0;
+      let latestPrevMax = 0;
+      const enriched = sessions.map(s => {
+        const isPR = s.weight > runningMax;
+        const prevMax = runningMax;
+        if (isPR) runningMax = s.weight;
+        return { ...s, isPR, prevMax };
+      });
+      const latest = enriched[enriched.length - 1];
+      const latestIsPR = latest?.isPR || false;
+      if (latestIsPR) latestPrevMax = latest.prevMax;
+      const allTimeMax = runningMax;
+      return { id, name: data.name, sessions: enriched, latestIsPR, allTimeMax, latestPrevMax };
+    })
     .filter(e => e.sessions.length > 0)
-    .sort((a, b) => b.sessions.length - a.sessions.length);
+    .sort((a, b) => {
+      // PRs first, then by session count
+      if (a.latestIsPR !== b.latestIsPR) return a.latestIsPR ? -1 : 1;
+      return b.sessions.length - a.sessions.length;
+    });
 
   if (exercises.length === 0) return null;
 
+  const recentPRs = exercises.filter(e => e.latestIsPR).slice(0, 3);
+
   return (
     <div className="glass-card rounded-2xl p-4">
-      <p className="text-xs font-bold text-muted mb-3 flex items-center gap-1">
-        <Dumbbell className="h-3 w-3" />
-        Progresion por Ejercicio
-      </p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-bold text-muted flex items-center gap-1">
+          <Dumbbell className="h-3 w-3" />
+          Progresion por Ejercicio
+        </p>
+        {recentPRs.length > 0 && (
+          <span className="text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Trophy className="h-3 w-3" />
+            {recentPRs.length} PR{recentPRs.length > 1 ? "s" : ""} nuevo{recentPRs.length > 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {recentPRs.length > 0 && (
+        <div className="mb-3 p-3 rounded-xl bg-gradient-to-br from-amber-500/15 to-transparent border border-amber-500/25">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Flame className="h-4 w-4 text-amber-400" />
+            <p className="text-xs font-bold text-amber-400">PRs frescos</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {recentPRs.map(pr => (
+              <button
+                key={pr.id}
+                onClick={() => userName && setSharingPR({ name: pr.name, weight: pr.allTimeMax, previousMax: pr.latestPrevMax })}
+                className="text-[10px] font-semibold bg-card-bg hover:bg-card-bg/70 rounded-md px-2 py-1 inline-flex items-center gap-1 transition"
+                disabled={!userName}
+              >
+                {pr.name} · <span className="text-amber-400">{pr.allTimeMax}kg</span>
+                {userName && <Share2 className="h-2.5 w-2.5 text-muted" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {sharingPR && userName && (
+        <PRShareModal
+          open
+          onClose={() => setSharingPR(null)}
+          exerciseName={sharingPR.name}
+          weight={sharingPR.weight}
+          userName={userName}
+          previousMax={sharingPR.previousMax || null}
+          avatarUrl={avatarUrl || null}
+        />
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {exercises.map(ex => {
           const latest = ex.sessions[ex.sessions.length - 1];
@@ -308,13 +381,26 @@ export function ExerciseProgressCharts({ logs }: { logs: ExerciseLog[] }) {
           const chartData = ex.sessions.map(s => ({
             date: new Date(s.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
             kg: s.weight,
+            isPR: s.isPR,
           }));
 
           return (
-            <div key={ex.id} className="bg-card-bg rounded-xl p-3">
-              <p className="text-[10px] font-bold truncate mb-1" title={ex.name}>{ex.name}</p>
+            <div
+              key={ex.id}
+              className={`rounded-xl p-3 transition-all ${
+                ex.latestIsPR
+                  ? "bg-gradient-to-br from-amber-500/10 to-card-bg border border-amber-500/30"
+                  : "bg-card-bg"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <p className="text-[10px] font-bold truncate flex-1" title={ex.name}>{ex.name}</p>
+                {ex.latestIsPR && <Trophy className="h-3 w-3 text-amber-400 shrink-0" />}
+              </div>
               <div className="flex items-baseline gap-1 mb-2">
-                <span className="text-sm font-black text-primary">{latest.weight}kg</span>
+                <span className={`text-sm font-black ${ex.latestIsPR ? "text-amber-400" : "text-primary"}`}>
+                  {latest.weight}kg
+                </span>
                 {diff !== 0 && (
                   <span className={`text-[10px] font-bold ${diff > 0 ? "text-primary" : "text-danger"}`}>
                     {diff > 0 ? "+" : ""}{diff}kg
@@ -330,9 +416,32 @@ export function ExerciseProgressCharts({ logs }: { logs: ExerciseLog[] }) {
                       contentStyle={{ background: "#1a1a2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", fontSize: "10px", padding: "4px 8px" }}
                       labelStyle={{ color: "#888", fontSize: "9px" }}
                       itemStyle={{ color: "#00f593" }}
-                      formatter={(value) => [`${value} kg`, ""]}
+                      formatter={(value, _name, props) => {
+                        const pr = (props?.payload as { isPR?: boolean })?.isPR;
+                        return [`${value} kg${pr ? " PR" : ""}`, ""];
+                      }}
                     />
-                    <Line type="monotone" dataKey="kg" stroke="#00f593" strokeWidth={1.5} dot={{ fill: "#00f593", r: 2 }} />
+                    <Line
+                      type="monotone"
+                      dataKey="kg"
+                      stroke={ex.latestIsPR ? "#fbbf24" : "#00f593"}
+                      strokeWidth={1.5}
+                      dot={(props: { cx?: number; cy?: number; payload?: { isPR?: boolean } }) => {
+                        const { cx, cy, payload } = props;
+                        if (cx == null || cy == null) return <g />;
+                        const isPR = payload?.isPR;
+                        return (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={isPR ? 3.5 : 2}
+                            fill={isPR ? "#fbbf24" : "#00f593"}
+                            stroke={isPR ? "#fde68a" : "none"}
+                            strokeWidth={isPR ? 1 : 0}
+                          />
+                        );
+                      }}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (

@@ -16,6 +16,7 @@ import {
   MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
   ExerciseProgressCharts,
 } from "@/components/progress-charts";
+import { PhotoCompareSlider } from "@/components/photo-compare-slider";
 import type { Sex, ActivityLevel } from "@/types";
 
 interface ProgressEntry {
@@ -39,7 +40,7 @@ interface SurveyBaseline {
 }
 
 export default function ProgresoPage() {
-  const { user, isExpired, hasActiveSubscription } = useAuth();
+  const { user, profile, isExpired, hasActiveSubscription } = useAuth();
   const [entries, setEntries] = useState<ProgressEntry[]>([]);
   const [baseline, setBaseline] = useState<SurveyBaseline | null>(null);
   const [macrosData, setMacrosData] = useState<{ calories: number; protein: number; carbs: number; fats: number } | null>(null);
@@ -308,7 +309,11 @@ export default function ProgresoPage() {
 
       {/* Exercise Progress */}
       <div className="mb-6">
-        <ExerciseProgressCharts logs={exerciseLogs} />
+        <ExerciseProgressCharts
+          logs={exerciseLogs}
+          userName={profile?.full_name || ""}
+          avatarUrl={null}
+        />
       </div>
 
       {entries.filter(e => e.weight).length === 0 && (
@@ -319,57 +324,59 @@ export default function ProgresoPage() {
         </div>
       )}
 
-      {/* Progress Photos: Before / After */}
+      {/* Progress Photos: interactive Before / After slider */}
       {(() => {
         const entriesWithPhotos = entries.filter(e => e.photo_front || e.photo_side || e.photo_back);
         if (entriesWithPhotos.length === 0) return null;
+        // entries is sorted desc; first-in-time is last in array
         const first = entriesWithPhotos[entriesWithPhotos.length - 1];
         const latest = entriesWithPhotos.length > 1 ? entriesWithPhotos[0] : null;
+        const daysDiff = latest
+          ? Math.floor((new Date(latest.date).getTime() - new Date(first.date).getTime()) / 86400000)
+          : null;
+        const weightDiff = latest && first.weight && latest.weight ? Number((latest.weight - first.weight).toFixed(1)) : null;
+
+        const views: { key: "photo_front" | "photo_side" | "photo_back"; label: string }[] = [
+          { key: "photo_front", label: "Frente" },
+          { key: "photo_side", label: "Perfil" },
+          { key: "photo_back", label: "Espalda" },
+        ];
+        const availableViews = views.filter(v => first[v.key] || latest?.[v.key]);
+
         return (
           <div className="glass-card rounded-2xl p-6 mb-6">
-            <h2 className="font-bold mb-4 flex items-center gap-2">
-              <Image className="h-5 w-5 text-primary" />
-              {latest ? "Antes / Despues" : "Fotos de Progreso"}
-            </h2>
-            <div className={`grid ${latest ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
-              <div>
-                <p className="text-xs text-muted mb-2 text-center">
-                  {latest ? "Inicio" : ""} — {new Date(first.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
-                </p>
-                <div className="grid grid-cols-3 gap-1">
-                  {[first.photo_front, first.photo_side, first.photo_back].map((path, i) => (
-                    <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
-                      {path && photoUrls[path] ? (
-                        <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Camera className="h-4 w-4 text-muted" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold flex items-center gap-2">
+                <Image className="h-5 w-5 text-primary" />
+                {latest ? "Antes / Despues" : "Fotos de Progreso"}
+              </h2>
               {latest && (
-                <div>
-                  <p className="text-xs text-muted mb-2 text-center">
-                    Actual — {new Date(latest.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
-                  </p>
-                  <div className="grid grid-cols-3 gap-1">
-                    {[latest.photo_front, latest.photo_side, latest.photo_back].map((path, i) => (
-                      <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
-                        {path && photoUrls[path] ? (
-                          <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Camera className="h-4 w-4 text-muted" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <span className="text-[10px] text-muted">
+                  {new Date(first.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                  {" → "}
+                  {new Date(latest.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                </span>
               )}
+            </div>
+
+            <div className={`grid ${availableViews.length > 1 ? "sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"} gap-4`}>
+              {availableViews.map(v => {
+                const beforePath = first[v.key];
+                const afterPath = latest?.[v.key] || null;
+                return (
+                  <div key={v.key}>
+                    <p className="text-xs font-bold text-muted mb-2 text-center uppercase tracking-wider">{v.label}</p>
+                    <PhotoCompareSlider
+                      beforeUrl={beforePath ? photoUrls[beforePath] || null : null}
+                      afterUrl={afterPath ? photoUrls[afterPath] || null : null}
+                      beforeLabel="Antes"
+                      afterLabel="Actual"
+                      weightDiff={v.key === "photo_front" ? weightDiff : null}
+                      daysDiff={v.key === "photo_front" ? daysDiff : null}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         );

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trophy, Flame, Zap, Medal, Star, Crown, Target, Award } from "lucide-react";
+import { Trophy, Flame, Zap, Medal, Star, Crown, Target, Award, Share2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getLevelForXp, LEVELS } from "@/lib/gamification";
+import { CommunityFeed } from "@/components/community-feed";
+import { RankingShareModal } from "@/components/ranking-share-modal";
 
 interface RankingEntry {
   rank: number;
@@ -43,11 +45,12 @@ const RANK_ICONS = [Crown, Medal, Award];
 const RANK_COLORS = ["text-yellow-400", "text-gray-300", "text-orange-400"];
 
 export default function RankingPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [tab, setTab] = useState<"weekly" | "alltime">("weekly");
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [gamification, setGamification] = useState<GamificationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -107,6 +110,45 @@ export default function RankingPage() {
           )}
         </div>
       )}
+
+      {/* Share my ranking CTA */}
+      {gamification && myRank && (
+        <button
+          onClick={() => setShareOpen(true)}
+          className="w-full mb-6 glass-card rounded-2xl p-3 flex items-center justify-between hover:border-primary/30 border border-transparent transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+              <Share2 className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold">Compartir mi puesto</p>
+              <p className="text-[10px] text-muted">Genera imagen para IG Stories</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-primary">#{myRank.rank}</span>
+        </button>
+      )}
+
+      {gamification && myRank && profile && (
+        <RankingShareModal
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          userName={profile.full_name || "Atleta"}
+          rank={myRank.rank}
+          totalUsers={rankings.length}
+          level={gamification.level}
+          levelName={gamification.levelName}
+          xp={gamification.xp}
+          streak={gamification.streak}
+          weekXp={myRank.xp}
+        />
+      )}
+
+      {/* Community achievements feed */}
+      <div className="mb-6">
+        <CommunityFeed limit={10} />
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-4">

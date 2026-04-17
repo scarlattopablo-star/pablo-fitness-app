@@ -10,6 +10,7 @@ import { PLANS, DURATION_LABELS, DURATION_DESCRIPTIONS, getDiscountPercentage, f
 import { useState, useEffect } from "react";
 import type { Duration } from "@/types";
 import CountdownTimer from "@/components/countdown-timer";
+import { ScarcityCounter } from "@/components/scarcity-counter";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
@@ -71,6 +72,9 @@ export default function PlanesPage() {
             <span>Campeon Fisicoculturismo 2019</span>
           </div>
         </div>
+
+        {/* SCARCITY — cupos limitados este mes */}
+        <ScarcityCounter />
 
         {/* ROTATING TESTIMONIAL */}
         <TestimonioRotativo />
