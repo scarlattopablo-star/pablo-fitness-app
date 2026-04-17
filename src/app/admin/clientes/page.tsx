@@ -34,22 +34,26 @@ export default function ClientesPage() {
 
   const loadClients = async () => {
     try {
-      const [profilesRes, qrRes, plansRes] = await Promise.all([
+      const [profilesRes, qrRes, plansRes, subsRes] = await Promise.all([
         supabase.from("profiles").select("*")
           .eq("is_admin", false).is("deleted_at", null)
           .order("created_at", { ascending: false }),
         supabase.from("free_access_codes").select("used_by, plan_slug")
           .eq("used", true).not("used_by", "is", null),
         supabase.from("training_plans").select("user_id, plan_approved"),
+        supabase.from("subscriptions").select("user_id, plan_slug")
+          .eq("plan_slug", "direct-client"),
       ]);
 
       const data = profilesRes.data;
       const qrCodes = qrRes.data;
       const plans = plansRes.data;
 
-      const directClientIds = new Set(
-        qrCodes?.filter(c => c.plan_slug === "direct-client").map(c => c.used_by) || []
-      );
+      // Direct clients: via QR code OR via subscription converted manually
+      const directClientIds = new Set([
+        ...(qrCodes?.filter(c => c.plan_slug === "direct-client").map(c => c.used_by) || []),
+        ...(subsRes.data?.map((s: { user_id: string }) => s.user_id) || []),
+      ]);
       const freeClientIds = new Set(
         qrCodes?.filter(c => c.plan_slug !== "direct-client").map(c => c.used_by) || []
       );
