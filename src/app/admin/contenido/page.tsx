@@ -343,7 +343,7 @@ export default function ContenidoPage() {
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const sendFeatureAnnouncement = async () => {
-    if (!confirm("Esto enviará un email y notificación push a TODOS los clientes activos anunciando las nuevas funciones. ¿Confirmar?")) return;
+    if (!confirm("Esto enviará email + mensaje en el chat de la app + push notification a TODOS los clientes activos. ¿Confirmar?")) return;
     setSending(true);
     setSendResult(null);
     try {
@@ -357,7 +357,7 @@ export default function ContenidoPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSendResult({ ok: true, msg: `✓ Enviado a ${data.results?.email?.sent ?? 0} clientes` });
+        setSendResult({ ok: true, msg: data.summary || `✓ Enviado a ${data.results?.email?.sent ?? 0} clientes` });
       } else {
         setSendResult({ ok: false, msg: data.error || "Error desconocido" });
       }

@@ -6,6 +6,24 @@ import { Resend } from "resend";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f"; // Pablo
+
+function buildChatMessage(name: string): string {
+  return `Hola ${name}! 👋 Acabo de lanzar varias funciones nuevas en la app que te van a cambiar el entreno:
+
+🏆 *Compartí tus records* — cuando rompés un PR, la app te genera una imagen lista para tu Instagram Story con 1 tap.
+
+🤖 *IA analiza tu técnica* — grabás 5 segundos de cualquier ejercicio y la IA te da puntaje, correcciones y cues al instante. Lo encontrás en la sección Ejercicios.
+
+🎯 *Reto del mes* — desafío mensual donde competís con todos los clientes por un premio real. Ya podés ver el top 5 en tu dashboard.
+
+📊 *Sugerencia de peso inteligente* — la app te dice exactamente cuánto poner en la barra basándose en tus sesiones anteriores.
+
+📸 *Slider antes/después* — en Progreso podés deslizar entre tus fotos para ver tu transformación.
+
+Entrá a la app y probalo todo. Cualquier duda escribime acá!`;
+}
+
 function buildEmail(name: string): string {
   return `<!DOCTYPE html>
 <html>
@@ -145,13 +163,14 @@ export async function POST(request: NextRequest) {
     const results = {
       email: { sent: 0, failed: 0 },
       push: { sent: 0, failed: 0 },
+      chat: { sent: 0, failed: 0 },
     };
 
     for (const profile of profiles ?? []) {
       const firstName = (profile.full_name || "").split(" ")[0] || "Usuario";
       const email = profile.email;
 
-      // Send email
+      // 1. Email
       if (email) {
         try {
           await resend.emails.send({
@@ -164,11 +183,55 @@ export async function POST(request: NextRequest) {
         } catch {
           results.email.failed++;
         }
-        // Rate limit
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 150));
       }
 
-      // Send push notification
+      // 2. Chat message enviado como Pablo
+      try {
+        const userId = profile.id;
+        const [user1, user2] = userId < ADMIN_ID
+          ? [userId, ADMIN_ID]
+          : [ADMIN_ID, userId];
+
+        let conversationId: string;
+        const { data: existing } = await supabaseAdmin
+          .from("conversations")
+          .select("id")
+          .eq("user1_id", user1)
+          .eq("user2_id", user2)
+          .single();
+
+        if (existing) {
+          conversationId = existing.id;
+        } else {
+          const { data: created, error: convErr } = await supabaseAdmin
+            .from("conversations")
+            .insert({ user1_id: user1, user2_id: user2 })
+            .select("id")
+            .single();
+          if (convErr || !created) throw convErr || new Error("no conv");
+          conversationId = created.id;
+        }
+
+        const chatText = buildChatMessage(firstName);
+        const { error: msgErr } = await supabaseAdmin.from("messages").insert({
+          conversation_id: conversationId,
+          sender_id: ADMIN_ID,
+          content: chatText,
+        });
+        if (msgErr) throw msgErr;
+
+        await supabaseAdmin.from("conversations").update({
+          last_message_at: new Date().toISOString(),
+          last_message_preview: chatText.substring(0, 100),
+        }).eq("id", conversationId);
+
+        results.chat.sent++;
+      } catch {
+        results.chat.failed++;
+      }
+
+      // 3. Push notification (link al chat para que lo vean)
       try {
         const { data: subs } = await supabaseAdmin
           .from("push_subscriptions")
@@ -180,9 +243,9 @@ export async function POST(request: NextRequest) {
             await webpush.sendNotification(
               { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
               JSON.stringify({
-                title: "Hay novedades en la app! 🚀",
-                body: "IA para técnica, compartir PRs, retos del mes y más. Entrá a ver.",
-                url: "/dashboard",
+                title: "Pablo te mandó un mensaje 💬",
+                body: "Hay funciones nuevas en la app. Abrí el chat para ver todo.",
+                url: "/dashboard/chat",
               })
             );
             results.push.sent++;
@@ -199,7 +262,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, results });
+    return NextResponse.json({
+      success: true,
+      results,
+      summary: `Email: ${results.email.sent} enviados · Chat: ${results.chat.sent} enviados · Push: ${results.push.sent} enviados`,
+    });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
