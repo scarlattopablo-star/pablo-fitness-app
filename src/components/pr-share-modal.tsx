@@ -34,6 +34,10 @@ export function PRShareModal({
   useEffect(() => {
     if (!open || !canvasRef.current) return;
 
+    // Reset state every time deps change so modal is re-usable
+    setRendered(false);
+    setSharing(false);
+
     const canvas = canvasRef.current;
     canvas.width = 1080;
     canvas.height = 1920;
@@ -155,25 +159,35 @@ export function PRShareModal({
   const handleShare = async () => {
     if (!canvasRef.current) return;
     setSharing(true);
-    try {
-      canvasRef.current.toBlob(async (blob) => {
-        if (!blob) { setSharing(false); return; }
+
+    // Safety timeout — if toBlob never fires or share hangs, re-enable button
+    const safety = setTimeout(() => setSharing(false), 15000);
+
+    canvasRef.current.toBlob(async (blob) => {
+      try {
+        if (!blob) return;
         const file = new File([blob], `PR-${exerciseName}.png`, { type: "image/png" });
         const nav = navigator as Navigator & { canShare?: (data: { files?: File[] }) => boolean };
         if (nav.canShare && nav.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `Nuevo PR: ${exerciseName} ${weight}kg`,
-            text: `Nuevo record personal con Pablo Scarlatto Entrenamientos`,
-          });
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Nuevo PR: ${exerciseName} ${weight}kg`,
+              text: `Nuevo record personal con Pablo Scarlatto Entrenamientos`,
+            });
+          } catch (err: unknown) {
+            // User cancelled or permission denied — fallback to download
+            const name = (err as { name?: string })?.name;
+            if (name !== "AbortError") handleDownload();
+          }
         } else {
           handleDownload();
         }
+      } finally {
+        clearTimeout(safety);
         setSharing(false);
-      }, "image/png");
-    } catch {
-      setSharing(false);
-    }
+      }
+    }, "image/png");
   };
 
   return (
