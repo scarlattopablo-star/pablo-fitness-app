@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Download, Sparkles, RefreshCw, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 
-type Template = "ia-tecnica" | "pr-generic" | "cupos-limitados" | "reto-mes";
+type Template = "ia-tecnica" | "pr-generic" | "cupos-limitados" | "reto-mes" | "ai-feed" | "ai-story";
 
 interface TemplateDef {
   id: Template;
@@ -325,6 +325,139 @@ const TEMPLATES: TemplateDef[] = [
       ctx.fillText(f.cta, 540, 990);
     },
   },
+  // ── AI GENERATED FEED ──────────────────────────────────────────────
+  {
+    id: "ai-feed",
+    name: "IA Generado (feed)",
+    format: "square",
+    fields: [
+      { key: "eyebrow", label: "Etiqueta arriba", default: "TIP DE ENTRENAMIENTO" },
+      { key: "headline", label: "Titular", default: "GENERA CON IA →" },
+      { key: "body", label: "Cuerpo", default: "Elegí una categoría y apretá Generar." },
+      { key: "extra", label: "Dato extra (opcional)", default: "" },
+      { key: "cta", label: "CTA", default: "Guardalo y ponlo en práctica" },
+    ],
+    render: (ctx, f) => {
+      const W = 1080, H = 1080;
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#0a0a0a"); bg.addColorStop(1, "#000");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      // Lime glow top-left
+      const glow = ctx.createRadialGradient(200, 200, 50, 200, 200, 700);
+      glow.addColorStop(0, "rgba(205,255,0,0.14)"); glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+      // Eyebrow pill
+      ctx.fillStyle = "#CDFF00";
+      ctx.font = "bold 30px system-ui";
+      ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillRect(60, 90, 8, 50);
+      ctx.fillText(f.eyebrow || "", 82, 98);
+
+      // Headline
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 76px system-ui";
+      const headY = wrapText(ctx, f.headline || "", 60, 200, 960, 86) + 200;
+
+      // Divider
+      ctx.fillStyle = "#222";
+      ctx.fillRect(60, headY + 20, 960, 2);
+
+      // Body
+      ctx.fillStyle = "#ccc";
+      ctx.font = "400 36px system-ui";
+      const bodyEndY = wrapText(ctx, f.body || "", 60, headY + 50, 960, 50) + headY + 50;
+
+      // Extra fact (if any)
+      if (f.extra && f.extra.trim()) {
+        ctx.fillStyle = "#555";
+        ctx.fillRect(60, bodyEndY + 20, 960, 1);
+        ctx.fillStyle = "#CDFF00";
+        ctx.font = "500 28px system-ui";
+        wrapText(ctx, f.extra, 60, bodyEndY + 38, 960, 38);
+      }
+
+      // Footer
+      ctx.fillStyle = "#CDFF00";
+      ctx.font = "bold 28px system-ui";
+      ctx.textAlign = "left";
+      ctx.fillText(f.cta || "", 60, 960);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#444";
+      ctx.font = "500 24px system-ui";
+      ctx.fillText("PABLO SCARLATTO", 1020, 960);
+      ctx.fillStyle = "#333";
+      ctx.font = "400 20px system-ui";
+      ctx.fillText("@pabloscarlattoentrenamientos", 1020, 990);
+    },
+  },
+  // ── AI GENERATED STORY ─────────────────────────────────────────────
+  {
+    id: "ai-story",
+    name: "IA Generado (story)",
+    format: "story",
+    fields: [
+      { key: "eyebrow", label: "Etiqueta arriba", default: "TIP DE ENTRENAMIENTO" },
+      { key: "headline", label: "Titular", default: "GENERA CON IA →" },
+      { key: "body", label: "Cuerpo", default: "Elegí una categoría y apretá Generar." },
+      { key: "extra", label: "Dato extra (opcional)", default: "" },
+      { key: "cta", label: "CTA", default: "Guardalo y ponlo en práctica" },
+    ],
+    render: (ctx, f) => {
+      const W = 1080, H = 1920;
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#0a0a0a"); bg.addColorStop(1, "#000");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      const glow = ctx.createRadialGradient(540, 700, 100, 540, 700, 900);
+      glow.addColorStop(0, "rgba(205,255,0,0.15)"); glow.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+      // Top label
+      ctx.fillStyle = "#CDFF00";
+      ctx.fillRect(80, 200, 8, 60);
+      ctx.font = "bold 36px system-ui";
+      ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText(f.eyebrow || "", 104, 213);
+
+      // Big headline
+      ctx.fillStyle = "#fff";
+      ctx.font = "900 96px system-ui";
+      wrapText(ctx, f.headline || "", 80, 360, 920, 108);
+
+      // Divider
+      ctx.fillStyle = "#1a1a1a";
+      ctx.fillRect(80, 740, 920, 3);
+
+      // Body
+      ctx.fillStyle = "#bbb";
+      ctx.font = "400 44px system-ui";
+      wrapText(ctx, f.body || "", 80, 790, 920, 60);
+
+      // Extra
+      if (f.extra && f.extra.trim()) {
+        ctx.fillStyle = "#CDFF00";
+        ctx.font = "600 34px system-ui";
+        wrapText(ctx, f.extra, 80, 1100, 920, 46);
+      }
+
+      // CTA
+      ctx.fillStyle = "#CDFF00";
+      ctx.font = "bold 40px system-ui";
+      ctx.fillText(f.cta || "", 80, 1650);
+
+      // Branding
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#CDFF00";
+      ctx.font = "900 34px system-ui";
+      ctx.fillText("PABLO SCARLATTO", 1000, 1740);
+      ctx.fillStyle = "#555";
+      ctx.font = "400 26px system-ui";
+      ctx.fillText("@pabloscarlattoentrenamientos", 1000, 1780);
+    },
+  },
 ];
 
 function initFields(id: Template): Record<string, string> {
@@ -341,6 +474,44 @@ export default function ContenidoPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [aiCategory, setAiCategory] = useState("motivacion");
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiFormat, setAiFormat] = useState<"square" | "story">("square");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  const generateWithAI = async () => {
+    setAiGenerating(true);
+    setAiError("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/generate-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ category: aiCategory, topic: aiTopic || undefined, format: aiFormat }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAiError(data.error || "Error al generar"); return; }
+
+      // Switch to the right template and fill fields
+      const targetId: Template = aiFormat === "story" ? "ai-story" : "ai-feed";
+      setTemplateId(targetId);
+      setFields({
+        eyebrow: data.eyebrow || "",
+        headline: data.headline || "",
+        body: data.body || "",
+        extra: data.extra || "",
+        cta: data.cta || "",
+      });
+    } catch (e) {
+      setAiError(String(e));
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   const sendFeatureAnnouncement = async () => {
     if (!confirm("Esto enviará email + mensaje en el chat de la app + push notification a TODOS los clientes activos. ¿Confirmar?")) return;
@@ -407,6 +578,70 @@ export default function ContenidoPage() {
         <h1 className="text-2xl font-black">Generador de contenido</h1>
       </div>
       <p className="text-sm text-muted mb-6">Creá imágenes listas para Instagram desde plantillas.</p>
+
+      {/* ── AI GENERATOR ─────────────────────────── */}
+      <div className="mb-6 p-4 rounded-2xl border border-primary/40 bg-primary/5">
+        <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" /> Generar contenido con IA
+        </h2>
+        <div className="grid sm:grid-cols-3 gap-3 mb-3">
+          {/* Category */}
+          <div>
+            <label className="text-xs text-muted block mb-1">Categoría</label>
+            <select
+              value={aiCategory}
+              onChange={e => setAiCategory(e.target.value)}
+              className="w-full p-2.5 rounded-lg bg-card-bg border border-card-border text-sm focus:border-primary outline-none"
+            >
+              <option value="motivacion">💪 Motivación</option>
+              <option value="tip-entreno">🏋️ Tip de entrenamiento</option>
+              <option value="tip-nutricion">🥗 Tip de nutrición</option>
+              <option value="dato">🧠 Dato curioso</option>
+              <option value="pregunta">❓ Pregunta interactiva</option>
+              <option value="mito">⚡ Mito vs Realidad</option>
+              <option value="antes-despues">📸 Antes / Después</option>
+            </select>
+          </div>
+          {/* Topic */}
+          <div>
+            <label className="text-xs text-muted block mb-1">Tema específico (opcional)</label>
+            <input
+              type="text"
+              value={aiTopic}
+              onChange={e => setAiTopic(e.target.value)}
+              placeholder="ej: sentadilla, proteína, descanso..."
+              className="w-full p-2.5 rounded-lg bg-card-bg border border-card-border text-sm focus:border-primary outline-none"
+            />
+          </div>
+          {/* Format */}
+          <div>
+            <label className="text-xs text-muted block mb-1">Formato</label>
+            <div className="flex gap-2">
+              {(["square", "story"] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setAiFormat(f)}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold border transition-all ${
+                    aiFormat === f ? "border-primary bg-primary/10 text-primary" : "border-card-border text-muted"
+                  }`}
+                >
+                  {f === "square" ? "Feed 1:1" : "Story 9:16"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={generateWithAI}
+          disabled={aiGenerating}
+          className="gradient-primary text-black font-bold py-2.5 px-6 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-2"
+        >
+          <Sparkles className="h-4 w-4" />
+          {aiGenerating ? "Generando..." : "Generar con IA"}
+        </button>
+        {aiError && <p className="mt-2 text-xs text-red-400">{aiError}</p>}
+        <p className="mt-2 text-[11px] text-muted">Genera el texto y carga automáticamente el template. Podés editar antes de descargar.</p>
+      </div>
 
       {/* Template selector */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
