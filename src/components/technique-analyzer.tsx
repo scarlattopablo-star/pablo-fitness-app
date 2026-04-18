@@ -67,7 +67,11 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
     // iOS CRITICAL: play briefly so the decoder actually loads frames
     // Without this, canvas.drawImage() renders black on iOS
     try {
-      await video.play();
+      // Race play() against a 2s timeout — some browsers never resolve the promise
+      await Promise.race([
+        video.play(),
+        new Promise<void>(r => setTimeout(r, 2000)),
+      ]);
       await new Promise(r => setTimeout(r, 400)); // let it decode a few frames
       video.pause();
     } catch {
@@ -82,7 +86,8 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) { setStatus("error"); setError("Error al procesar"); return; }
 
-    const W = 640;
+    // 480px width keeps file sizes small (~20-40KB each) for fast API response
+    const W = 480;
     const aspect = (video.videoHeight > 0 && video.videoWidth > 0)
       ? video.videoHeight / video.videoWidth
       : 16 / 9;
@@ -96,14 +101,16 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push(canvas.toDataURL("image/jpeg", 0.8));
     } else {
-      const count = Math.min(5, Math.max(3, Math.floor(duration)));
+      // Max 3 frames keeps request size small and API fast (avoids Vercel timeout)
+      const count = Math.min(3, Math.max(2, Math.floor(duration)));
       const timestamps = Array.from({ length: count }, (_, i) => ((i + 0.5) / count) * duration);
       for (const t of timestamps) {
         await seekTo(video, t);
         // Small delay after seek for iOS to actually render the frame
         await new Promise(r => setTimeout(r, 150));
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        frames.push(canvas.toDataURL("image/jpeg", 0.8));
+        // Quality 0.65 — good enough for technique analysis, ~20-40KB per frame
+        frames.push(canvas.toDataURL("image/jpeg", 0.65));
       }
     }
 

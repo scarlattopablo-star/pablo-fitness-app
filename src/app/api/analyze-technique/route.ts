@@ -6,6 +6,9 @@ import Anthropic from "@anthropic-ai/sdk";
 // Body: { exerciseName: string, frames: string[] } where frames are base64 JPEG data URLs
 // Returns: { analysis: { score, positives, corrections, cues } }
 
+// Give the function enough time — image analysis can take 8-15s
+export const maxDuration = 30;
+
 interface Frame {
   type: "image";
   source: { type: "base64"; media_type: "image/jpeg" | "image/png"; data: string };
@@ -54,16 +57,15 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(frames) || frames.length === 0) {
       return NextResponse.json({ error: "Faltan frames" }, { status: 400 });
     }
-    if (frames.length > 6) {
-      return NextResponse.json({ error: "Demasiados frames (max 6)" }, { status: 400 });
-    }
+    // Limit to 3 frames max to stay well within function timeout
+    const limitedFrames = frames.slice(0, 3);
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({ error: "AI no configurado" }, { status: 500 });
     }
 
     // Parse data URLs into Anthropic content blocks
-    const imageBlocks: Frame[] = frames.map((dataUrl) => {
+    const imageBlocks: Frame[] = limitedFrames.map((dataUrl) => {
       const match = /^data:image\/(jpeg|jpg|png);base64,(.+)$/.exec(dataUrl);
       if (!match) throw new Error("Formato de imagen invalido");
       const mt = match[1] === "png" ? "image/png" : "image/jpeg";
@@ -76,8 +78,8 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 800,
+      model: "claude-opus-4-5",
+      max_tokens: 600,
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -106,6 +108,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ analysis });
   } catch (err) {
-    return NextResponse.json({ error: `Error: ${err}` }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
