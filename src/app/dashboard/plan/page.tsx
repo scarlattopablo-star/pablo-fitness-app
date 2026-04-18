@@ -108,7 +108,7 @@ function PlanContent() {
   const initialView = (searchParams.get("v") === "entrenamiento" || searchParams.get("v") === "nutricion")
     ? searchParams.get("v") as "entrenamiento" | "nutricion"
     : "overview";
-  const { user, subscription, isExpired, hasActiveSubscription } = useAuth();
+  const { user, subscription, isExpired, hasActiveSubscription, loading: authLoading } = useAuth();
   const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">(initialView);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
@@ -150,11 +150,15 @@ function PlanContent() {
   const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return; // Esperar que auth termine antes de actuar
     if (user) {
       loadMacros();
       loadExerciseLogs();
+    } else {
+      // Auth terminó pero no hay user — dejar de cargar (el layout redirige al login)
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   // Realtime subscription: re-fetch when admin updates plans
   useEffect(() => {
@@ -400,7 +404,7 @@ function PlanContent() {
       const [surveyRes, trainingRes, nutritionRes] = await Promise.all([
         supabase.from("surveys")
           .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee")
-          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).single(),
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("training_plans")
           .select("data, plan_approved")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
