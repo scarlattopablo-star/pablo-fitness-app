@@ -26,7 +26,9 @@ export default function EncuestaDirectaPage() {
   const [error, setError] = useState("");
   const [userId, setUserId] = useState("");
   const [step, setStep] = useState(1);
-  const [detectedPlanSlug, setDetectedPlanSlug] = useState<PlanSlug>("direct-client" as PlanSlug);
+  // Default to "quema-grasa" for free trial users — auto-approved, no waiting for admin
+  // Only set to "direct-client" when user actually has a direct-client access code
+  const [detectedPlanSlug, setDetectedPlanSlug] = useState<PlanSlug>("quema-grasa" as PlanSlug);
   const [nutritionalGoal, setNutritionalGoal] = useState<NutritionalGoal | "">("");
   const needsGoal = PLANS_NEEDING_GOAL.includes(detectedPlanSlug);
   const totalSteps = needsGoal ? 6 : 5;
@@ -95,7 +97,10 @@ export default function EncuestaDirectaPage() {
   }, [router]);
 
   const handleFinishSurvey = async () => {
-    if (!userId || !sex || !activityLevel) return;
+    if (!userId) { setError("Sesión expirada. Por favor recargá la página."); return; }
+    if (!sex) { setError("Falta seleccionar sexo. Volvé al paso anterior."); return; }
+    if (!activityLevel) { setError("Falta seleccionar nivel de actividad. Volvé al paso anterior."); return; }
+    if (!weight || !height || !age) { setError("Faltan datos personales (peso, altura o edad). Volvé al paso anterior."); return; }
     setLoading(true);
     setError("");
 
@@ -141,11 +146,17 @@ export default function EncuestaDirectaPage() {
     });
 
     // Auto-generate training + nutrition plans based on survey data
-    await fetch("/api/generate-plans", {
+    const plansRes = await fetch("/api/generate-plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, planSlug }),
     });
+    if (!plansRes.ok) {
+      const plansErr = await plansRes.json().catch(() => ({ error: "unknown" }));
+      setError(`Error al generar tu plan: ${plansErr.error || "intenta de nuevo"}`);
+      setLoading(false);
+      return;
+    }
 
     setLoading(false);
     setStep(needsGoal ? 6 : 5);
@@ -179,14 +190,17 @@ export default function EncuestaDirectaPage() {
           <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4">
             <Check className="h-8 w-8 text-black" />
           </div>
-          <h1 className="text-2xl font-black mb-2">¡Encuesta Completa!</h1>
-          <p className="text-muted mb-4">Tu entrenador va a preparar tu plan personalizado de entrenamiento y nutricion.</p>
-          <p className="text-sm text-muted mb-6">Ingresa a tu plan para ver tus macros y descargar la app.</p>
+          <h1 className="text-2xl font-black mb-2">¡Todo listo!</h1>
+          <p className="text-muted mb-4">
+            {detectedPlanSlug === "direct-client"
+              ? "Tu entrenador va a revisar tu encuesta y personalizar tu plan. Te avisamos cuando esté listo."
+              : "Tu plan de entrenamiento y nutrición ya está generado. ¡Entrá y empezá hoy!"}
+          </p>
           <a
-            href="/dashboard/bienvenida"
+            href="/dashboard/plan"
             className="inline-block gradient-primary text-black font-bold px-8 py-3 rounded-xl hover:opacity-90 mb-4 w-full text-center"
           >
-            Empezar mi experiencia
+            Ver mi plan
           </a>
           <div className="glass-card rounded-xl p-4 text-left mt-3">
             <p className="font-bold text-sm mb-2">Descarga la app en tu celular</p>
@@ -463,6 +477,12 @@ export default function EncuestaDirectaPage() {
               <p className="text-sm text-primary font-medium">Tus fotos son privadas</p>
               <p className="text-xs text-muted mt-1">Solo vos y tu entrenador pueden verlas.</p>
             </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-4">
+                <p className="text-sm text-red-400 font-medium">{error}</p>
+              </div>
+            )}
 
             <button onClick={handleFinishSurvey}
               className="w-full gradient-primary text-black font-bold py-4 rounded-xl hover:opacity-90 flex items-center justify-center gap-2 mb-3">
