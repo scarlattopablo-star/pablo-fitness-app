@@ -106,8 +106,8 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
       const timestamps = Array.from({ length: count }, (_, i) => ((i + 0.5) / count) * duration);
       for (const t of timestamps) {
         await seekTo(video, t);
-        // Small delay after seek for iOS to actually render the frame
-        await new Promise(r => setTimeout(r, 150));
+        // iOS needs more time after seeked fires to actually decode the frame into memory
+        await new Promise(r => setTimeout(r, 300));
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         // Quality 0.65 — good enough for technique analysis, ~20-40KB per frame
         frames.push(canvas.toDataURL("image/jpeg", 0.65));
@@ -163,14 +163,22 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
         </div>
 
         <div className="p-4">
-          {/* Video element — tiny visible pixel so iOS decodes properly */}
+          {/* Video element — must be a real size off-screen so iOS decoder works.
+               iOS will NOT decode frames for a 1x1px or display:none video element. */}
           <video
             ref={videoRef}
-            className="absolute opacity-0 pointer-events-none"
-            style={{ width: 1, height: 1 }}
             playsInline
             muted
             preload="auto"
+            style={{
+              position: "fixed",
+              top: "-9999px",
+              left: "-9999px",
+              width: "320px",
+              height: "568px",
+              opacity: 0,
+              pointerEvents: "none",
+            }}
           />
 
           {status === "idle" && (
