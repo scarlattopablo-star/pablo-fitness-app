@@ -12,7 +12,7 @@ import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage, formatPrice } fr
 import CountdownTimer from "@/components/countdown-timer";
 import type { Duration } from "@/types";
 
-const PROMO_END = "2026-04-30T23:59:59-03:00";
+const PROMO_END = "2026-05-31T23:59:59-03:00";
 
 const CHECKOUT_TESTIMONIOS = [
   { name: "Martin R.", text: "Baje 12kg en 4 meses. El seguimiento personalizado hace toda la diferencia." },

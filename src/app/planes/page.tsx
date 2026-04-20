@@ -19,8 +19,8 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 const DURATIONS: Duration[] = ["1-mes", "3-meses", "6-meses", "1-ano"];
 
-// Oferta de lanzamiento — fin de abril 2026
-const PROMO_END = "2026-04-30T23:59:59-03:00";
+// Oferta de lanzamiento — extendida hasta fin de mayo 2026
+const PROMO_END = "2026-05-31T23:59:59-03:00";
 
 const TESTIMONIOS_MINI = [
   { name: "Martin R.", text: "Baje 12kg en 4 meses. El plan es brutal.", avatar: "/testimonials/martin.jpg" },

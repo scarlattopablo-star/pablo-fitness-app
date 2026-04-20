@@ -65,9 +65,9 @@ function buildMessages(): UserMessage[] {
       ...u,
       type: "trial",
       pushTitle: `${u.name}, tu prueba se acaba pronto`,
-      pushBody: "30% OFF esta semana en el plan trimestral. No te lo pierdas!",
-      chatMessage: `Hola ${u.name}! Soy Pablo. Vi que estás usando la app, qué bueno! Como te viene yendo?\n\nTe cuento que esta semana tengo una promo especial: 30% OFF en el plan trimestral, te queda en $4.700/mes con rutina personalizada, seguimiento y todo el acceso completo.\n\nSi te interesa escribime y te paso el link directo para activarlo. Dale que son pocos lugares a este precio!`,
-      emailSubject: `${u.name}, 30% OFF esta semana - Pablo Scarlatto Entrenamientos`,
+      pushBody: "Primer mes GRATIS en cualquier plan — sin tarjeta. No te lo pierdas!",
+      chatMessage: `Hola ${u.name}! Soy Pablo. Vi que estás usando la app, qué bueno! Como te viene yendo?\n\nTe cuento que tengo una promo activa hasta fin de mayo: PRIMER MES GRATIS en cualquier plan, sin tarjeta de crédito. Entrás, probás el plan completo personalizado y recién al segundo mes se cobra.\n\nSi te interesa escribime y te paso el link directo para activarlo. Dale que son pocos lugares este mes!`,
+      emailSubject: `${u.name}, Primer mes GRATIS — sin tarjeta`,
       emailBody: buildTrialEmail(u.name),
     });
   }
@@ -113,16 +113,17 @@ function buildTrialEmail(name: string): string {
     <p style="color:#888;font-size:14px;">Entrenamientos Personalizados</p>
   </div>
   <h2 style="color:#fff;">Hola ${name}!</h2>
-  <p style="color:#ccc;line-height:1.6;">Vi que estás probando la app y me encanta. Quería contarte que <strong style="color:#10b981;">esta semana tengo 30% OFF</strong> en el plan trimestral.</p>
-  <div style="background:#1a1a2e;border:1px solid #10b981;border-radius:12px;padding:20px;margin:20px 0;text-align:center;">
-    <p style="color:#888;margin:0 0 5px;">Plan Trimestral con 30% OFF</p>
-    <p style="font-size:28px;font-weight:bold;color:#10b981;margin:0;">$4.700/mes</p>
+  <p style="color:#ccc;line-height:1.6;">Vi que estás probando la app y me encanta. Quería contarte que <strong style="color:#CDFF00;">tenés el PRIMER MES GRATIS</strong> en cualquier plan — sin tarjeta de crédito.</p>
+  <div style="background:#1a1a2e;border:1px solid #CDFF00;border-radius:12px;padding:20px;margin:20px 0;text-align:center;">
+    <p style="color:#888;margin:0 0 5px;">Oferta de lanzamiento</p>
+    <p style="font-size:28px;font-weight:bold;color:#CDFF00;margin:0;">Primer mes GRATIS</p>
     <p style="color:#888;font-size:13px;margin:5px 0 0;">Rutina personalizada + Videos + Seguimiento + Chat directo</p>
+    <p style="color:#888;font-size:13px;margin:5px 0 0;">Sin tarjeta. Recién al segundo mes se cobra.</p>
   </div>
   <div style="text-align:center;margin:30px 0;">
-    <a href="https://pabloscarlattoentrenamientos.com/planes" style="background:#10b981;color:#000;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;">Ver Planes</a>
+    <a href="https://pabloscarlattoentrenamientos.com/planes" style="background:#CDFF00;color:#000;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;">Ver Planes</a>
   </div>
-  <p style="color:#888;font-size:13px;text-align:center;">Son pocos lugares a este precio. No te lo pierdas!</p>
+  <p style="color:#888;font-size:13px;text-align:center;">Oferta hasta fin de mayo. Pocos lugares este mes!</p>
   <hr style="border:none;border-top:1px solid #333;margin:30px 0;">
   <p style="color:#666;font-size:12px;text-align:center;">Pablo Scarlatto Entrenamientos<br>pabloscarlattoentrenamientos.com</p>
 </div>
