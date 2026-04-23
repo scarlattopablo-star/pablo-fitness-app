@@ -266,7 +266,22 @@ export default function ClienteDetailPage({
       setPasteMsg("✓ Rutina pegada");
       setTimeout(() => setPasteMsg(""), 3000);
     } catch (err) {
-      setPasteMsg("Error: " + (err instanceof Error ? err.message : String(err)));
+      // Blindaje total: extraemos el mensaje sea cual sea la forma del error
+      // (Error, objeto plano de Supabase, objeto anidado, string, etc.)
+      const toMsg = (e: unknown): string => {
+        if (!e) return "error desconocido";
+        if (typeof e === "string") return e;
+        if (e instanceof Error) return e.message;
+        if (typeof e === "object") {
+          const o = e as Record<string, unknown>;
+          if (typeof o.message === "string") return o.message;
+          if (typeof o.error === "string") return o.error;
+          if (typeof o.details === "string") return o.details;
+          try { return JSON.stringify(o); } catch { return "error no serializable"; }
+        }
+        return String(e);
+      };
+      setPasteMsg("Error: " + toMsg(err));
     } finally {
       setPastingRoutine(false);
     }
