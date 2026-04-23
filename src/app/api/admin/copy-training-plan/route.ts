@@ -46,25 +46,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Leer plan existente para preservar otros campos del JSONB (instructions, etc).
-    const { data: existing } = await supabaseAdmin
+    // SELECT primero (por user_id) y despues UPDATE o INSERT segun corresponda.
+    // Asi funciona sin depender de un constraint UNIQUE en user_id.
+    const { data: existing, error: selErr } = await supabaseAdmin
       .from("training_plans")
-      .select("data")
+      .select("id, data")
       .eq("user_id", targetUserId)
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .limit(1)
       .maybeSingle();
+
+    if (selErr) {
+      return NextResponse.json({ error: selErr.message }, { status: 500 });
+    }
 
     const existingData = (existing?.data && typeof existing.data === "object") ? existing.data : {};
     const newData = { ...existingData, days };
 
-    const { error: upErr } = await supabaseAdmin
-      .from("training_plans")
-      .upsert(
-        { user_id: targetUserId, data: newData, plan_approved: false },
-        { onConflict: "user_id" }
-      );
-
-    if (upErr) {
-      return NextResponse.json({ error: upErr.message }, { status: 500 });
+    if (existing?.id) {
+      const { error: upErr } = await supabaseAdmin
+        .from("training_plans")
+        .update({ data: newData, plan_approved: false })
+        .eq("id", existing.id);
+      if (upErr) {
+        return NextResponse.json({ error: upErr.message }, { status: 500 });
+      }
+    } else {
+      const { error: insErr } = await supabaseAdmin
+        .from("training_plans")
+        .insert({ user_id: targetUserId, data: newData, plan_approved: false });
+      if (insErr) {
+        return NextResponse.json({ error: insErr.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ success: true, data: newData });
