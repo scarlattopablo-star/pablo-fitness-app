@@ -33,6 +33,17 @@ const METHOD_OPTIONS: { value: string; label: string }[] = [
   { value: "cluster",    label: "Cluster" },
 ];
 
+// Plantillas editables para cada metodo. Pablo puede clickear 📋 y se insertan
+// en el campo "Nota personal" — despues las edita o las borra a gusto.
+const METHOD_TEMPLATES: Record<string, string> = {
+  "superset":   "Super serie: hacé este ejercicio y el siguiente seguidos, sin descanso entre medio. Descansá 60-90s al terminar ambos.",
+  "giant-set":  "Serie gigante: 3-4 ejercicios seguidos del mismo grupo muscular, sin descanso. Descansá 90s al terminar todos.",
+  "drop-set":   "Drop set: al llegar al fallo muscular, bajá el peso 20-25% y seguí sin descanso. Repetí 2 veces más. Solo en la última serie.",
+  "pyramid":    "Piramidal: subí peso y bajá reps en cada serie. Ej: 15-12-10-8 reps con peso progresivamente mayor.",
+  "rest-pause": "Rest-pause: hacé tus reps al fallo, descansá 15s, seguí hasta fallar otra vez, 15s más, y una última mini-serie.",
+  "cluster":    "Cluster: dividí la serie en mini-series de 2-3 reps con 10-15s de descanso entre ellas. Ideal para peso más alto.",
+};
+
 interface TrainingDay {
   day: string;
   exercises: TrainingExercise[];
@@ -540,8 +551,18 @@ export default function PlanEditorPage({
                         onChange={(e) => updateExercise(dayIdx, exIdx, "notes", e.target.value)}
                         className="flex-1 min-w-[150px] bg-background border border-card-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
                         placeholder="Nota personal (opcional) — ej: cuidar rodillas"
-                        maxLength={140}
+                        maxLength={200}
                       />
+                      {ex.method && METHOD_TEMPLATES[ex.method] && (
+                        <button
+                          type="button"
+                          onClick={() => updateExercise(dayIdx, exIdx, "notes", METHOD_TEMPLATES[ex.method || ""] || "")}
+                          className="text-[10px] px-2 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors font-semibold whitespace-nowrap"
+                          title="Insertar la plantilla del método en la nota"
+                        >
+                          📋 Usar plantilla
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
