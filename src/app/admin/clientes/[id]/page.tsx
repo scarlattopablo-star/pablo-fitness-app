@@ -264,6 +264,10 @@ export default function ClienteDetailPage({
 
       setTrainingPlan({ ...(trainingPlan || {}), data: body.data, plan_approved: false });
       setPasteMsg("✓ Rutina pegada");
+      // Limpia el portapapeles para que NO aparezca mas el boton de pegar hasta
+      // que el admin copie otra rutina.
+      localStorage.removeItem("admin-routine-clipboard");
+      setCopiedRoutine(null);
       setTimeout(() => setPasteMsg(""), 3000);
     } catch (err) {
       // Blindaje total: extraemos el mensaje sea cual sea la forma del error
@@ -896,15 +900,25 @@ export default function ClienteDetailPage({
           </div>
         )}
 
-        {/* Paste routine from clipboard */}
-        {!editingTraining && copiedRoutine && (
-          <div className="mt-3 pt-3 border-t border-card-border flex items-center gap-3">
+        {/* Paste routine from clipboard — se esconde si estamos viendo el mismo cliente que copio */}
+        {!editingTraining && copiedRoutine && copiedRoutine.clientName !== client?.full_name && (
+          <div className="mt-3 pt-3 border-t border-card-border flex items-center gap-2 flex-wrap">
             <button
               onClick={pasteRoutine}
               disabled={pastingRoutine}
               className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition font-semibold disabled:opacity-50"
             >
               {pastingRoutine ? "Pegando..." : `Pegar rutina de "${copiedRoutine.clientName}"`}
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("admin-routine-clipboard");
+                setCopiedRoutine(null);
+              }}
+              className="text-xs px-3 py-2 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition"
+              title="Descartar la rutina copiada"
+            >
+              ✕ Descartar
             </button>
             {pasteMsg && (
               <p className={`text-xs font-medium ${pasteMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
