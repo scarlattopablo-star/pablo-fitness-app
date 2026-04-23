@@ -246,16 +246,27 @@ export default function ClienteDetailPage({
     setPastingRoutine(true);
     setPasteMsg("");
     try {
-      const newData = { ...(trainingPlan?.data || {}), days: copiedRoutine.days };
-      const { error } = await supabase
-        .from("training_plans")
-        .upsert({ user_id: id, data: newData, plan_approved: false }, { onConflict: "user_id" });
-      if (error) throw error;
-      setTrainingPlan({ ...(trainingPlan || {}), data: newData, plan_approved: false });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Sesion expirada — recargá la pagina");
+
+      // Usa endpoint admin con service role para saltar RLS y evitar 'permission denied'
+      // al escribir el training_plan de otro cliente.
+      const res = await fetch("/api/admin/copy-training-plan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ targetUserId: id, days: copiedRoutine.days }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+
+      setTrainingPlan({ ...(trainingPlan || {}), data: body.data, plan_approved: false });
       setPasteMsg("✓ Rutina pegada");
       setTimeout(() => setPasteMsg(""), 3000);
     } catch (err) {
-      setPasteMsg("Error: " + String(err));
+      setPasteMsg("Error: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setPastingRoutine(false);
     }
