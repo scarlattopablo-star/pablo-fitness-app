@@ -46,24 +46,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // SELECT primero (por user_id) y despues UPDATE o INSERT segun corresponda.
-    // Asi funciona sin depender de un constraint UNIQUE en user_id.
-    const { data: existing, error: selErr } = await supabaseAdmin
+    // SELECT (sin .single/.maybeSingle para tolerar duplicados existentes).
+    const { data: rows, error: selErr } = await supabaseAdmin
       .from("training_plans")
-      .select("id, data")
+      .select("id, data, updated_at")
       .eq("user_id", targetUserId)
       .order("updated_at", { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(5);
 
     if (selErr) {
       return NextResponse.json({ error: selErr.message }, { status: 500 });
     }
 
+    const existing = rows?.[0];
     const existingData = (existing?.data && typeof existing.data === "object") ? existing.data : {};
     const newData = { ...existingData, days };
 
     if (existing?.id) {
+      // Si hay duplicados, actualizamos el mas reciente.
+      // (La limpieza de duplicados antiguos queda como SQL manual.)
       const { error: upErr } = await supabaseAdmin
         .from("training_plans")
         .update({ data: newData, plan_approved: false })
@@ -80,7 +81,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, data: newData });
+    const duplicatesCount = (rows?.length ?? 0) > 1 ? (rows!.length - 1) : 0;
+    return NextResponse.json({
+      success: true,
+      data: newData,
+      ...(duplicatesCount > 0 ? { warning: `Hay ${duplicatesCount} filas duplicadas de training_plans para este cliente. Actualice la mas reciente; conviene limpiar con SQL.` } : {}),
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : String(err) },
