@@ -32,11 +32,17 @@ export default function CompraExitosaPage() {
         setChecking(false);
 
         // Auto-redirect after countdown
-        const destination = profile?.is_admin
+        const coreDestination = profile?.is_admin
           ? "/admin"
           : survey
             ? (profile?.onboarding_completed_at ? "/dashboard" : "/dashboard/bienvenida")
             : "/encuesta-directa";
+
+        // Si es la primera vez del cliente, pasa por splash + 5 slides (/onboarding) antes del destino.
+        const sawSlides = typeof window !== "undefined" && localStorage.getItem("hasSeenOnboarding") === "true";
+        const destination = (!sawSlides && !profile?.is_admin)
+          ? `/onboarding?next=${encodeURIComponent(coreDestination)}`
+          : coreDestination;
 
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -94,11 +100,11 @@ export default function CompraExitosaPage() {
                     .select("onboarding_completed_at")
                     .eq("id", session.user.id)
                     .single();
-                  router.push(
-                    survey
-                      ? (prof?.onboarding_completed_at ? "/dashboard" : "/dashboard/bienvenida")
-                      : "/encuesta-directa"
-                  );
+                  const core = survey
+                    ? (prof?.onboarding_completed_at ? "/dashboard" : "/dashboard/bienvenida")
+                    : "/encuesta-directa";
+                  const saw = localStorage.getItem("hasSeenOnboarding") === "true";
+                  router.push(saw ? core : `/onboarding?next=${encodeURIComponent(core)}`);
                 } else {
                   router.push("/login");
                 }

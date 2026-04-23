@@ -8,7 +8,7 @@ import {
   ArrowLeft, Check, ArrowRight, Clock, Target, Zap, Star,
   Shield as ShieldIcon,
 } from "lucide-react";
-import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
+import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage, formatPrice, getAvailableDurations } from "@/lib/plans-data";
 import CountdownTimer from "@/components/countdown-timer";
 import type { Duration } from "@/types";
 
@@ -25,7 +25,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Heart, Shield, RefreshCw, Users, Medal, Home, Wind,
 };
 
-const DURATIONS: Duration[] = ["1-mes", "3-meses", "6-meses", "1-ano"];
+const DEFAULT_DURATIONS: Duration[] = ["1-mes", "3-meses", "6-meses", "1-ano"];
 
 export default function PlanDetailPage({
   params,
@@ -34,7 +34,11 @@ export default function PlanDetailPage({
 }) {
   const { slug } = use(params);
   const plan = getPlanBySlug(slug);
-  const [selectedDuration, setSelectedDuration] = useState<Duration>("3-meses");
+  // Solo mostramos las duraciones que el plan comercializa.
+  const availableDurations = (plan ? getAvailableDurations(plan) : DEFAULT_DURATIONS) as Duration[];
+  const defaultDuration: Duration =
+    availableDurations.includes("3-meses" as Duration) ? "3-meses" : availableDurations[0];
+  const [selectedDuration, setSelectedDuration] = useState<Duration>(defaultDuration);
   const [referralCode, setReferralCode] = useState("");
   const [referrerName, setReferrerName] = useState("");
 
@@ -142,11 +146,14 @@ export default function PlanDetailPage({
           {/* RIGHT: Pricing Card */}
           <div className="lg:col-span-2">
             <div className="glass-card rounded-2xl p-6 sticky top-24">
-              {/* Free month badge */}
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mb-4 text-center">
-                <p className="text-sm font-bold text-emerald-400">Primer mes GRATIS</p>
-                <p className="text-[10px] text-muted">Proba todo sin compromiso. Despues elegis si continuar.</p>
-              </div>
+              {/* Free month badge — NO aplica al reto de 21 dias (es un producto aparte). */}
+              {plan.slug !== "glutes-360" && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mb-4 text-center">
+                  <p className="text-sm font-bold text-emerald-400">Primer mes GRATIS</p>
+                  <p className="text-[10px] text-muted">Proba todo sin compromiso. Despues elegis si continuar.</p>
+                  <p className="text-[9px] text-muted/70 mt-1">Promo solo para planes mensuales — no aplica al reto Gluteos 360.</p>
+                </div>
+              )}
 
               {/* Countdown */}
               <CountdownTimer
@@ -159,13 +166,14 @@ export default function PlanDetailPage({
               <h3 className="font-bold text-lg mb-4">Elegi tu duracion</h3>
 
               <div className="space-y-2 mb-6">
-                {DURATIONS.map((d) => {
+                {availableDurations.map((d) => {
                   const p = plan.prices[d];
                   const discount = getDiscountPercentage(d);
                   const monthly = d === "1-mes" ? p :
                     d === "3-meses" ? Math.round(p / 3) :
                     d === "6-meses" ? Math.round(p / 6) :
-                    Math.round(p / 12);
+                    d === "1-ano" ? Math.round(p / 12) :
+                    p; // 21-dias: no desglosamos mensual, es precio total del reto.
 
                   return (
                     <button
@@ -186,8 +194,11 @@ export default function PlanDetailPage({
                             </span>
                           )}
                         </div>
-                        {d !== "1-mes" && (
+                        {d !== "1-mes" && d !== "21-dias" && (
                           <p className="text-xs text-muted">${formatPrice(monthly)}/mes</p>
+                        )}
+                        {d === "21-dias" && (
+                          <p className="text-xs text-accent font-bold">Acceso inmediato</p>
                         )}
                       </div>
                       <span className="font-bold text-lg">${formatPrice(p)}</span>

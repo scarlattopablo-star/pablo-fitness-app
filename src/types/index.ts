@@ -11,9 +11,11 @@ export type PlanSlug =
   | 'competicion'
   | 'entrenamiento-casa'
   | 'kitesurf'
+  | 'glutes-360'
   | 'direct-client';
 
-export type Duration = '1-mes' | '3-meses' | '6-meses' | '1-ano';
+// '21-dias' se usa para retos cortos (entry product). 0 en un precio = no disponible en esa duracion.
+export type Duration = '1-mes' | '3-meses' | '6-meses' | '1-ano' | '21-dias';
 
 export type NutritionalGoal = 'perder-grasa' | 'ganar-musculo' | 'mantenimiento';
 

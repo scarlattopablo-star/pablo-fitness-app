@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, Dumbbell, Check, Loader2, Save, Info, Play, X, Clock,
+  ArrowLeft, Dumbbell, Check, Loader2, Save, Info, Play, X, Clock, TrendingUp, Camera,
 } from "lucide-react";
 import RestTimer from "@/components/rest-timer";
 import { getExerciseById } from "@/lib/exercises-data";
@@ -264,7 +264,7 @@ export default function AdminEntrenarPage({
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-4">
         <Link href={`/admin/clientes/${clientId}`} className="text-muted hover:text-white">
           <ArrowLeft className="h-5 w-5" />
         </Link>
@@ -275,6 +275,31 @@ export default function AdminEntrenarPage({
         <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
           <Dumbbell className="h-5 w-5 text-primary" />
         </div>
+      </div>
+
+      {/* Quick actions: ver progreso / plan-editor sin perder contexto */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Link
+          href={`/admin/clientes/${clientId}#progreso`}
+          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card-bg hover:bg-card-border/50 border border-card-border transition-colors"
+        >
+          <TrendingUp className="h-3.5 w-3.5 text-primary" />
+          Ver progreso del cliente
+        </Link>
+        <Link
+          href={`/admin/clientes/${clientId}#fotos`}
+          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card-bg hover:bg-card-border/50 border border-card-border transition-colors"
+        >
+          <Camera className="h-3.5 w-3.5 text-primary" />
+          Fotos
+        </Link>
+        <Link
+          href={`/admin/clientes/${clientId}/plan-editor`}
+          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-card-bg hover:bg-card-border/50 border border-card-border transition-colors"
+        >
+          <Dumbbell className="h-3.5 w-3.5 text-primary" />
+          Editar plan
+        </Link>
       </div>
 
       {error && (

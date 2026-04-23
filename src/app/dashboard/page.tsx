@@ -20,6 +20,8 @@ import { cacheData, getCachedData } from "@/lib/offline-cache";
 import MuscleHeatmap from "@/components/muscle-heatmap";
 import { Goal7dCard } from "@/components/goal-7d-card";
 import { MonthlyChallengeCard } from "@/components/monthly-challenge-card";
+import Glutes360ClientBanner from "@/components/glutes-360-client-banner";
+import ExtraActivityLogger from "@/components/extra-activity-logger";
 import { EXERCISES } from "@/lib/exercises-data";
 
 interface SurveyData {
@@ -263,6 +265,12 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* CRO: banner reto Gluteos 360 para clientes existentes */}
+      <Glutes360ClientBanner />
+
+      {/* Logger de actividad extra (correr, futbol, kitesurf, etc. por fuera del plan) */}
+      {user && <ExtraActivityLogger userId={user.id} weightKg={currentWeight ?? survey?.weight ?? null} />}
 
       {/* 7-day goal from onboarding */}
       {user && <Goal7dCard userId={user.id} />}

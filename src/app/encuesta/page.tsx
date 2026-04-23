@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload, Sparkles, Target, Utensils, Clock } from "lucide-react";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
 import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
+import { supabase } from "@/lib/supabase";
 import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, MacroCalculation } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
@@ -45,7 +46,18 @@ export default function EncuestaPage() {
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const planSlug = (searchParams?.get("plan") || "quema-grasa") as PlanSlug;
   const duration = searchParams?.get("duration") || "3-meses";
+  // flow=trial → el user YA tiene cuenta (viene de /registro-gratis). Guardamos survey + sub y vamos a onboarding.
+  const flow = searchParams?.get("flow") || "";
+  const isTrialFlow = flow === "trial";
   const plan = getPlanBySlug(planSlug);
+  const isRetoGlutes = planSlug === "glutes-360";
+  const [finishing, setFinishing] = useState(false);
+  const [finishError, setFinishError] = useState("");
+
+  // El reto Gluteos 360 ya define el foco (gluteos + abdomen) — no preguntamos.
+  useEffect(() => {
+    if (isRetoGlutes) setEmphasis("piernas");
+  }, [isRetoGlutes]);
 
   const needsGoal = PLANS_NEEDING_GOAL.includes(planSlug);
   const isKitesurf = planSlug === "kitesurf";
@@ -273,26 +285,28 @@ export default function EncuestaPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-3">¿Que parte de tu cuerpo queres mejorar mas?</label>
-                <p className="text-xs text-muted mb-3">Tu rutina se adapta para darle mas foco a esa zona. Si no tenes preferencia, elegí Equilibrado.</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: "ninguno", label: "Equilibrado", desc: "Todas las zonas por igual" },
-                    { value: "pecho", label: "Pecho", desc: "Pecho y brazos" },
-                    { value: "espalda", label: "Espalda", desc: "Espalda y hombros" },
-                    { value: "piernas", label: "Piernas", desc: "Piernas y gluteos" },
-                    { value: "abdomen", label: "Abdomen", desc: "Core y abdominales" },
-                    { value: "tren-superior", label: "Tren Superior", desc: "Pecho, espalda, brazos" },
-                  ].map((opt) => (
-                    <button key={opt.value} onClick={() => setEmphasis(opt.value)}
-                      className={`text-left p-3 rounded-xl border transition-all ${emphasis === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"}`}>
-                      <p className="font-medium text-sm">{opt.label}</p>
-                      <p className="text-[10px] text-muted">{opt.desc}</p>
-                    </button>
-                  ))}
+              {!isRetoGlutes && (
+                <div>
+                  <label className="block text-sm font-medium mb-3">¿Que parte de tu cuerpo queres mejorar mas?</label>
+                  <p className="text-xs text-muted mb-3">Tu rutina se adapta para darle mas foco a esa zona. Si no tenes preferencia, elegí Equilibrado.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: "ninguno", label: "Equilibrado", desc: "Todas las zonas por igual" },
+                      { value: "pecho", label: "Pecho", desc: "Pecho y brazos" },
+                      { value: "espalda", label: "Espalda", desc: "Espalda y hombros" },
+                      { value: "piernas", label: "Piernas", desc: "Piernas y gluteos" },
+                      { value: "abdomen", label: "Abdomen", desc: "Core y abdominales" },
+                      { value: "tren-superior", label: "Tren Superior", desc: "Pecho, espalda, brazos" },
+                    ].map((opt) => (
+                      <button key={opt.value} onClick={() => setEmphasis(opt.value)}
+                        className={`text-left p-3 rounded-xl border transition-all ${emphasis === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"}`}>
+                        <p className="font-medium text-sm">{opt.label}</p>
+                        <p className="text-[10px] text-muted">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-3">Restricciones Alimentarias</label>
@@ -491,9 +505,9 @@ export default function EncuestaPage() {
             )}
 
             <button
-              onClick={() => {
-                // Guardar encuesta en localStorage (macros calculados pero NO mostrados)
-                localStorage.setItem("pendingSurvey", JSON.stringify({
+              disabled={finishing}
+              onClick={async () => {
+                const payload = {
                   sex, age: Number(age), weight: Number(weight), height: Number(height),
                   activityLevel, restrictions, emphasis, planSlug,
                   ...(nutritionalGoal ? { nutritionalGoal } : {}),
@@ -503,16 +517,85 @@ export default function EncuestaPage() {
                     targetCalories: macros.targetCalories,
                     protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
                   },
-                }));
+                };
+
+                // FLOW TRIAL: user YA tiene cuenta. Persistimos survey + creamos sub + onboarding.
+                if (isTrialFlow) {
+                  setFinishing(true);
+                  setFinishError("");
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const session = sessionData?.session;
+                    if (!session?.user) {
+                      // No hay sesion — mandar al login con volver aca.
+                      window.location.href = "/login?next=" + encodeURIComponent(window.location.pathname + window.location.search);
+                      return;
+                    }
+                    const userId = session.user.id;
+
+                    await supabase.from("surveys").insert({
+                      user_id: userId,
+                      age: payload.age,
+                      sex: payload.sex,
+                      weight: payload.weight,
+                      height: payload.height,
+                      activity_level: payload.activityLevel,
+                      dietary_restrictions: payload.restrictions || [],
+                      objective: payload.planSlug || "quema-grasa",
+                      nutritional_goal: payload.nutritionalGoal || null,
+                      tmb: payload.macros.tmb,
+                      tdee: payload.macros.tdee,
+                      target_calories: payload.macros.targetCalories,
+                      protein: payload.macros.protein,
+                      carbs: payload.macros.carbs,
+                      fats: payload.macros.fats,
+                    });
+
+                    const subRes = await fetch("/api/create-subscription", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({
+                        userId,
+                        duration: duration || "1-mes",
+                        trialDays: 30,
+                        amountPaid: 0,
+                        currency: "UYU",
+                      }),
+                    });
+                    if (!subRes.ok) {
+                      const err = await subRes.json().catch(() => ({}));
+                      throw new Error(err.error || "No pudimos activar tu prueba");
+                    }
+
+                    // Antes del dashboard: splash + 5 slides (onboarding) → bienvenida (meta + foto + push) → dashboard.
+                    window.location.href = "/onboarding?next=" + encodeURIComponent("/dashboard/bienvenida");
+                  } catch (e) {
+                    setFinishError(e instanceof Error ? e.message : "Error al finalizar");
+                    setFinishing(false);
+                  }
+                  return;
+                }
+
+                // FLOW PAGO: dejamos survey en localStorage y seguimos al registro → MercadoPago.
+                localStorage.setItem("pendingSurvey", JSON.stringify(payload));
                 window.location.href = `/registro?plan=${planSlug}&duration=${duration}`;
               }}
-              className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-lg"
+              className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 disabled:opacity-60 transition-opacity flex items-center justify-center gap-2 text-lg"
             >
-              Continuar al Pago <ArrowRight className="h-5 w-5" />
+              {isTrialFlow
+                ? (finishing ? "Activando tu prueba..." : "Empezar mi prueba gratis")
+                : "Continuar al Pago"} <ArrowRight className="h-5 w-5" />
             </button>
 
+            {finishError && (
+              <p className="text-red-400 text-sm text-center mt-3">{finishError}</p>
+            )}
+
             <p className="text-xs text-muted text-center mt-3">
-              Pago seguro con MercadoPago
+              {isTrialFlow ? "Sin tarjeta · 30 dias gratis" : "Pago seguro con MercadoPago"}
             </p>
           </div>
         )}

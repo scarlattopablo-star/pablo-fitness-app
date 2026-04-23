@@ -22,6 +22,7 @@ import {
   MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
   ExerciseProgressCharts,
 } from "@/components/progress-charts";
+import ZoomableImage from "@/components/zoomable-image";
 
 interface ClientData {
   id: string;
@@ -1715,7 +1716,7 @@ export default function ClienteDetailPage({
       </div>
 
       {/* Progress Section */}
-      <div className="mb-6">
+      <div id="progreso" className="mb-6 scroll-mt-24">
         <button
           onClick={() => setExpandProgress(!expandProgress)}
           className="w-full glass-card rounded-2xl p-5 flex items-center justify-between"
@@ -1796,40 +1797,46 @@ export default function ClienteDetailPage({
               {/* Exercise Progress */}
               <ExerciseProgressCharts logs={exerciseLogs} />
 
-              {/* Progress Photos */}
-              {firstPhoto && (
-                <div className="glass-card rounded-2xl p-4">
-                  <p className="text-xs font-bold text-muted mb-3 flex items-center gap-1">
-                    <Image className="h-3 w-3" />
-                    {latestPhoto ? "Antes / Despues" : "Fotos de Progreso"}
-                  </p>
-                  <div className={`grid ${latestPhoto ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
-                    <div>
-                      <p className="text-[10px] text-muted mb-1 text-center">
-                        {latestPhoto ? "Inicio" : ""} — {new Date(firstPhoto.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
-                      </p>
-                      <div className="grid grid-cols-3 gap-1">
-                        {[firstPhoto.photo_front, firstPhoto.photo_side, firstPhoto.photo_back].map((path, i) => (
-                          <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
-                            {path && photoUrls[path] ? (
-                              <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center"><Camera className="h-3 w-3 text-muted" /></div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {latestPhoto && (
+              {/* Progress Photos — con lightbox al hacer click */}
+              <span id="fotos" className="block -mt-24 pt-24" aria-hidden />
+              {firstPhoto && (() => {
+                // Armamos la galeria ordenada cronologicamente (inicio primero).
+                const galleryItems = progressEntries
+                  .slice()
+                  .reverse()
+                  .flatMap((e) => {
+                    const fecha = new Date(e.date).toLocaleDateString("es", { day: "numeric", month: "short" });
+                    return [
+                      { path: e.photo_front, label: "Frente" },
+                      { path: e.photo_side, label: "Perfil" },
+                      { path: e.photo_back, label: "Espalda" },
+                    ]
+                      .filter((x) => x.path && photoUrls[x.path])
+                      .map((x) => ({ src: photoUrls[x.path as string]!, alt: `${x.label} — ${fecha}` }));
+                  });
+
+                return (
+                  <div className="glass-card rounded-2xl p-4">
+                    <p className="text-xs font-bold text-muted mb-3 flex items-center gap-1">
+                      <Image className="h-3 w-3" />
+                      {latestPhoto ? "Antes / Despues" : "Fotos de Progreso"}
+                      <span className="ml-auto text-[9px] text-muted/60 font-normal">Click para ampliar</span>
+                    </p>
+                    <div className={`grid ${latestPhoto ? "grid-cols-2" : "grid-cols-1"} gap-3`}>
                       <div>
                         <p className="text-[10px] text-muted mb-1 text-center">
-                          Actual — {new Date(latestPhoto.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                          {latestPhoto ? "Inicio" : ""} — {new Date(firstPhoto.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
                         </p>
                         <div className="grid grid-cols-3 gap-1">
-                          {[latestPhoto.photo_front, latestPhoto.photo_side, latestPhoto.photo_back].map((path, i) => (
+                          {[firstPhoto.photo_front, firstPhoto.photo_side, firstPhoto.photo_back].map((path, i) => (
                             <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
                               {path && photoUrls[path] ? (
-                                <img src={photoUrls[path]} alt={["Frente", "Perfil", "Espalda"][i]} className="w-full h-full object-cover" />
+                                <ZoomableImage
+                                  src={photoUrls[path]!}
+                                  alt={`${["Frente", "Perfil", "Espalda"][i]} — inicio`}
+                                  className="w-full h-full object-cover"
+                                  gallery={galleryItems}
+                                />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center"><Camera className="h-3 w-3 text-muted" /></div>
                               )}
@@ -1837,10 +1844,33 @@ export default function ClienteDetailPage({
                           ))}
                         </div>
                       </div>
-                    )}
+                      {latestPhoto && (
+                        <div>
+                          <p className="text-[10px] text-muted mb-1 text-center">
+                            Actual — {new Date(latestPhoto.date).toLocaleDateString("es", { day: "numeric", month: "short" })}
+                          </p>
+                          <div className="grid grid-cols-3 gap-1">
+                            {[latestPhoto.photo_front, latestPhoto.photo_side, latestPhoto.photo_back].map((path, i) => (
+                              <div key={i} className="aspect-[3/4] rounded-lg bg-card-bg overflow-hidden">
+                                {path && photoUrls[path] ? (
+                                  <ZoomableImage
+                                    src={photoUrls[path]!}
+                                    alt={`${["Frente", "Perfil", "Espalda"][i]} — actual`}
+                                    className="w-full h-full object-cover"
+                                    gallery={galleryItems}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center"><Camera className="h-3 w-3 text-muted" /></div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* History */}
               <div className="glass-card rounded-2xl p-4">

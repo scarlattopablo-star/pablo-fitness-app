@@ -950,6 +950,49 @@ export default function ContenidoPage() {
         )}
       </div>
 
+      {/* Anuncio Reto Gluteos 360 + Actividad extra */}
+      <div className="mb-8 p-4 rounded-2xl border border-accent/30 bg-accent/5">
+        <h2 className="font-bold text-sm mb-1 flex items-center gap-2">
+          <Send className="h-4 w-4 text-accent" /> Anuncio — Reto Gluteos 360 + Actividad extra
+        </h2>
+        <p className="text-xs text-muted mb-3">
+          Envia email + mensaje en el chat de la app + push a TODOS los clientes activos. Anuncia el nuevo reto de 21 dias y la funcion para registrar entrenamientos fuera del plan.
+          <strong className="text-accent block mt-1">No menciona precios.</strong>
+        </p>
+        <button
+          onClick={async () => {
+            if (!confirm("Enviar anuncio del reto + actividad extra a TODOS los clientes activos (email + chat + push)?")) return;
+            setSending(true);
+            setSendResult(null);
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              const res = await fetch("/api/admin/announce-pricing-reto", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                },
+              });
+              const data = await res.json();
+              if (res.ok) {
+                setSendResult({ ok: true, msg: data.summary || `✓ Enviado` });
+              } else {
+                setSendResult({ ok: false, msg: data.error || "Error" });
+              }
+            } catch (e) {
+              setSendResult({ ok: false, msg: String(e) });
+            } finally {
+              setSending(false);
+            }
+          }}
+          disabled={sending}
+          className="bg-accent text-black font-bold py-2.5 px-5 rounded-xl text-sm disabled:opacity-50 inline-flex items-center gap-2 hover:bg-accent/90 transition-colors"
+        >
+          <Send className="h-4 w-4" />
+          {sending ? "Enviando..." : "Anunciar reto + actividad extra"}
+        </button>
+      </div>
+
       <div className="grid md:grid-cols-2 gap-6">
         {/* Fields */}
         <div>

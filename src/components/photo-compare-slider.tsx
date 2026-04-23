@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Camera, ArrowLeftRight } from "lucide-react";
+import ZoomableImage from "@/components/zoomable-image";
 
 interface Props {
   beforeUrl: string | null;
@@ -72,8 +73,14 @@ export function PhotoCompareSlider({
     const url = afterUrl || beforeUrl;
     return (
       <div className="aspect-[3/4] max-h-96 rounded-2xl overflow-hidden bg-card-bg relative">
-        {url && <img src={url} alt="" className="w-full h-full object-cover" />}
-        <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-md text-[10px] font-bold">
+        {url && (
+          <ZoomableImage
+            src={url}
+            alt={afterUrl ? afterLabel : beforeLabel}
+            className="w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-md text-[10px] font-bold pointer-events-none">
           {afterUrl ? afterLabel : beforeLabel}
         </div>
       </div>

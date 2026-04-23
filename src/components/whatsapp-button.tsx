@@ -5,8 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { getOrCreateConversation, getUnreadCount } from "@/lib/chat-helpers";
+import { trackEvent } from "@/lib/track-event";
 
 const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
+const WA_URL =
+  "https://wa.me/59897336318?text=" +
+  encodeURIComponent("Hola, quiero info del reto Gluteos 360");
+
+const onWhatsAppClick = (variant: string) => () =>
+  trackEvent("whatsapp_click", { variant });
 
 interface WhatsAppButtonProps {
   variant?: "floating" | "inline" | "small";
@@ -44,6 +51,20 @@ export default function WhatsAppButton({
   };
 
   if (variant === "small") {
+    if (!user) {
+      return (
+        <a
+          href={WA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onWhatsAppClick("small")}
+          className={`flex items-center gap-1 text-xs text-emerald-400 font-medium px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors shrink-0 ${className}`}
+        >
+          <MessageCircle className="h-3 w-3" />
+          {label}
+        </a>
+      );
+    }
     return (
       <button
         onClick={handleOpen}
@@ -56,6 +77,20 @@ export default function WhatsAppButton({
   }
 
   if (variant === "inline") {
+    if (!user) {
+      return (
+        <a
+          href={WA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onWhatsAppClick("inline")}
+          className={`flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2.5 rounded-xl transition-colors ${className}`}
+        >
+          <MessageCircle className="h-5 w-5" />
+          {label}
+        </a>
+      );
+    }
     return (
       <button
         onClick={handleOpen}
@@ -68,6 +103,23 @@ export default function WhatsAppButton({
   }
 
   // Floating button
+  // Not logged in → open external WhatsApp
+  if (!user) {
+    return (
+      <a
+        href={WA_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onWhatsAppClick("floating")}
+        className={`fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg shadow-[#25D366]/30 hover:scale-110 transition-transform animate-whatsapp-pulse ${className}`}
+        aria-label="Chat por WhatsApp"
+      >
+        <MessageCircle className="h-7 w-7 text-white fill-white" />
+      </a>
+    );
+  }
+
+  // Logged in → open internal chat
   return (
     <button
       onClick={handleOpen}

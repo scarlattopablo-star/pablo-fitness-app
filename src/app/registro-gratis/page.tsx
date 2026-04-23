@@ -63,35 +63,15 @@ export default function RegistroGratisPage() {
         .from("profiles")
         .upsert({ id: userId, email, full_name: fullName, phone }, { onConflict: "id" });
 
-      // 3. Create trial subscription (30 days free — primer mes gratis)
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (accessToken) {
-        headers["Authorization"] = `Bearer ${accessToken}`;
-      }
-
-      const res = await fetch("/api/create-subscription", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          userId,
-          duration: "1-mes",
-          trialDays: 30,
-          amountPaid: 0,
-          currency: "UYU",
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Error al crear suscripción");
-      }
-
+      // NOTA: la subscription trial se crea al terminar la encuesta, no aca.
+      // Orden correcto: registro → encuesta → onboarding (5 slides) → dashboard.
+      // Asi la rutina/macros se generan con los datos reales del usuario.
+      void accessToken; // no usamos token aca — queda para la proxima request
       setSuccess(true);
 
-      // Redirect to dashboard after brief success message
       setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 2000);
+        window.location.href = "/encuesta?flow=trial&duration=1-mes";
+      }, 1200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error al registrarte";
       if (msg.includes("already registered")) {
@@ -113,9 +93,9 @@ export default function RegistroGratisPage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">¡Cuenta creada!</h1>
           <p className="text-muted mb-2">
-            Tenes 30 dias gratis para explorar la app.
+            Ahora vamos a hacerte unas preguntas rapidas para armar tu plan personalizado.
           </p>
-          <p className="text-muted text-sm">Redirigiendo al dashboard...</p>
+          <p className="text-muted text-sm">Llevandote a la encuesta...</p>
         </div>
       </div>
     );
@@ -132,6 +112,9 @@ export default function RegistroGratisPage() {
           <h1 className="text-2xl font-bold mb-1">Probá Gratis</h1>
           <p className="text-muted text-sm">
             30 dias gratis para explorar la app. Sin tarjeta de credito.
+          </p>
+          <p className="mt-2 inline-block text-[11px] text-accent bg-accent/10 border border-accent/20 px-3 py-1 rounded-full">
+            El reto Gluteos 360 se contrata aparte — no entra en esta prueba
           </p>
         </div>
 

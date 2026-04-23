@@ -17,8 +17,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Flame',
     color: '#FF4444',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '2',
@@ -36,8 +36,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Dumbbell',
     color: '#4CAF50',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '3',
@@ -55,8 +55,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Sparkles',
     color: '#FF9800',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '4',
@@ -74,8 +74,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'GraduationCap',
     color: '#2196F3',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '5',
@@ -93,8 +93,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Trophy',
     color: '#9C27B0',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '6',
@@ -112,8 +112,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Heart',
     color: '#E91E63',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '7',
@@ -131,8 +131,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Shield',
     color: '#607D8B',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '8',
@@ -150,8 +150,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'RefreshCw',
     color: '#00BCD4',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '9',
@@ -169,8 +169,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Users',
     color: '#FF5722',
-    prices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
     isCouple: true,
   },
   {
@@ -189,8 +189,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Home',
     color: '#8BC34A',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '11',
@@ -208,8 +208,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Medal',
     color: '#FFD700',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
   },
   {
     id: '12',
@@ -229,8 +229,28 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Wind',
     color: '#0097A7',
-    prices: { '1-mes': 3200, '3-meses': 6720, '6-meses': 11200, '1-ano': 16800 },
-    couplePrices: { '1-mes': 5120, '3-meses': 10750, '6-meses': 17920, '1-ano': 26880 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+  },
+  {
+    id: '13',
+    slug: 'glutes-360',
+    name: 'Gluteos 360 - 21 dias',
+    shortDescription: 'Reto de 21 dias para gluteos y abdomen firmes sin dietas extremas',
+    description: 'Reto corto, intenso y guiado para mujeres. En 21 dias activas gluteos y abdomen con una rutina simple en la app y una guia de alimentacion flexible. Pensado para quienes sienten que entrenan y no ven cambios.',
+    includes: [
+      'Rutina simple en la app (acceso inmediato)',
+      'Guia de alimentacion flexible (sin dietas extremas)',
+      'Seguimiento de fotos, peso y medidas dentro de la app',
+      'Progresion semana a semana durante 21 dias',
+      'Acceso al chat con Pablo para dudas',
+      'Recordatorios para no perderte ningun dia',
+    ],
+    icon: 'Sparkles',
+    color: '#C3FF3A',
+    // Solo se comercializa en la duracion '21-dias'. Las otras duraciones quedan en 0 (no se venden).
+    prices: { '1-mes': 0, '3-meses': 0, '6-meses': 0, '1-ano': 0, '21-dias': 599 },
+    couplePrices: { '1-mes': 0, '3-meses': 0, '6-meses': 0, '1-ano': 0, '21-dias': 999 },
   },
 ];
 
@@ -239,6 +259,7 @@ export const DURATION_LABELS: Record<string, string> = {
   '3-meses': '3 Meses',
   '6-meses': '6 Meses',
   '1-ano': '1 Año',
+  '21-dias': 'Reto 21 dias',
 };
 
 export const DURATION_DESCRIPTIONS: Record<string, string> = {
@@ -246,6 +267,16 @@ export const DURATION_DESCRIPTIONS: Record<string, string> = {
   '3-meses': 'Resultados visibles',
   '6-meses': 'Transformación real',
   '1-ano': 'Cambio de vida',
+  '21-dias': 'Reto intensivo',
+};
+
+// Duracion en dias para calcular fin de suscripcion.
+export const DURATION_DAYS: Record<string, number> = {
+  '1-mes': 30,
+  '3-meses': 90,
+  '6-meses': 180,
+  '1-ano': 365,
+  '21-dias': 21,
 };
 
 export function getPlanBySlug(slug: string): Plan | undefined {
@@ -262,6 +293,14 @@ export function getDiscountPercentage(duration: string): number {
     '3-meses': 20,
     '6-meses': 33,
     '1-ano': 50,
+    '21-dias': 0,
   };
   return discounts[duration] ?? 0;
+}
+
+// Devuelve solo las duraciones que el plan comercializa (precio > 0).
+export function getAvailableDurations(plan: Plan): string[] {
+  return Object.entries(plan.prices)
+    .filter(([, price]) => price > 0)
+    .map(([d]) => d);
 }

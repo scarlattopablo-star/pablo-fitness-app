@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight, Dumbbell, UtensilsCrossed, Smartphone,
-  BarChart3, Zap, Target, Star, MessageCircle, Users,
-  ChevronLeft, ChevronRight, GripVertical, X,
+  BarChart3, Zap, Target, Star, Users, Sparkles,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { InstagramIcon } from "@/components/icons";
 import WhatsAppButton from "@/components/whatsapp-button";
 import { LanguageSelector } from "@/components/language-selector";
+import PainPointsBlock from "@/components/pain-points-block";
+import Glutes360Offer from "@/components/glutes-360-offer";
 import { useI18n } from "@/lib/i18n";
+import { trackEvent } from "@/lib/track-event";
 
 // Scroll reveal with stagger support
 function useScrollReveal(delay = 0) {
@@ -117,66 +120,6 @@ const heroImages = [
   "/images/pablo-row.jpg",
 ];
 
-// Before/After comparison slider
-function BeforeAfterSlider({ src, label }: { src: string; label: string }) {
-  const [position, setPosition] = useState(50);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-
-  const updatePosition = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    setPosition((x / rect.width) * 100);
-  }, []);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!dragging.current) return;
-      e.preventDefault();
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      updatePosition(clientX);
-    };
-    const onUp = () => { dragging.current = false; };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("touchmove", onMove, { passive: false });
-    window.addEventListener("mouseup", onUp);
-    window.addEventListener("touchend", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      window.removeEventListener("touchend", onUp);
-    };
-  }, [updatePosition]);
-
-  return (
-    <div
-      ref={containerRef}
-      className="relative w-full aspect-[3/4] max-w-sm mx-auto rounded-2xl overflow-hidden cursor-ew-resize select-none border border-card-border"
-      onMouseDown={(e) => { dragging.current = true; updatePosition(e.clientX); }}
-      onTouchStart={(e) => { dragging.current = true; updatePosition(e.touches[0].clientX); }}
-    >
-      {/* After (full background) */}
-      <img src={src} alt={`${label} - Después`} className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "right center" }} />
-      {/* Before (clipped) */}
-      <div className="absolute inset-0 overflow-hidden" style={{ width: `${position}%` }}>
-        <img src={src} alt={`${label} - Antes`} className="absolute inset-0 h-full object-cover" style={{ width: `${containerRef.current?.offsetWidth || 400}px`, objectPosition: "left center" }} />
-      </div>
-      {/* Handle */}
-      <div className="absolute top-0 bottom-0 z-10" style={{ left: `${position}%` }}>
-        <div className="absolute top-0 bottom-0 w-0.5 bg-accent -translate-x-1/2" />
-        <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-accent flex items-center justify-center shadow-lg shadow-accent/40">
-          <GripVertical className="h-5 w-5 text-black" />
-        </div>
-      </div>
-      {/* Labels */}
-      <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/60 text-xs font-bold text-white backdrop-blur-sm">ANTES</div>
-      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-accent/90 text-xs font-bold text-black backdrop-blur-sm">DESPUES</div>
-    </div>
-  );
-}
-
 // Testimonials data
 const testimonials = [
   { name: "Maria L.", result: "-12kg en 3 meses", quote: "Pablo me cambio la forma de entrenar. Nunca pense que iba a lograr estos resultados.", rating: 5 },
@@ -197,9 +140,6 @@ export default function HomePage() {
     const interval = setInterval(() => setHeroIndex(i => (i + 1) % heroImages.length), 4000);
     return () => clearInterval(interval);
   }, []);
-
-  // Modal slider for transformations
-  const [sliderModal, setSliderModal] = useState<string | null>(null);
 
   // Navbar shrink on scroll
   const [scrolled, setScrolled] = useState(false);
@@ -241,16 +181,8 @@ export default function HomePage() {
         </div>
       </nav>
 
-      {/* WHATSAPP FLOATING BUTTON — pulse animation */}
-      <a
-        href="https://wa.me/59897336318?text=Hola%20Pablo!%20Vi%20tu%20web%20y%20quiero%20info%20sobre%20los%20planes"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg shadow-[#25D366]/30 hover:scale-110 transition-transform animate-whatsapp-pulse"
-        aria-label="Chat por WhatsApp"
-      >
-        <MessageCircle className="h-7 w-7 text-white fill-white" />
-      </a>
+      {/* WHATSAPP FLOATING BUTTON — si está logueado abre chat interno, si no va a WA */}
+      <WhatsAppButton />
 
       {/* HERO — full viewport with parallax */}
       <section className="relative min-h-screen flex items-center px-4 overflow-hidden">
@@ -275,22 +207,23 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left — Copy */}
             <div>
+              {/* Badge del reto: NO confundir con el trial de 30 dias de los planes regulares — este reto es pago ($599 UYU). */}
               <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 animate-fade-in-up">
-                <Star className="h-4 w-4 text-accent fill-accent" />
-                <span className="text-sm font-bold text-accent">30 DIAS GRATIS</span>
-                <span className="text-xs text-muted">sin compromiso</span>
+                <Sparkles className="h-4 w-4 text-accent" />
+                <span className="text-sm font-bold text-accent">RETO 21 DIAS</span>
+                <span className="text-xs text-muted">cupos limitados</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1] mb-6 animate-fade-in-up animate-delay-100 tracking-tight">
-                Entrenamiento
+                Gluteos y abdomen
                 <br />
-                + Nutricion
+                en 21 dias
                 <br />
-                <span className="text-gradient">Personalizada</span>
+                <span className="text-gradient">sin dietas extremas</span>
               </h1>
 
               <p className="text-base sm:text-lg text-muted max-w-md mb-8 animate-fade-in-up animate-delay-200 leading-relaxed">
-                Pablo Scarlatto · Entrenador personal de fitness y musculacion · Campeon de fisicoculturismo 2019
+                Programa disenado para mujeres que quieren resultados reales con un metodo simple — sin vivir en el gym.
               </p>
 
               {/* Social proof - avatar stack */}
@@ -308,14 +241,25 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up animate-delay-300 mb-10">
-                <Link href="/registro-gratis" className="btn-shimmer text-base px-8 py-4 rounded-full flex items-center justify-center gap-2 font-bold">
-                  Empezar gratis <ArrowRight className="h-5 w-5" />
-                </Link>
-                <Link href="/planes" className="btn-outline-premium text-base px-8 py-4 rounded-full flex items-center justify-center gap-2">
-                  Ver planes
+              <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up animate-delay-300 mb-3">
+                <a
+                  href="#oferta-glutes-360"
+                  onClick={() => trackEvent("cta_hero_click", { destino: "oferta" })}
+                  className="btn-shimmer text-base px-8 py-4 rounded-full flex items-center justify-center gap-2 font-bold"
+                >
+                  Quiero empezar ahora <ArrowRight className="h-5 w-5" />
+                </a>
+                <Link
+                  href="/planes"
+                  onClick={() => trackEvent("cta_hero_click", { destino: "planes" })}
+                  className="btn-outline-premium text-base px-8 py-4 rounded-full flex items-center justify-center gap-2"
+                >
+                  Unirme al programa
                 </Link>
               </div>
+              <p className="text-xs text-muted mb-10 animate-fade-in-up animate-delay-300">
+                ✓ Acceso inmediato &nbsp;·&nbsp; ✓ Sin compromiso a largo plazo &nbsp;·&nbsp; ✓ Resultados en 21 dias
+              </p>
 
               {/* Animated counters - enhanced */}
               <div className="flex gap-8 animate-fade-in-up animate-delay-400 border-t border-card-border/30 pt-6">
@@ -358,14 +302,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* CRO: bloque de identificacion (dolor) */}
+      <PainPointsBlock />
+
       {/* URGENCY BANNER */}
       <ScrollReveal>
         <div className="bg-accent/10 border-y border-accent/20 py-4 px-4">
           <div className="max-w-4xl mx-auto flex items-center justify-center gap-3">
             <Users className="h-5 w-5 text-accent shrink-0 animate-pulse" />
             <p className="text-sm font-bold text-center">
-              <span className="text-accent">Quedan 5 lugares</span>
-              <span className="text-muted"> para planes personalizados este mes</span>
+              <span className="text-accent">Cupos muy limitados</span>
+              <span className="text-muted"> — Pablo acepta pocos clientes nuevos por mes para dar atencion personal</span>
             </p>
           </div>
         </div>
@@ -384,13 +331,12 @@ export default function HomePage() {
             {transformations.map((item, i) => (
               <ScrollReveal key={i} delay={i * 80}>
                 <div
-                  className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/5 cursor-pointer"
-                  onClick={() => setSliderModal(item.src)}
+                  className="card-premium rounded-xl overflow-hidden group border border-card-border/50 hover:border-accent/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/5"
                 >
                   <img src={item.src} alt={item.result} className="w-full object-contain group-hover:scale-[1.03] transition-transform duration-500" loading="lazy" />
                   <div className="p-3 text-center border-t border-card-border/30">
                     <p className="text-accent font-bold text-xs">{item.result}</p>
-                    <p className="text-[10px] text-muted mt-0.5">Toca para comparar</p>
+                    <p className="text-[10px] text-muted mt-0.5">Resultado real</p>
                   </div>
                 </div>
               </ScrollReveal>
@@ -442,6 +388,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* CRO: oferta destacada Gluteos 360 */}
+      <Glutes360Offer />
 
       {/* QUE INCLUYE — staggered cards */}
       <section id="incluido" className="py-16 px-4 bg-card-bg/30">
@@ -608,16 +557,20 @@ export default function HomePage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent/[0.04] rounded-full blur-[100px]" />
         <ScrollReveal className="max-w-2xl mx-auto text-center relative">
           <h2 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight">
-            Empeza tu
+            Empeza el reto
             <br />
-            <span className="text-gradient">transformacion hoy</span>
+            <span className="text-gradient">Gluteos 360 hoy</span>
           </h2>
           <p className="text-muted mb-8 max-w-md mx-auto">
-            30 dias gratis. Sin tarjeta. Sin compromiso. Entrena con un plan hecho para vos.
+            Acceso inmediato. Resultados en 21 dias. Cupos limitados este mes.
           </p>
-          <Link href="/registro-gratis" className="btn-shimmer inline-flex items-center gap-2 text-lg px-10 py-4 rounded-full font-bold hover:scale-105 transition-transform">
-            Empezar gratis <ArrowRight className="h-5 w-5" />
-          </Link>
+          <a
+            href="#oferta-glutes-360"
+            onClick={() => trackEvent("cta_final_click", { destino: "oferta" })}
+            className="btn-shimmer inline-flex items-center gap-2 text-lg px-10 py-4 rounded-full font-bold hover:scale-105 transition-transform"
+          >
+            Unirme al programa <ArrowRight className="h-5 w-5" />
+          </a>
           <div className="mt-4">
             <Link href="/planes" className="text-sm text-muted hover:text-primary transition-colors">
               o ver todos los planes →
@@ -625,19 +578,6 @@ export default function HomePage() {
           </div>
         </ScrollReveal>
       </section>
-
-      {/* SLIDER MODAL */}
-      {sliderModal && (
-        <div className="fixed inset-0 z-[60] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSliderModal(null)}>
-          <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors" onClick={() => setSliderModal(null)}>
-            <X className="h-6 w-6 text-white" />
-          </button>
-          <div className="w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <p className="text-center text-sm text-muted mb-4">Arrastra para comparar antes y despues</p>
-            <BeforeAfterSlider src={sliderModal} label="Transformacion" />
-          </div>
-        </div>
-      )}
 
       {/* FOOTER */}
       <footer className="border-t border-card-border/50 py-6 px-4">
@@ -656,8 +596,6 @@ export default function HomePage() {
         </div>
       </footer>
 
-      {/* WhatsApp floating button */}
-      <WhatsAppButton />
     </main>
   );
 }
