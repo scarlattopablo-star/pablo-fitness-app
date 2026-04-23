@@ -17,7 +17,21 @@ interface TrainingExercise {
   reps: string;
   rest: string;
   notes: string;
+  // Metodo de entrenamiento elegido explicitamente por Pablo (opcional).
+  // Si es vacio o "standard", el cliente no ve ninguna nota de metodo.
+  method?: string;
 }
+
+// Metodos disponibles en el dropdown. value = lo que se guarda; label = lo que ve Pablo.
+const METHOD_OPTIONS: { value: string; label: string }[] = [
+  { value: "",           label: "Sin método" },
+  { value: "superset",   label: "Superserie" },
+  { value: "giant-set",  label: "Serie gigante" },
+  { value: "drop-set",   label: "Drop set" },
+  { value: "pyramid",    label: "Piramidal" },
+  { value: "rest-pause", label: "Rest-pause" },
+  { value: "cluster",    label: "Cluster" },
+];
 
 interface TrainingDay {
   day: string;
@@ -32,7 +46,7 @@ interface Meal {
 }
 
 const EMPTY_EXERCISE: TrainingExercise = {
-  exerciseId: "", name: "", sets: 4, reps: "10", rest: "60s", notes: "",
+  exerciseId: "", name: "", sets: 4, reps: "10", rest: "60s", notes: "", method: "",
 };
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -303,7 +317,10 @@ export default function PlanEditorPage({
     try {
       const numDays = trainingDays.length || 5;
       const generated = generateTrainingPlan(numDays, objective, emphasis, clientWeight, clientSex, clientActivityLevel);
-      // Map generated format (id) to editor format (exerciseId)
+      // Map generated format (id) to editor format (exerciseId).
+      // Ya NO pegamos el texto largo del metodo en `notes` — lo guardamos como
+      // `method` para que Pablo elija desde el dropdown. El cliente solo ve un
+      // badge corto segun el metodo, nunca parrafos automaticos.
       const mapped: TrainingDay[] = generated.map(day => ({
         day: day.day,
         instructions: day.instructions || "",
@@ -313,7 +330,8 @@ export default function PlanEditorPage({
           sets: ex.sets,
           reps: ex.reps,
           rest: ex.rest,
-          notes: ex.notes || (ex.method && ex.method !== "standard" ? `${ex.methodExplanation || ""}${ex.pairedWith ? ` (con ${ex.pairedWith})` : ""}` : ""),
+          notes: "", // <-- dejar vacio; Pablo escribe lo que quiera
+          method: ex.method && ex.method !== "standard" ? ex.method : "",
         })),
       }));
       setTrainingDays(mapped);
@@ -467,41 +485,64 @@ export default function PlanEditorPage({
 
               <div className="p-4 space-y-3">
                 {day.exercises.map((ex, exIdx) => (
-                  <div key={exIdx} className="flex flex-wrap gap-2 items-center bg-card-bg rounded-xl p-3">
-                    <select
-                      value={ex.exerciseId}
-                      onChange={(e) => updateExercise(dayIdx, exIdx, "exerciseId", e.target.value)}
-                      className="flex-1 min-w-[200px] bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    >
-                      <option value="">Seleccionar ejercicio...</option>
-                      {EXERCISES.map((exercise) => (
-                        <option key={exercise.id} value={exercise.id}>{exercise.name}</option>
-                      ))}
-                    </select>
-                    <input
-                      value={ex.sets}
-                      onChange={(e) => updateExercise(dayIdx, exIdx, "sets", Number(e.target.value))}
-                      type="number"
-                      min={1}
-                      className="w-16 bg-background border border-card-border rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:border-primary"
-                      placeholder="Sets"
-                    />
-                    <span className="text-xs text-muted">x</span>
-                    <input
-                      value={ex.reps}
-                      onChange={(e) => updateExercise(dayIdx, exIdx, "reps", e.target.value)}
-                      className="w-20 bg-background border border-card-border rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:border-primary"
-                      placeholder="Reps"
-                    />
-                    <input
-                      value={ex.rest}
-                      onChange={(e) => updateExercise(dayIdx, exIdx, "rest", e.target.value)}
-                      className="w-20 bg-background border border-card-border rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:border-primary"
-                      placeholder="Desc."
-                    />
-                    <button onClick={() => removeExercise(dayIdx, exIdx)} className="text-muted hover:text-danger">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div key={exIdx} className="flex flex-col gap-2 bg-card-bg rounded-xl p-3">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <select
+                        value={ex.exerciseId}
+                        onChange={(e) => updateExercise(dayIdx, exIdx, "exerciseId", e.target.value)}
+                        className="flex-1 min-w-[200px] bg-background border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      >
+                        <option value="">Seleccionar ejercicio...</option>
+                        {EXERCISES.map((exercise) => (
+                          <option key={exercise.id} value={exercise.id}>{exercise.name}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={ex.sets}
+                        onChange={(e) => updateExercise(dayIdx, exIdx, "sets", Number(e.target.value))}
+                        type="number"
+                        min={1}
+                        className="w-16 bg-background border border-card-border rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:border-primary"
+                        placeholder="Sets"
+                      />
+                      <span className="text-xs text-muted">x</span>
+                      <input
+                        value={ex.reps}
+                        onChange={(e) => updateExercise(dayIdx, exIdx, "reps", e.target.value)}
+                        className="w-20 bg-background border border-card-border rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:border-primary"
+                        placeholder="Reps"
+                      />
+                      <input
+                        value={ex.rest}
+                        onChange={(e) => updateExercise(dayIdx, exIdx, "rest", e.target.value)}
+                        className="w-20 bg-background border border-card-border rounded-lg px-2 py-2 text-sm text-center focus:outline-none focus:border-primary"
+                        placeholder="Desc."
+                      />
+                      <button onClick={() => removeExercise(dayIdx, exIdx)} className="text-muted hover:text-danger">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Metodo opcional + nota personal. Solo se muestran al cliente si tienen valor. */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <select
+                        value={ex.method || ""}
+                        onChange={(e) => updateExercise(dayIdx, exIdx, "method", e.target.value)}
+                        className="min-w-[140px] bg-background border border-card-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+                        title="Método de entrenamiento (opcional)"
+                      >
+                        {METHOD_OPTIONS.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        value={ex.notes || ""}
+                        onChange={(e) => updateExercise(dayIdx, exIdx, "notes", e.target.value)}
+                        className="flex-1 min-w-[150px] bg-background border border-card-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+                        placeholder="Nota personal (opcional) — ej: cuidar rodillas"
+                        maxLength={140}
+                      />
+                    </div>
                   </div>
                 ))}
                 <button
