@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Flame, Plus, Loader2, Check, X, Trash2, Zap } from "lucide-react";
+import { Flame, Plus, Loader2, Check, X, Trash2, Zap, Dumbbell, Route } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   ACTIVITY_PRESETS,
   estimateKcal,
   INTENSITY_LABELS,
+  supportsDistance,
   type ActivityIntensity,
   getActivityById,
 } from "@/lib/extra-activity-calc";
@@ -19,6 +20,8 @@ interface ExtraActivityRow {
   duration_min: number;
   intensity: ActivityIntensity;
   kcal_burned: number;
+  strength_same_day?: boolean | null;
+  distance_km?: number | null;
 }
 
 interface Props {
@@ -36,15 +39,22 @@ export default function ExtraActivityLogger({ userId, weightKg, onLogged }: Prop
   const [activityId, setActivityId] = useState<string>("correr");
   const [duration, setDuration] = useState<number>(30);
   const [intensity, setIntensity] = useState<ActivityIntensity>("media");
+  const [strengthSameDay, setStrengthSameDay] = useState(false);
+  const [distanceKm, setDistanceKm] = useState<string>(""); // string para input libre
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string>("");
   const [todayRows, setTodayRows] = useState<ExtraActivityRow[]>([]);
 
   const preset = useMemo(() => getActivityById(activityId), [activityId]);
+  const showDistance = useMemo(() => supportsDistance(activityId), [activityId]);
+  const distanceNum = useMemo(() => {
+    const n = parseFloat(distanceKm);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [distanceKm]);
   const kcalPreview = useMemo(
-    () => estimateKcal({ activityId, durationMin: duration, intensity, weightKg }),
-    [activityId, duration, intensity, weightKg]
+    () => estimateKcal({ activityId, durationMin: duration, intensity, weightKg, distanceKm: distanceNum }),
+    [activityId, duration, intensity, weightKg, distanceNum]
   );
 
   // Sync preset default minutes al cambiar de actividad.
@@ -56,7 +66,7 @@ export default function ExtraActivityLogger({ userId, weightKg, onLogged }: Prop
     const today = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("extra_activities")
-      .select("id, date, activity_type, label, duration_min, intensity, kcal_burned")
+      .select("id, date, activity_type, label, duration_min, intensity, kcal_burned, strength_same_day, distance_km")
       .eq("user_id", userId)
       .eq("date", today)
       .order("created_at", { ascending: false });
@@ -81,21 +91,36 @@ export default function ExtraActivityLogger({ userId, weightKg, onLogged }: Prop
         duration_min: duration,
         intensity,
         kcal_burned: kcalPreview,
+        strength_same_day: strengthSameDay,
+        distance_km: showDistance && distanceNum ? distanceNum : null,
         notes: notes.trim() || null,
       });
       if (error) throw error;
 
-      // Suma XP — 10 base + 5 si duracion >= 45min + 5 si intensidad alta.
-      const xp = 10 + (duration >= 45 ? 5 : 0) + (intensity === "alta" ? 5 : 0);
+      // Suma XP — 10 base + 5 si duracion >= 45min + 5 si intensidad alta
+      // + 5 extra si tambien hizo fuerza ese dia (dia "doble").
+      const xp = 10
+        + (duration >= 45 ? 5 : 0)
+        + (intensity === "alta" ? 5 : 0)
+        + (strengthSameDay ? 5 : 0);
       await supabase.from("gamification_events").insert({
         user_id: userId,
         event_type: "extra_activity",
         xp_earned: xp,
-        metadata: { activity_type: preset.id, duration_min: duration, intensity, kcal: kcalPreview },
+        metadata: {
+          activity_type: preset.id,
+          duration_min: duration,
+          intensity,
+          kcal: kcalPreview,
+          strength_same_day: strengthSameDay,
+          distance_km: showDistance && distanceNum ? distanceNum : null,
+        },
       });
 
       setToast(`✓ Registrado: ${kcalPreview} kcal · +${xp} XP`);
       setNotes("");
+      setStrengthSameDay(false);
+      setDistanceKm("");
       await loadToday();
       onLogged?.();
       setTimeout(() => setToast(""), 3000);
@@ -198,6 +223,48 @@ export default function ExtraActivityLogger({ userId, weightKg, onLogged }: Prop
             </div>
           </div>
 
+          {/* Distancia (opcional, solo para actividades con pace) */}
+          {showDistance && (
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted mb-2 flex items-center gap-1.5">
+                <Route className="h-3 w-3" /> Distancia (opcional)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="300"
+                  value={distanceKm}
+                  onChange={(e) => setDistanceKm(e.target.value)}
+                  placeholder="Ej: 5.2"
+                  className="flex-1 bg-card-bg border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent transition-colors"
+                />
+                <span className="text-xs font-bold text-muted">km</span>
+              </div>
+              {distanceNum && (
+                <p className="text-[10px] text-muted mt-1">
+                  Pace: {(duration / distanceNum).toFixed(1)} min/km · {(distanceNum / (duration / 60)).toFixed(1)} km/h
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Entrenamiento de fuerza el mismo dia */}
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-card-border hover:border-muted transition-colors cursor-pointer">
+            <input
+              type="checkbox"
+              checked={strengthSameDay}
+              onChange={(e) => setStrengthSameDay(e.target.checked)}
+              className="w-4 h-4 accent-accent shrink-0"
+            />
+            <Dumbbell className="h-4 w-4 text-accent shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold">Hice fuerza hoy (del plan)</p>
+              <p className="text-[10px] text-muted">Suma al volumen del dia · +5 XP extra</p>
+            </div>
+          </label>
+
           {/* Notas opcionales */}
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-muted block mb-2">Nota (opcional)</label>
@@ -218,12 +285,13 @@ export default function ExtraActivityLogger({ userId, weightKg, onLogged }: Prop
               <p className="text-2xl font-black text-accent flex items-center gap-1.5">
                 <Flame className="h-5 w-5" /> {kcalPreview} kcal
               </p>
+              <p className="text-[9px] text-muted">Compendium Ainsworth · formula VO2</p>
             </div>
             <div className="text-right">
               <p className="text-[10px] text-muted uppercase tracking-wider">XP</p>
               <p className="text-sm font-bold text-amber-400 flex items-center gap-1">
                 <Zap className="h-3.5 w-3.5" />
-                +{10 + (duration >= 45 ? 5 : 0) + (intensity === "alta" ? 5 : 0)}
+                +{10 + (duration >= 45 ? 5 : 0) + (intensity === "alta" ? 5 : 0) + (strengthSameDay ? 5 : 0)}
               </p>
             </div>
           </div>
@@ -252,9 +320,19 @@ export default function ExtraActivityLogger({ userId, weightKg, onLogged }: Prop
               <span className="text-lg">{getActivityById(r.activity_type).emoji}</span>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">
-                  {r.label} <span className="text-muted font-normal">· {r.duration_min} min · {INTENSITY_LABELS[r.intensity]}</span>
+                  {r.label}
+                  <span className="text-muted font-normal">
+                    {" · "}{r.duration_min} min{r.distance_km ? ` · ${r.distance_km} km` : ""} · {INTENSITY_LABELS[r.intensity]}
+                  </span>
                 </p>
-                <p className="text-[10px] text-orange-400 font-bold">{r.kcal_burned} kcal</p>
+                <p className="text-[10px] text-orange-400 font-bold flex items-center gap-1">
+                  {r.kcal_burned} kcal
+                  {r.strength_same_day && (
+                    <span className="text-accent inline-flex items-center gap-0.5 ml-1">
+                      <Dumbbell className="h-3 w-3" /> + fuerza
+                    </span>
+                  )}
+                </p>
               </div>
               <button
                 onClick={() => remove(r.id)}
