@@ -112,6 +112,8 @@ export default function ClienteDetailPage({
   const [convertingToDirect, setConvertingToDirect] = useState(false);
   const [convertMsg, setConvertMsg] = useState("");
   const [copiedRoutine, setCopiedRoutine] = useState<{ days: any[]; clientName?: string } | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generateMsg, setGenerateMsg] = useState("");
   const [pastingRoutine, setPastingRoutine] = useState(false);
   const [pasteMsg, setPasteMsg] = useState("");
   const [savingTraining, setSavingTraining] = useState(false);
@@ -288,6 +290,35 @@ export default function ClienteDetailPage({
       setPasteMsg("Error: " + toMsg(err));
     } finally {
       setPastingRoutine(false);
+    }
+  };
+
+  // Generar/regenerar training + nutrition plan automatico desde la survey del cliente.
+  const autoGeneratePlans = async (overwrite = false) => {
+    if (generating) return;
+    if (overwrite && !confirm("¿Regenerar los planes de este cliente? Se reemplazaran los actuales.")) return;
+    setGenerating(true);
+    setGenerateMsg("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Sesion expirada — recargá la pagina");
+      const res = await fetch("/api/admin/generate-plans-for-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId: id, overwrite }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+      const extra = body.heightFixed ? " (altura corregida a cm)" : "";
+      setGenerateMsg(`✓ Plan generado: ${body.trainingDays} días, ${body.meals} comidas${extra}. Recargá para verlo.`);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      setGenerateMsg("Error: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -856,7 +887,21 @@ export default function ClienteDetailPage({
         </button>
 
         {trainingDays.length === 0 && (
-          <p className="text-sm text-muted mt-2">Sin plan asignado</p>
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
+            <p className="text-sm text-muted">Sin plan asignado</p>
+            <button
+              onClick={() => autoGeneratePlans(false)}
+              disabled={generating}
+              className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
+            >
+              ⚡ {generating ? "Generando..." : "Generar plan automático desde encuesta"}
+            </button>
+            {generateMsg && (
+              <p className={`text-xs font-medium ${generateMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
+                {generateMsg}
+              </p>
+            )}
+          </div>
         )}
 
         {expandTraining && trainingDays.length > 0 && !editingTraining && (

@@ -570,6 +570,18 @@ export default function EncuestaPage() {
                       throw new Error(err.error || "No pudimos activar tu prueba");
                     }
 
+                    // Auto-generar training_plan + nutrition_plan basado en la survey.
+                    // Si falla, seguimos igual al onboarding — Pablo puede generarlo
+                    // a mano despues desde el admin.
+                    fetch("/api/admin/generate-plans-for-user", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({ userId, overwrite: false }),
+                    }).catch(() => { /* silent: no bloquear el flujo del cliente */ });
+
                     // Antes del dashboard: splash + 5 slides (onboarding) → bienvenida (meta + foto + push) → dashboard.
                     // Si es el reto Gluteos 360, insertamos el briefing PRIMERO: reto-briefing -> onboarding -> bienvenida -> dashboard.
                     const onboardingUrl = "/onboarding?next=" + encodeURIComponent("/dashboard/bienvenida");
