@@ -300,8 +300,8 @@ export function diasHastaCierre(ref: Date = new Date()): number {
  * CUPOS_RESTANTES_ESTE_MES: cuando baje a 0, el componente muestra "sin cupos"
  *                          y deriva a lista de espera. Numero bajo crea urgencia.
  */
-export const CUPOS_RESTANTES_ESTE_MES = 3;
-export const CUPOS_AGOTADOS_ESTE_MES = CUPOS_RESTANTES_ESTE_MES <= 0;
+export const CUPOS_RESTANTES_ESTE_MES: number = 3;
+export const CUPOS_AGOTADOS_ESTE_MES: boolean = CUPOS_RESTANTES_ESTE_MES <= 0;
 
 /** Texto del proximo mes disponible (el que abre el 1ro del mes siguiente). */
 export function formatProximoCohorte(ref: Date = new Date()): string {
