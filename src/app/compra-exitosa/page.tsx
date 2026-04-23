@@ -40,9 +40,19 @@ export default function CompraExitosaPage() {
 
         // Si es la primera vez del cliente, pasa por splash + 5 slides (/onboarding) antes del destino.
         const sawSlides = typeof window !== "undefined" && localStorage.getItem("hasSeenOnboarding") === "true";
-        const destination = (!sawSlides && !profile?.is_admin)
-          ? `/onboarding?next=${encodeURIComponent(coreDestination)}`
-          : coreDestination;
+        // Reto Gluteos 360 → briefing antes del onboarding.
+        const planSlugFromUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("plan") : null;
+        const isReto = planSlugFromUrl === "glutes-360";
+
+        let destination = coreDestination;
+        if (!profile?.is_admin) {
+          const onboarding = !sawSlides
+            ? `/onboarding?next=${encodeURIComponent(coreDestination)}`
+            : coreDestination;
+          destination = isReto
+            ? `/reto-briefing?next=${encodeURIComponent(onboarding)}`
+            : onboarding;
+        }
 
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -104,7 +114,10 @@ export default function CompraExitosaPage() {
                     ? (prof?.onboarding_completed_at ? "/dashboard" : "/dashboard/bienvenida")
                     : "/encuesta-directa";
                   const saw = localStorage.getItem("hasSeenOnboarding") === "true";
-                  router.push(saw ? core : `/onboarding?next=${encodeURIComponent(core)}`);
+                  const onboarding = saw ? core : `/onboarding?next=${encodeURIComponent(core)}`;
+                  const slugParam = new URLSearchParams(window.location.search).get("plan");
+                  const isRetoBtn = slugParam === "glutes-360";
+                  router.push(isRetoBtn ? `/reto-briefing?next=${encodeURIComponent(onboarding)}` : onboarding);
                 } else {
                   router.push("/login");
                 }

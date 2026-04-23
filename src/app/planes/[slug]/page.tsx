@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getPlanBySlug, DURATION_LABELS, getDiscountPercentage, formatPrice, getAvailableDurations } from "@/lib/plans-data";
 import CountdownTimer from "@/components/countdown-timer";
+import Glutes360Timeline from "@/components/glutes-360-timeline";
 import type { Duration } from "@/types";
 
 const PROMO_END = "2026-05-31T23:59:59-03:00";
@@ -122,6 +123,9 @@ export default function PlanDetailPage({
                 </li>
               ))}
             </ul>
+
+            {/* Para el reto: timeline visual de las 3 semanas (pre-venta) */}
+            {plan.slug === "glutes-360" && <Glutes360Timeline />}
 
             <h2 className="text-xl font-bold mb-4">Cómo funciona</h2>
             <div className="space-y-4">

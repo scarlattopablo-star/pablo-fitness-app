@@ -571,7 +571,12 @@ export default function EncuestaPage() {
                     }
 
                     // Antes del dashboard: splash + 5 slides (onboarding) → bienvenida (meta + foto + push) → dashboard.
-                    window.location.href = "/onboarding?next=" + encodeURIComponent("/dashboard/bienvenida");
+                    // Si es el reto Gluteos 360, insertamos el briefing PRIMERO: reto-briefing -> onboarding -> bienvenida -> dashboard.
+                    const onboardingUrl = "/onboarding?next=" + encodeURIComponent("/dashboard/bienvenida");
+                    const finalUrl = isRetoGlutes
+                      ? "/reto-briefing?next=" + encodeURIComponent(onboardingUrl)
+                      : onboardingUrl;
+                    window.location.href = finalUrl;
                   } catch (e) {
                     setFinishError(e instanceof Error ? e.message : "Error al finalizar");
                     setFinishing(false);
