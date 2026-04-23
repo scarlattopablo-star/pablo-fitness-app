@@ -47,11 +47,12 @@ export async function POST(request: NextRequest) {
     }
 
     // SELECT (sin .single/.maybeSingle para tolerar duplicados existentes).
+    // training_plans solo tiene created_at (no updated_at).
     const { data: rows, error: selErr } = await supabaseAdmin
       .from("training_plans")
-      .select("id, data, updated_at")
+      .select("id, data, created_at")
       .eq("user_id", targetUserId)
-      .order("updated_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false, nullsFirst: false })
       .limit(5);
 
     if (selErr) {
