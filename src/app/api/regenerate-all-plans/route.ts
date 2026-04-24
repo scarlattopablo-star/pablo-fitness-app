@@ -90,26 +90,44 @@ export async function POST(request: NextRequest) {
         const activityLevel = String(survey.activity_level || "moderado") as ActivityLevel;
         const nutritionalGoal = (survey.nutritional_goal || null) as NutritionalGoal | null;
 
-        let target_calories = Number(survey.target_calories) || 2000;
-        let protein = Number(survey.protein) || 150;
-        let carbs = Number(survey.carbs) || 200;
-        let fats = Number(survey.fats) || 60;
+        // Correccion de altura: si viene <10 (usuaria ingreso metros por error), convertir a cm.
+        let heightCm = Number(survey.height) || 170;
+        let heightFixed = false;
+        if (heightCm > 0 && heightCm < 10) { heightCm = Math.round(heightCm * 100); heightFixed = true; }
 
-        if (nutritionalGoal && PLANS_NEEDING_GOAL.includes(objective as PlanSlug)) {
-          const recalc = calculateMacros(
-            userSex,
-            Number(survey.weight) || 70,
-            Number(survey.height) || 170,
-            Number(survey.age) || 25,
-            activityLevel,
-            objective as PlanSlug,
-            nutritionalGoal
-          );
-          target_calories = recalc.targetCalories;
-          protein = recalc.protein;
-          carbs = recalc.carbs;
-          fats = recalc.fats;
-        }
+        // SIEMPRE recalcular macros con la logica nueva de harris-benedict
+        // (objetivo manda sobre nutritional_goal para objetivos con direccion clara).
+        // Antes esto solo se hacia si venia nutritional_goal, por eso habian
+        // planes viejos con target incorrecto.
+        const recalc = calculateMacros(
+          userSex,
+          Number(survey.weight) || 70,
+          heightCm,
+          Number(survey.age) || 25,
+          activityLevel,
+          objective as PlanSlug,
+          nutritionalGoal ?? undefined
+        );
+        const target_calories = recalc.targetCalories;
+        const protein = recalc.protein;
+        const carbs = recalc.carbs;
+        const fats = recalc.fats;
+
+        // Persistir los macros corregidos (y la altura) en la survey row para que
+        // la UI y los calculos del cliente coincidan con el nuevo plan.
+        const surveyPatch: Record<string, unknown> = {
+          tmb: recalc.tmb,
+          tdee: recalc.tdee,
+          target_calories,
+          protein,
+          carbs,
+          fats,
+        };
+        if (heightFixed) surveyPatch.height = heightCm;
+        await supabase.from("surveys").update(surveyPatch).eq("user_id", userId);
+        // PLANS_NEEDING_GOAL ya no se usa para decidir recalcular, pero lo dejamos
+        // importado por compatibilidad.
+        void PLANS_NEEDING_GOAL;
 
         const training = generateTrainingPlan(
           trainingDays, objective, emphasis, userWeight, userSex, activityLevel
