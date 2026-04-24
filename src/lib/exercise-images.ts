@@ -140,6 +140,25 @@ const EXERCISE_GIFS: Record<string, string> = {
   'remo-cable-unilateral': gif('remo-cable-unilateral'),
   'remo-barra-unilateral': gif('remo-barra-unilateral'),
   'peso-muerto-unilateral': gif('peso-muerto-unilateral'),
+
+  // --- Nuevos ejercicios mapeados a GIFs existentes similares ---
+  // Glúteos / Piernas
+  'glute-bridge-pausa': gif('puente-gluteo'),
+  'hip-thrust-unipodal': gif('hip-thrust-banda'),
+  'frog-pump': gif('puente-gluteo'),
+  'curtsy-lunge': gif('zancadas-laterales'),
+  'kickback-banda': gif('patada-gluteo'),
+  'cable-glute-kickback': gif('extension-cadera-polea'),
+  'abduccion-banda-acostada': gif('abduccion-cadera'),
+  'donkey-kick-banda': gif('donkey-kicks'),
+  'good-morning-banda': gif('buenos-dias'),
+  'box-jump': gif('jumping-jacks'),
+  'sentadilla-jefferson': gif('sentadilla-frontal'),
+  // Abdomen
+  'flutter-kicks': gif('elevacion-piernas'),
+  'scissor-kicks': gif('elevacion-piernas'),
+  'toe-touches': gif('crunch-suelo'),
+  'crunch-maquina': gif('crunch-polea'),
   'split-squat-mancuerna': gif('split-squat-mancuerna'),
   'sentadilla-unilateral': gif('sentadilla-unilateral'),
   'pantorrilla-unilateral': gif('pantorrilla-unilateral'),

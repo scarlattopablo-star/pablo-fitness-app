@@ -1402,6 +1402,69 @@ export const EXERCISES: Exercise[] = [
   { id: 'external-rotation', name: 'Rotación Externa con Banda', muscleGroup: 'hombros',
     description: 'Rotación externa del hombro. Esencial para el manguito rotador.',
     steps: ['Banda o cable a la altura del codo', 'Codo a 90 grados pegado al costado', 'Rotar antebrazo hacia afuera', 'Controlar movimiento al abrir y cerrar', 'Realizar 15-20 reps con resistencia ligera'], videoUrl: 'SEARCH' },
+
+  // ============= GLUTEOS (reto + mujeres) =============
+  { id: 'glute-bridge-pausa', name: 'Puente de Glúteo con Pausa', muscleGroup: 'piernas',
+    description: 'Puente de glúteo acentuando la contracción arriba (pausa 2s). Activación máxima del glúteo mayor.',
+    steps: ['Acostada boca arriba, pies al ancho de caderas', 'Apretar glúteos y elevar cadera hasta línea recta', 'Mantener 2 segundos arriba apretando bien', 'Bajar controlado sin tocar el piso', 'Mantener lumbar pegada en todo momento'], videoUrl: 'SEARCH' },
+
+  { id: 'hip-thrust-unipodal', name: 'Hip Thrust a Una Pierna', muscleGroup: 'piernas',
+    description: 'Hip thrust unipodal con apoyo en banco. Máxima activación unilateral de glúteo mayor.',
+    steps: ['Espalda alta apoyada en banco, una pierna flexionada', 'Otra pierna extendida al frente o cruzada', 'Empujar con talón apoyado elevando cadera', 'Apretar glúteo en el punto más alto', 'Bajar controlado y repetir'], videoUrl: 'SEARCH' },
+
+  { id: 'frog-pump', name: 'Frog Pump', muscleGroup: 'piernas',
+    description: 'Variante del puente con pies en rana. Aísla glúteo mayor sin cargar cuádriceps.',
+    steps: ['Acostada, plantas de los pies juntas, rodillas abiertas', 'Los talones cerca de los glúteos', 'Elevar cadera apretando glúteos', 'Mantener 1 segundo arriba', 'Bajar despacio y repetir'], videoUrl: 'SEARCH' },
+
+  { id: 'curtsy-lunge', name: 'Curtsy Lunge (Desplante Cruzado)', muscleGroup: 'piernas',
+    description: 'Desplante cruzado que activa glúteo medio y menor. Forma redondeada lateral.',
+    steps: ['De pie, manos en la cintura o con mancuernas', 'Cruzar una pierna atrás por detrás de la otra', 'Bajar flexionando ambas rodillas como haciendo reverencia', 'Subir empujando con el talón de la pierna de adelante', 'Alternar lados manteniendo el torso recto'], videoUrl: 'SEARCH' },
+
+  { id: 'kickback-banda', name: 'Patada de Glúteo con Banda', muscleGroup: 'piernas',
+    description: 'Patada atrás en 4 puntos con banda elástica. Activa glúteo mayor sin carga pesada.',
+    steps: ['En 4 puntos con banda enganchada en el pie', 'Mantener espalda neutra y core activo', 'Llevar pierna hacia atrás extendiendo con fuerza', 'Apretar glúteo en el punto máximo', 'Bajar controlado sin tocar el piso'], videoUrl: 'SEARCH' },
+
+  { id: 'cable-glute-kickback', name: 'Kickback de Glúteo en Polea', muscleGroup: 'piernas',
+    description: 'Patada atrás con polea baja. Tensión constante sobre el glúteo.',
+    steps: ['Tobillera en polea baja, mirando al equipo', 'Flexionar levemente el torso adelante', 'Extender la pierna hacia atrás con fuerza', 'Apretar glúteo 1 segundo arriba', 'Volver controlado sin dejar caer el peso'], videoUrl: 'SEARCH' },
+
+  { id: 'abduccion-banda-acostada', name: 'Abducción Acostada con Banda', muscleGroup: 'piernas',
+    description: 'Clamshell con banda: abre las rodillas contra resistencia. Foco glúteo medio.',
+    steps: ['Acostada de lado, rodillas flexionadas 90°', 'Banda elástica arriba de las rodillas', 'Abrir la rodilla superior manteniendo los pies juntos', 'Pausa 1 segundo apretando glúteo medio', 'Bajar controlado y repetir'], videoUrl: 'SEARCH' },
+
+  { id: 'donkey-kick-banda', name: 'Donkey Kick con Banda', muscleGroup: 'piernas',
+    description: 'Donkey kick con banda alrededor del pie/rodilla. Resistencia constante.',
+    steps: ['En 4 puntos con banda enganchada', 'Empujar hacia arriba como dando una patada al techo', 'Flexionar la rodilla al máximo arriba', 'Apretar glúteo en la punta', 'Bajar controlado sin descanso'], videoUrl: 'SEARCH' },
+
+  // ============= ABDOMEN / CORE =============
+  { id: 'flutter-kicks', name: 'Flutter Kicks (Aleteos)', muscleGroup: 'abdomen',
+    description: 'Pataleo alterno acostada. Recto abdominal inferior y flexores de cadera.',
+    steps: ['Acostada boca arriba, manos debajo del glúteo para sostén', 'Piernas extendidas ligeramente elevadas', 'Alternar subir y bajar cada pierna en movimiento corto', 'Mantener lumbar pegada al piso', 'Respirar suave durante 30-45 segundos'], videoUrl: 'SEARCH' },
+
+  { id: 'scissor-kicks', name: 'Tijeras Abdominales', muscleGroup: 'abdomen',
+    description: 'Cruce alternado de piernas en horizontal. Core estabilizador + abdominales bajos.',
+    steps: ['Acostada, piernas extendidas a 30° del piso', 'Cruzar una pierna sobre la otra alternando', 'Mantener core activo y lumbar pegada', 'No tocar el piso con los talones', 'Trabajar por tiempo (30s-60s)'], videoUrl: 'SEARCH' },
+
+  { id: 'toe-touches', name: 'Toe Touches', muscleGroup: 'abdomen',
+    description: 'Crunch con piernas extendidas arriba. Recto abdominal superior.',
+    steps: ['Acostada con piernas extendidas hacia el techo', 'Brazos extendidos arriba tocando el aire', 'Elevar el torso intentando tocar la punta de los pies', 'No tirar del cuello', 'Bajar lento controlando el abdomen'], videoUrl: 'SEARCH' },
+
+  { id: 'crunch-maquina', name: 'Crunch en Máquina', muscleGroup: 'abdomen',
+    description: 'Crunch con carga en máquina específica de abdomen. Hipertrofia del recto abdominal.',
+    steps: ['Ajustar la máquina a tu altura y sujetar las manijas', 'Iniciar con torso recto', 'Crunch llevando los codos hacia las rodillas', 'Exhalar al contraer, pausa 1s abajo', 'Subir controlado sin soltar tensión'], videoUrl: 'SEARCH' },
+
+  // ============= PIERNAS ADICIONALES =============
+  { id: 'good-morning-banda', name: 'Good Morning con Banda', muscleGroup: 'piernas',
+    description: 'Bisagra de cadera con banda al cuello. Isquios, glúteo mayor y lumbar.',
+    steps: ['Banda por debajo de los pies, puntas sobre los hombros', 'Rodillas ligeramente flexionadas', 'Llevar cadera atrás inclinando torso adelante', 'Bajar hasta sentir estiramiento en isquios', 'Subir apretando glúteos'], videoUrl: 'SEARCH' },
+
+  { id: 'box-jump', name: 'Box Jump (Salto al Cajón)', muscleGroup: 'piernas',
+    description: 'Salto pliométrico a un cajón o banco firme. Potencia, fuerza explosiva y glúteo.',
+    steps: ['Cajón firme a altura segura (30-50cm)', 'Pies al ancho de cadera, leve flexión', 'Balancear brazos y saltar aterrizando suave en el cajón', 'Incorporarse completamente arriba', 'Bajar caminando (no saltar de vuelta) para proteger rodillas'], videoUrl: 'SEARCH' },
+
+  { id: 'sentadilla-jefferson', name: 'Sentadilla Jefferson', muscleGroup: 'piernas',
+    description: 'Sentadilla con barra entre las piernas. Glúteo, cuádriceps e isquios con menos estrés lumbar.',
+    steps: ['Pararse sobre una barra cargada, piernas separadas', 'Una mano adelante, otra atrás sosteniendo la barra', 'Bajar como sentadilla manteniendo la espalda recta', 'Subir empujando con piernas y glúteos', 'Alternar la posición de manos entre series'], videoUrl: 'SEARCH' },
 ];
 
 export function getVideoUrl(exercise: Exercise): string {
