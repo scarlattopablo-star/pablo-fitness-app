@@ -9,6 +9,7 @@ import {
 import { EXERCISES } from "@/lib/exercises-data";
 import { supabase } from "@/lib/supabase";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
+import ExerciseGifPicker from "@/components/exercise-gif-picker";
 
 interface TrainingExercise {
   exerciseId: string;
@@ -533,6 +534,13 @@ export default function PlanEditorPage({
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
+                    {/* Buscador de GIF externo — solo visible si el ejercicio esta seleccionado */}
+                    {ex.exerciseId && ex.name && (
+                      <div className="flex items-center gap-2 -mt-1">
+                        <ExerciseGifPicker exerciseId={ex.exerciseId} exerciseName={ex.name} />
+                        <span className="text-[10px] text-muted">Buscá un GIF externo si el actual no te convence.</span>
+                      </div>
+                    )}
 
                     {/* Metodo opcional + nota personal. Solo se muestran al cliente si tienen valor. */}
                     <div className="flex flex-wrap gap-2 items-center">
