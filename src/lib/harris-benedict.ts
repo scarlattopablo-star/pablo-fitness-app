@@ -61,17 +61,22 @@ export function calculateMacros(
   const tmb = calculateTMB(sex, weight, height, age);
   const tdee = calculateTDEE(tmb, activityLevel);
 
-  // Regla de negocio: el objetivo del plan MANDA sobre el nutritional_goal
-  // cuando el objetivo ya define una direccion clara (|adj| >= 0.10).
-  // Ej: quema-grasa es siempre deficit, ganancia-muscular es siempre
-  // superavit — independiente de lo que venga en el survey.
-  // Solo los objetivos neutrales (principiante-total, plan-pareja,
-  // fuerza-funcional) dejan que nutritionalGoal decida.
+  // Regla de negocio (Pablo): ajuste FIJO de 500 kcal, no porcentual.
+  //   Deficit = TDEE - 500   (≈0.45 kg grasa / semana)
+  //   Superavit = TDEE + 500 (ganancia muscular controlada)
+  //   Mantenimiento = TDEE
+  // La direccion (+/- o 0) se decide con la misma regla de antes: el
+  // objetivo manda si tiene direccion clara (|adj| >= 0.10), sino lo
+  // define nutritional_goal.
   const objectiveAdj = OBJECTIVE_ADJUSTMENTS[objective] ?? 0;
   const goalAdj = nutritionalGoal ? NUTRITIONAL_GOAL_ADJUSTMENTS[nutritionalGoal] : undefined;
-  const adjustment = Math.abs(objectiveAdj) >= 0.10 ? objectiveAdj : (goalAdj ?? objectiveAdj);
+  const effectiveAdj = Math.abs(objectiveAdj) >= 0.10 ? objectiveAdj : (goalAdj ?? objectiveAdj);
 
-  const targetCalories = Math.max(1200, Math.round(tdee * (1 + adjustment)));
+  // Convertir a offset fijo en kcal: -500 / +500 / 0
+  const calOffset = effectiveAdj < 0 ? -500 : effectiveAdj > 0 ? 500 : 0;
+  const targetCalories = Math.max(1200, Math.round(tdee + calOffset));
+  // Se mantiene la variable para que el resto del codigo conozca la direccion.
+  const adjustment = calOffset / tdee;
 
   const protein = Math.round(weight * 2);
   const proteinCalories = protein * 4;
