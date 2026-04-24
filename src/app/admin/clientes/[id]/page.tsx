@@ -1287,11 +1287,11 @@ export default function ClienteDetailPage({
               const dF = tF > 0 ? tF : (survey?.fats || 0);
               const userTdee = survey?.tdee || 0;
 
-              // Determine goal label comparing meal plan calories vs survey target
+              // Determine goal label comparing meal plan calories vs TDEE (mantenimiento),
+              // NO contra el target (que ya tiene el deficit/superavit aplicado).
               let gLabel = ""; let gIcon = ""; let gColor = "";
-              const surveyTarget = survey?.target_calories || 0;
-              if (surveyTarget > 0 && dC > 0) {
-                const diff = dC - surveyTarget;
+              if (userTdee > 0 && dC > 0) {
+                const diff = dC - userTdee;
                 if (diff < -50) { gLabel = "Deficit calorico"; gIcon = "🔥"; gColor = "text-orange-400"; }
                 else if (diff > 50) { gLabel = "Superavit calorico"; gIcon = "💪"; gColor = "text-blue-400"; }
                 else { gLabel = "Mantenimiento"; gIcon = "⚖️"; gColor = "text-emerald-400"; }
