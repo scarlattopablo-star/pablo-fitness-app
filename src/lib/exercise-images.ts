@@ -139,7 +139,6 @@ const EXERCISE_GIFS: Record<string, string> = {
   // UNILATERALES
   'remo-cable-unilateral': gif('remo-cable-unilateral'),
   'remo-barra-unilateral': gif('remo-barra-unilateral'),
-  'press-suelo-unilateral': gif('press-suelo-unilateral'),
   'peso-muerto-unilateral': gif('peso-muerto-unilateral'),
   'split-squat-mancuerna': gif('split-squat-mancuerna'),
   'sentadilla-unilateral': gif('sentadilla-unilateral'),

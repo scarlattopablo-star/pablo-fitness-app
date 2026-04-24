@@ -220,7 +220,6 @@ const GYM_EXERCISES: Record<string, { compound: { id: string; name: string }[]; 
       { id: "cruces-polea", name: "Cruces en Polea" },
       { id: "flexiones-diamante", name: "Flexiones Diamante" },
       { id: "flexiones-abiertas", name: "Flexiones Abiertas" },
-      { id: "press-suelo-unilateral", name: "Press Suelo Unilateral" },
     ],
   },
   espalda: {
