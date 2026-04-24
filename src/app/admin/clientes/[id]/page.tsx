@@ -23,6 +23,7 @@ import {
   ExerciseProgressCharts,
 } from "@/components/progress-charts";
 import ZoomableImage from "@/components/zoomable-image";
+import ExerciseGifPicker from "@/components/exercise-gif-picker";
 
 interface ClientData {
   id: string;
@@ -1141,6 +1142,15 @@ export default function ClienteDetailPage({
                         <X className="h-3.5 w-3.5" />
                       </button>
                       </div>
+                      {/* GIF picker — aparece cuando el ejercicio ya esta seleccionado */}
+                      {currentExercise && (
+                        <div className="mt-1 ml-1">
+                          <ExerciseGifPicker
+                            exerciseId={currentExercise.id}
+                            exerciseName={currentExercise.name}
+                          />
+                        </div>
+                      )}
                     </div>
                     );
                   })}
