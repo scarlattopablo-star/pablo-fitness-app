@@ -904,6 +904,25 @@ export default function ClienteDetailPage({
           </div>
         )}
 
+        {/* Boton regenerar: siempre disponible cuando hay plan. Pisa el actual. */}
+        {trainingDays.length > 0 && !editingTraining && (
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
+            <button
+              onClick={() => autoGeneratePlans(true)}
+              disabled={generating}
+              className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors font-semibold disabled:opacity-50 inline-flex items-center gap-1.5"
+              title="Pisa el plan actual con uno nuevo basado en la survey corregida"
+            >
+              ⚡ {generating ? "Regenerando..." : "Regenerar plan automático (pisa el actual)"}
+            </button>
+            {generateMsg && (
+              <p className={`text-xs font-medium ${generateMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
+                {generateMsg}
+              </p>
+            )}
+          </div>
+        )}
+
         {expandTraining && trainingDays.length > 0 && !editingTraining && (
           <div className="mt-4 space-y-3">
             {trainingDays.map((day: any, i: number) => (
