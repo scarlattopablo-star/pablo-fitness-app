@@ -151,7 +151,7 @@ const EXERCISE_GIFS: Record<string, string> = {
   'cable-glute-kickback': gif('extension-cadera-polea'),
   'abduccion-banda-acostada': gif('abduccion-cadera'),
   'donkey-kick-banda': gif('donkey-kicks'),
-  'good-morning-banda': gif('buenos-dias'),
+  'good-morning-banda': gif('peso-muerto-rumano'),
   'box-jump': gif('high-knees'),
   'sentadilla-jefferson': gif('sentadilla-frontal'),
   // Abdomen

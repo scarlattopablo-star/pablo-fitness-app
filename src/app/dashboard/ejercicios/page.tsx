@@ -5,6 +5,9 @@ import { Search, Play, X, ChevronDown, Sparkles } from "lucide-react";
 import { EXERCISES, MUSCLE_GROUP_LABELS, getVideoUrl } from "@/lib/exercises-data";
 import type { Exercise } from "@/types";
 import { TechniqueAnalyzer } from "@/components/technique-analyzer";
+import { useAuth } from "@/lib/auth-context";
+import { useExerciseGifs } from "@/lib/custom-exercise-gifs";
+import ExerciseGifPicker from "@/components/exercise-gif-picker";
 
 const ALL_GROUPS = Object.keys(MUSCLE_GROUP_LABELS);
 
@@ -13,6 +16,9 @@ export default function EjerciciosPage() {
   const [search, setSearch] = useState("");
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [analyzingExercise, setAnalyzingExercise] = useState<Exercise | null>(null);
+  const { profile } = useAuth();
+  const isAdmin = !!profile?.is_admin;
+  const resolveGif = useExerciseGifs();
 
   const filtered = EXERCISES.filter((ex) => {
     const matchesGroup = selectedGroup === "todos" || ex.muscleGroup === selectedGroup;
@@ -66,29 +72,38 @@ export default function EjerciciosPage() {
 
       {/* Exercises Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((exercise) => (
-          <button
-            key={exercise.id}
-            onClick={() => setSelectedExercise(exercise)}
-            className="glass-card rounded-2xl p-5 text-left hover-glow transition-all group"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full capitalize">
-                {MUSCLE_GROUP_LABELS[exercise.muscleGroup]}
-              </span>
-              {exercise.videoUrl && (
-                <Play className="h-4 w-4 text-primary" />
+        {filtered.map((exercise) => {
+          const gif = resolveGif(exercise.id);
+          return (
+            <button
+              key={exercise.id}
+              onClick={() => setSelectedExercise(exercise)}
+              className="glass-card rounded-2xl p-5 text-left hover-glow transition-all group"
+            >
+              {gif && (
+                <div className="aspect-video rounded-xl bg-card-bg mb-3 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={gif} alt={exercise.name} className="w-full h-full object-cover" />
+                </div>
               )}
-            </div>
-            <h3 className="font-bold mb-1 group-hover:text-primary transition-colors">
-              {exercise.name}
-            </h3>
-            <p className="text-sm text-muted line-clamp-2">{exercise.description}</p>
-            <p className="text-xs text-primary mt-3 flex items-center gap-1">
-              Ver detalles <ChevronDown className="h-3 w-3" />
-            </p>
-          </button>
-        ))}
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full capitalize">
+                  {MUSCLE_GROUP_LABELS[exercise.muscleGroup]}
+                </span>
+                {exercise.videoUrl && (
+                  <Play className="h-4 w-4 text-primary" />
+                )}
+              </div>
+              <h3 className="font-bold mb-1 group-hover:text-primary transition-colors">
+                {exercise.name}
+              </h3>
+              <p className="text-sm text-muted line-clamp-2">{exercise.description}</p>
+              <p className="text-xs text-primary mt-3 flex items-center gap-1">
+                Ver detalles <ChevronDown className="h-3 w-3" />
+              </p>
+            </button>
+          );
+        })}
       </div>
 
       {filtered.length === 0 && (
@@ -111,6 +126,30 @@ export default function EjerciciosPage() {
             <span className="inline-block text-xs px-2 py-1 bg-primary/10 text-primary rounded-full capitalize mb-4">
               {MUSCLE_GROUP_LABELS[selectedExercise.muscleGroup]}
             </span>
+
+            {/* GIF grande del ejercicio */}
+            {(() => {
+              const gif = resolveGif(selectedExercise.id);
+              if (!gif) return null;
+              return (
+                <div className="aspect-video rounded-xl bg-card-bg mb-4 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={gif} alt={selectedExercise.name} className="w-full h-full object-cover" />
+                </div>
+              );
+            })()}
+
+            {/* Picker de GIF (solo admin) — buscar/cambiar imagen desde acá */}
+            {isAdmin && (
+              <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                <span className="text-xs text-muted">Admin:</span>
+                <ExerciseGifPicker
+                  exerciseId={selectedExercise.id}
+                  exerciseName={selectedExercise.name}
+                />
+                <span className="text-[10px] text-muted">Cambia el GIF para todos los clientes.</span>
+              </div>
+            )}
 
             <p className="text-muted mb-4">{selectedExercise.description}</p>
 
