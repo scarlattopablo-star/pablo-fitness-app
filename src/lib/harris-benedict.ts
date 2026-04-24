@@ -61,16 +61,25 @@ export function calculateMacros(
   const tmb = calculateTMB(sex, weight, height, age);
   const tdee = calculateTDEE(tmb, activityLevel);
 
-  // Si el plan necesita objetivo y el cliente eligió uno, usar ese ajuste
-  const adjustment = nutritionalGoal
-    ? NUTRITIONAL_GOAL_ADJUSTMENTS[nutritionalGoal]
-    : (OBJECTIVE_ADJUSTMENTS[objective] ?? 0);
+  // Regla de negocio: el objetivo del plan MANDA sobre el nutritional_goal
+  // cuando el objetivo ya define una direccion clara (|adj| >= 0.10).
+  // Ej: quema-grasa es siempre deficit, ganancia-muscular es siempre
+  // superavit — independiente de lo que venga en el survey.
+  // Solo los objetivos neutrales (principiante-total, plan-pareja,
+  // fuerza-funcional) dejan que nutritionalGoal decida.
+  const objectiveAdj = OBJECTIVE_ADJUSTMENTS[objective] ?? 0;
+  const goalAdj = nutritionalGoal ? NUTRITIONAL_GOAL_ADJUSTMENTS[nutritionalGoal] : undefined;
+  const adjustment = Math.abs(objectiveAdj) >= 0.10 ? objectiveAdj : (goalAdj ?? objectiveAdj);
+
   const targetCalories = Math.max(1200, Math.round(tdee * (1 + adjustment)));
 
   const protein = Math.round(weight * 2);
   const proteinCalories = protein * 4;
 
-  const isDeficit = nutritionalGoal === 'perder-grasa' || objective === 'quema-grasa';
+  // isDeficit se deriva del adjustment final, no de strings hardcodeados —
+  // asi abarca quema-grasa, tonificacion, post-parto, recomposicion,
+  // competicion y cualquier otro objetivo negativo.
+  const isDeficit = adjustment < 0;
   const fatPercentage = isDeficit ? 0.25 : 0.30;
   const fatCalories = Math.round(targetCalories * fatPercentage);
   const fats = Math.round(fatCalories / 9);
