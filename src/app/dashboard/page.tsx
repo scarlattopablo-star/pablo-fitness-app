@@ -5,7 +5,7 @@ import {
   Flame, TrendingUp, Camera, Dumbbell,
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
   Loader2, ChevronRight, Zap, CreditCard, Crown,
-  Trophy, Star, Lightbulb,
+  Trophy, Star, Lightbulb, ClipboardCheck,
 } from "lucide-react";
 import { getTodaysTip, CATEGORY_LABELS } from "@/lib/daily-tips";
 import { getWeeklyChallenges, getDaysRemaining } from "@/lib/weekly-challenges";
@@ -70,6 +70,8 @@ const DAILY_MESSAGES = [
 
 export default function DashboardPage() {
   const { user, profile, subscription, isTrial, trialDaysLeft, hasActiveSubscription } = useAuth();
+  // F5: estado del check-in semanal
+  const [checkInState, setCheckInState] = useState<{ canCheckIn: boolean; daysSinceLast: number; nextWeekNumber: number } | null>(null);
   const [survey, setSurvey] = useState<SurveyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [daysActive, setDaysActive] = useState(0);
@@ -227,11 +229,58 @@ export default function DashboardPage() {
     setCheckoutLoading(false);
   };
 
+  // F5: cargar estado de check-in
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) return;
+        const res = await fetch("/api/checkin", { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        setCheckInState({
+          canCheckIn: data.canCheckIn,
+          daysSinceLast: data.daysSinceLast,
+          nextWeekNumber: data.nextWeekNumber,
+        });
+      } catch { /* silent */ }
+    })();
+  }, [user]);
+
   if (loading) return <div className="flex items-center justify-center py-20"><RatLoader size={64} /></div>;
 
   return (
     <div>
       <OfflineBanner />
+
+      {/* F5: banner check-in semanal */}
+      {checkInState?.canCheckIn && hasActiveSubscription && (
+        <Link
+          href="/dashboard/check-in"
+          className="block glass-card border-l-4 border-primary rounded-2xl p-4 mb-4 hover:border-primary/80 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+              <ClipboardCheck className="h-5 w-5 text-black" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm">
+                {checkInState.nextWeekNumber === 1
+                  ? "Hace tu primer check-in"
+                  : `Tu check-in semana ${checkInState.nextWeekNumber} esta listo`}
+              </p>
+              <p className="text-xs text-muted">
+                {checkInState.daysSinceLast >= 999
+                  ? "2 minutos: peso + sensaciones para que Pablo ajuste tu plan"
+                  : `Hace ${checkInState.daysSinceLast} dias del ultimo. Cargá tus datos en 2 min.`}
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted shrink-0" />
+          </div>
+        </Link>
+      )}
 
       {/* HERO — clean, no background image */}
       <div className="mb-8">

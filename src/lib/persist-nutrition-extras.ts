@@ -9,12 +9,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MealPlanMeal } from "./generate-meal-plan";
 import { buildShoppingListFromDayPlan } from "./shopping-list";
 import { validateBudget } from "./budget-validator";
+import { recommendSupplements, type SupplementRecommendation } from "./supplement-advisor";
 import type { ShoppingList } from "./shopping-list";
 import type { BudgetReport } from "./budget-validator";
 
 export interface NutritionExtras {
   shoppingList: ShoppingList | null;
   budget: BudgetReport | null;
+  supplements: SupplementRecommendation[] | null;
 }
 
 interface BuildExtrasInput {
@@ -22,6 +24,27 @@ interface BuildExtrasInput {
   country: string | null | undefined;
   city: string | null | undefined;
   userBudgetMonthly: number | null | undefined;
+  // F3: cuando 'meals' ya contiene los 7 dias aplanados (weekMenu flatten),
+  // pasar daysInWeek=1. Cuando 'meals' es 1 dia que se repite, usar 7 (default).
+  daysInWeek?: number;
+  // F4: input para el advisor de suplementos. Si no se pasa, no se generan
+  // recomendaciones (los planes viejos quedan sin suplementos hasta regenerar).
+  supplementInput?: {
+    sex: string;
+    age: number;
+    objective: string;
+    nutritionalGoal: string | null;
+    activityLevel: string;
+    trainingDays: number;
+    dietaryRestrictions: string[];
+    pathologies: string[];
+    intolerances: string[];
+    currentSupplements: string[];
+    wantsAdvice: boolean;
+    proteinTarget: number;
+    isDeficit: boolean;
+    country?: string | null;
+  };
 }
 
 export async function buildNutritionExtras(
@@ -43,11 +66,12 @@ export async function buildNutritionExtras(
 
   if (catalog.length === 0) {
     // No hay catalogo seedeado todavia — degradar elegantemente
-    return { shoppingList: null, budget: null };
+    return { shoppingList: null, budget: null, supplements: null };
   }
 
   // 2) Construir shopping list (offline, sin precios)
-  const shoppingList = buildShoppingListFromDayPlan(input.meals, catalog, 7);
+  const daysInWeek = input.daysInWeek ?? 7;
+  const shoppingList = buildShoppingListFromDayPlan(input.meals, catalog, daysInWeek);
 
   // 3) Validar contra presupuesto + precios de la region
   let budget: BudgetReport | null = null;
@@ -62,5 +86,18 @@ export async function buildNutritionExtras(
     budget = null;
   }
 
-  return { shoppingList, budget };
+  // 4) F4: recomendaciones de suplementos (opcional)
+  let supplements: SupplementRecommendation[] | null = null;
+  if (input.supplementInput) {
+    try {
+      supplements = await recommendSupplements(supabase, {
+        ...input.supplementInput,
+        country: input.supplementInput.country ?? country,
+      });
+    } catch {
+      supplements = null;
+    }
+  }
+
+  return { shoppingList, budget, supplements };
 }

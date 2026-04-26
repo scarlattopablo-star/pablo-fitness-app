@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import { generateMealPlan } from "@/lib/generate-meal-plan";
+import { generateWeekMealPlan, flattenWeekMealsForShopping } from "@/lib/generate-week-meal-plan";
 import { calculateMacros } from "@/lib/harris-benedict";
 import { calculateMacrosV2, shouldUseV2Engine } from "@/lib/nutrition-engine";
 import { buildNutritionExtras } from "@/lib/persist-nutrition-extras";
@@ -140,8 +141,8 @@ export async function POST(request: NextRequest) {
       survey.activity_level || "moderado"
     );
 
-    // 6) Generar plan de comidas
-    const mealPlan = generateMealPlan(
+    // 6) Generar plan de comidas — F3: variedad semanal (7 dias distintos)
+    const week = generateWeekMealPlan(
       macros.targetCalories,
       macros.protein,
       macros.carbs,
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
       survey.objective || "",
       survey.nutritional_goal || ""
     );
+    const mealPlan = { meals: week.baseDay.meals, importantNotes: week.baseDay.importantNotes };
 
     // 7) Upsert sin depender de UNIQUE: SELECT → UPDATE/INSERT
     const existsResult = await Promise.all([
@@ -173,18 +175,36 @@ export async function POST(request: NextRequest) {
     const nutritionData: Record<string, unknown> = {
       meals: mealPlan.meals,
       importantNotes: mealPlan.importantNotes,
+      weekMenu: week.weekMenu,
     };
 
-    // F2: enriquecer con shopping list + budget si la encuesta tiene region
+    // F2 + F3: shopping list usa los 7 dias aplanados (variedad real)
     try {
       const extras = await buildNutritionExtras(supabaseAdmin, {
-        meals: mealPlan.meals,
+        meals: flattenWeekMealsForShopping(week.weekMenu),
         country: survey.country,
         city: survey.city,
         userBudgetMonthly: survey.food_budget_monthly,
+        daysInWeek: 1,
+        supplementInput: {
+          sex: survey.sex || "hombre",
+          age: Number(survey.age) || 30,
+          objective: survey.objective || "quema-grasa",
+          nutritionalGoal: survey.nutritional_goal || null,
+          activityLevel: survey.activity_level || "moderado",
+          trainingDays: numDays,
+          dietaryRestrictions: survey.dietary_restrictions || [],
+          pathologies: survey.pathologies || [],
+          intolerances: survey.intolerances || [],
+          currentSupplements: survey.current_supplements || [],
+          wantsAdvice: survey.wants_supplement_advice ?? true,
+          proteinTarget: macros.protein,
+          isDeficit: macros.targetCalories < macros.tdee,
+        },
       });
       if (extras.shoppingList) nutritionData.shoppingList = extras.shoppingList;
       if (extras.budget) nutritionData.budget = extras.budget;
+      if (extras.supplements) nutritionData.supplements = extras.supplements;
     } catch (e) {
       console.error("[admin/generate-plans-for-user] buildNutritionExtras failed:", e);
     }
