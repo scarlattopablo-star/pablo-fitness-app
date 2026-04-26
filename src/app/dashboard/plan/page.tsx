@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock, ShoppingCart, Wallet } from "lucide-react";
 import RestTimer from "@/components/rest-timer";
 import { suggestRecipe, type Recipe } from "@/lib/recipes-database";
 import { RatLoader } from "@/components/rat-loader";
@@ -20,6 +20,13 @@ const FoodSwapModal = dynamic(() => import("@/components/food-swap-modal").then(
 import { findFoodByName, calculateFoodMacros } from "@/lib/food-database";
 import { PLANS } from "@/lib/plans-data";
 import { ArrowLeft } from "lucide-react";
+// F2: tabs de Compra y Presupuesto
+import { NutritionShoppingTab } from "@/components/nutrition-shopping-tab";
+import { NutritionBudgetTab } from "@/components/nutrition-budget-tab";
+import { resolveSupermarket } from "@/lib/supermarket-resolver";
+import type { ShoppingList } from "@/lib/shopping-list";
+import type { BudgetReport } from "@/lib/budget-validator";
+import type { Supermarket } from "@/lib/supermarket-resolver";
 
 // Build foodDetails from food strings when plan was created by admin without structured data
 function enrichMealWithFoodDetails(meal: MealPlanMeal): MealPlanMeal {
@@ -148,6 +155,11 @@ function PlanContent() {
     mealName: string;
   } | null>(null);
   const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
+  // F2: state de Compra/Presupuesto
+  const [nutritionTab, setNutritionTab] = useState<"plan" | "compra" | "presupuesto">("plan");
+  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
+  const [budget, setBudget] = useState<BudgetReport | null>(null);
+  const [supermarket, setSupermarket] = useState<Supermarket | null>(null);
 
   useEffect(() => {
     if (authLoading) return; // Esperar que auth termine antes de actuar
@@ -403,7 +415,7 @@ function PlanContent() {
       // Load all data in parallel
       const [surveyRes, trainingRes, nutritionRes] = await Promise.all([
         supabase.from("surveys")
-          .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee")
+          .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee, country, city")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("training_plans")
           .select("data, plan_approved")
@@ -463,6 +475,25 @@ function PlanContent() {
       } else {
         setHasSurvey(false);
         setTrainingPlan(generateTrainingPlan(5));
+      }
+
+      // F2: extraer shoppingList + budget del nutrition_plan (si fueron persistidos)
+      if (dbNutrition?.data?.shoppingList) {
+        setShoppingList(dbNutrition.data.shoppingList as ShoppingList);
+      }
+      if (dbNutrition?.data?.budget) {
+        setBudget(dbNutrition.data.budget as BudgetReport);
+      }
+
+      // F2: resolver supermercado local segun region del cliente
+      if (data?.country) {
+        try {
+          const sm = await resolveSupermarket(supabase, data.country, data.city);
+          setSupermarket(sm);
+        } catch {
+          // Sin super, sin boton — no romper
+          setSupermarket(null);
+        }
       }
 
       if (dbNutrition && dbNutrition.data?.gymDay && dbNutrition.data?.kitesurfDay && dbNutrition.plan_approved !== false) {
@@ -874,6 +905,49 @@ function PlanContent() {
             Plan de Nutricion
           </h2>
 
+          {/* F2: sub-tabs Plan / Compra / Presupuesto */}
+          <div className="flex gap-2 mb-4 overflow-x-auto">
+            {([
+              { id: "plan",        label: "Plan",        icon: UtensilsCrossed },
+              { id: "compra",      label: "Compra",      icon: ShoppingCart },
+              { id: "presupuesto", label: "Presupuesto", icon: Wallet },
+            ] as const).map(t => {
+              const Icon = t.icon;
+              const active = nutritionTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setNutritionTab(t.id)}
+                  className={`flex-1 min-w-[100px] py-2.5 px-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                    active
+                      ? "gradient-primary text-black"
+                      : "bg-card-bg text-muted border border-card-border hover:border-muted"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* === TAB COMPRA === */}
+          {nutritionTab === "compra" && (
+            <NutritionShoppingTab
+              list={budget?.pricedList ?? shoppingList}
+              supermarket={supermarket}
+              currency={budget?.pricedList.currency}
+            />
+          )}
+
+          {/* === TAB PRESUPUESTO === */}
+          {nutritionTab === "presupuesto" && (
+            <NutritionBudgetTab budget={budget} />
+          )}
+
+          {/* === TAB PLAN (contenido original envuelto) === */}
+          {nutritionTab === "plan" && (
+          <>
           {/* Kitesurf day toggle */}
           {kitesurfMealPlans && (
             <div className="flex gap-2 mb-4">
@@ -1110,6 +1184,8 @@ function PlanContent() {
                 </div>
               </div>
             </div>
+          )}
+          </>
           )}
         </div>
       )}

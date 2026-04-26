@@ -112,6 +112,8 @@ function RegistroForm() {
             protein: survey.macros.protein,
             carbs: survey.macros.carbs,
             fats: survey.macros.fats,
+            // Campos v2 (encuesta extendida) — spread solo lo que el usuario completo
+            ...(survey.extraSurveyFields || {}),
           });
           localStorage.removeItem("pendingSurvey");
         } catch {
