@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
       ? generateKitesurfMealPlans(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, nutritionalGoal || "")
       : { meals: week!.baseDay.meals, importantNotes: week!.baseDay.importantNotes };
 
-    // Direct clients require admin approval before client sees the plan
-    // All other QR plans (free access with specific plan_slug) auto-approve
+    // Direct clients (efectivo / acceso por codigo manual) requieren que Pablo
+    // apruebe el plan antes de mostrarlo. Cualquier otro plan se auto-aprueba.
     const needsApproval = objective === "direct-client";
 
     // Check if plans already exist (don't overwrite admin-edited plans on retry)
