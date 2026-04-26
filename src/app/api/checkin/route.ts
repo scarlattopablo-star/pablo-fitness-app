@@ -158,9 +158,46 @@ export async function POST(req: NextRequest) {
 
   const suggestion = suggestRevision(checkinData, prevCheckin, ctx);
 
-  // 5) Si hay sugerencia con delta no vacio O necesita revision, crear plan_revision
+  // 5) AUTO-APLICAR delta directo al survey (sin admin approval).
+  //    Tope de seguridad: ±150 kcal por revision para que un check-in raro
+  //    no rompa el plan acumulativamente. Loggear todo en plan_revisions
+  //    como 'applied' para auditoria — Pablo puede revertir manualmente.
   let revisionId: string | null = null;
-  if (suggestion && (Object.keys(suggestion.delta).length > 0 || suggestion.needsReview)) {
+  let applied = false;
+
+  if (suggestion && Object.keys(suggestion.delta).length > 0) {
+    const delta = suggestion.delta as { calories?: number; protein?: number; carbs?: number; fats?: number };
+    const patch: Record<string, unknown> = {};
+
+    if (typeof delta.calories === "number" && delta.calories !== 0) {
+      const capped = Math.max(-150, Math.min(150, delta.calories));
+      patch.target_calories = Math.max(1200, (Number(survey.target_calories) || 2000) + capped);
+    }
+    if (typeof delta.protein === "number" && delta.protein !== 0) {
+      patch.protein = Math.max(50, (Number(survey.protein) || 130) + delta.protein);
+    }
+    if (typeof delta.carbs === "number" && delta.carbs !== 0) {
+      patch.carbs = Math.max(50, (Number(survey.carbs) || 200) + delta.carbs);
+    }
+    if (typeof delta.fats === "number" && delta.fats !== 0) {
+      patch.fats = Math.max(30, (Number(survey.fats) || 65) + delta.fats);
+    }
+
+    if (Object.keys(patch).length > 0) {
+      const { data: latestSurvey } = await supabase
+        .from("surveys")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestSurvey?.id) {
+        await supabase.from("surveys").update(patch).eq("id", latestSurvey.id);
+        applied = true;
+      }
+    }
+
+    // Loggear la revision (status applied si se aplico, sino rejected con razon)
     const { data: rev } = await supabase
       .from("plan_revisions")
       .insert({
@@ -169,7 +206,40 @@ export async function POST(req: NextRequest) {
         triggered_by: "weekly-checkin",
         delta: suggestion.delta,
         rationale: suggestion.rationale,
-        status: "pending",
+        status: applied ? "applied" : "rejected",
+        applied_at: applied ? new Date().toISOString() : null,
+      })
+      .select("id")
+      .single();
+    revisionId = rev?.id ?? null;
+
+    // Regenerar plan con los nuevos macros (best-effort)
+    if (applied) {
+      try {
+        const baseUrl = req.nextUrl.origin;
+        await fetch(`${baseUrl}/api/generate-plans`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id }),
+        });
+      } catch {
+        // Si falla la regeneracion, el survey ya quedo actualizado.
+        // El plan se va a regenerar en el proximo cron o cuando el usuario
+        // recargue el dashboard.
+      }
+    }
+  } else if (suggestion) {
+    // Sin delta concreto: igual loggear la observacion como nota informativa
+    const { data: rev } = await supabase
+      .from("plan_revisions")
+      .insert({
+        user_id: user.id,
+        checkin_id: created.id,
+        triggered_by: "weekly-checkin",
+        delta: {},
+        rationale: suggestion.rationale,
+        status: "applied", // sin cambios pero registrado
+        applied_at: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -181,5 +251,6 @@ export async function POST(req: NextRequest) {
     checkin: created,
     suggestion,
     revisionId,
+    applied,
   });
 }

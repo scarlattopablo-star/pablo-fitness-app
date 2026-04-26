@@ -209,22 +209,27 @@ export async function POST(request: NextRequest) {
       console.error("[admin/generate-plans-for-user] buildNutritionExtras failed:", e);
     }
 
+    // Aprobacion: solo direct-client (clientes manuales/efectivo) requieren
+    // que Pablo apruebe antes de mostrar al cliente. Cualquier otro plan
+    // (trial, paid, etc) se auto-aprueba.
+    const planApproved = (survey.objective || "") !== "direct-client";
+
     if (existingTraining) {
       await supabaseAdmin.from("training_plans")
-        .update({ data: trainingData, plan_approved: false })
+        .update({ data: trainingData, plan_approved: planApproved })
         .eq("id", existingTraining.id);
     } else {
       await supabaseAdmin.from("training_plans")
-        .insert({ user_id: userId, data: trainingData, plan_approved: false });
+        .insert({ user_id: userId, data: trainingData, plan_approved: planApproved });
     }
 
     if (existingNutrition) {
       await supabaseAdmin.from("nutrition_plans")
-        .update({ data: nutritionData, plan_approved: false })
+        .update({ data: nutritionData, plan_approved: planApproved })
         .eq("id", existingNutrition.id);
     } else {
       await supabaseAdmin.from("nutrition_plans")
-        .insert({ user_id: userId, data: nutritionData, plan_approved: false });
+        .insert({ user_id: userId, data: nutritionData, plan_approved: planApproved });
     }
 
     return NextResponse.json({

@@ -146,11 +146,11 @@ export default function CheckInPage() {
           <Check className="h-10 w-10 text-success mx-auto mb-3" />
           <h2 className="font-bold text-lg mb-2">Check-in guardado</h2>
           <p className="text-muted text-sm mb-4">
-            Pablo va a revisar tus datos y ajustar tu plan si corresponde. Vas a recibir
-            una notificacion cuando este listo.
+            Tu plan se ajusto automaticamente a partir de tus datos. Si hubo cambios,
+            ya estan reflejados en tus calorias, macros y comidas.
           </p>
           <Link href="/dashboard/plan" className="inline-block gradient-primary text-black font-bold py-3 px-6 rounded-xl">
-            Ver mi plan
+            Ver mi plan actualizado
           </Link>
         </div>
       )}
@@ -282,7 +282,8 @@ export default function CheckInPage() {
           </button>
 
           <p className="text-xs text-muted text-center">
-            Pablo recibe tu check-in y, si corresponde un ajuste, lo aplica al plan en pocas horas.
+            Tu plan se ajusta automaticamente a partir de tus datos. Si hay cambios,
+            quedan reflejados al instante.
           </p>
         </div>
       )}

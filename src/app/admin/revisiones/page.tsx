@@ -1,17 +1,17 @@
 "use client";
 
-// Nutrition v2 — F5: panel admin para aprobar/rechazar revisiones de plan
+// Nutrition v2 — F5: HISTORIAL de ajustes automaticos
 //
-// Lista las plan_revisions pendientes con info del cliente + check-in que la
-// origino. Pablo puede:
-//   - APROBAR  → aplica el delta al survey y regenera plan
-//   - RECHAZAR → marca como rechazada (no toca el plan)
+// Pablo decidio no requerir aprobacion manual: los ajustes de check-in se
+// aplican automaticamente al survey + regeneran el plan. Esta pagina muestra
+// el historial de ajustes aplicados (status='applied') para auditoria.
 //
-// Una vez resuelta, queda en historial pero ya no aparece en pending.
+// Si en el futuro Pablo quiere revertir un ajuste, puede editar manualmente
+// el plan/survey desde /admin/clientes/[id].
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, X, Loader2, AlertTriangle, MessageSquare, RefreshCw } from "lucide-react";
+import { ArrowLeft, Check, Loader2, AlertTriangle, MessageSquare, RefreshCw, History } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 
@@ -53,7 +53,6 @@ export default function AdminRevisionesPage() {
   const [revisions, setRevisions] = useState<RevisionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [actingOn, setActingOn] = useState<string | null>(null);
 
   const fetchRevisions = async () => {
     setLoading(true);
@@ -62,7 +61,8 @@ export default function AdminRevisionesPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("Sesion expirada");
-      const res = await fetch("/api/admin/revisions?status=pending", {
+      // Mostrar todas las revisiones (applied + rejected) ordenadas por fecha
+      const res = await fetch("/api/admin/revisions?status=all", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -81,30 +81,8 @@ export default function AdminRevisionesPage() {
     fetchRevisions();
   }, [authLoading, user, profile]);
 
-  const handleAction = async (revisionId: string, action: "approve" | "reject") => {
-    setActingOn(revisionId);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("Sesion expirada");
-      const res = await fetch("/api/admin/revisions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ revisionId, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error procesando accion");
-      // Quitar la revision de la lista
-      setRevisions(prev => prev.filter(r => r.id !== revisionId));
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Error desconocido");
-    } finally {
-      setActingOn(null);
-    }
-  };
+  // (Auto-aprobacion activa: ya no hay accion manual de aprobar/rechazar.
+  //  Si Pablo necesita revertir un ajuste, edita el plan/survey en /admin/clientes/[id].)
 
   if (authLoading || loading) {
     return (
@@ -126,9 +104,12 @@ export default function AdminRevisionesPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black">Revisiones de Plan</h1>
+          <h1 className="text-2xl font-black flex items-center gap-2">
+            <History className="h-6 w-6 text-primary" /> Historial de ajustes
+          </h1>
           <p className="text-muted text-sm">
-            Sugerencias generadas a partir de check-ins semanales. Aprobá o rechazá cada una.
+            Ajustes aplicados automaticamente a partir de check-ins semanales.
+            Si necesitas revertir alguno, edita el plan del cliente directamente.
           </p>
         </div>
         <button onClick={fetchRevisions} className="text-muted hover:text-primary p-2">
@@ -144,9 +125,9 @@ export default function AdminRevisionesPage() {
 
       {revisions.length === 0 && !error ? (
         <div className="glass-card rounded-2xl p-8 text-center">
-          <Check className="h-10 w-10 text-success mx-auto mb-3" />
-          <h2 className="font-bold mb-1">Todo al dia</h2>
-          <p className="text-muted text-sm">No hay revisiones pendientes.</p>
+          <History className="h-10 w-10 text-muted mx-auto mb-3" />
+          <h2 className="font-bold mb-1">Sin ajustes todavia</h2>
+          <p className="text-muted text-sm">Cuando un cliente haga check-in, aca vas a ver el ajuste aplicado automaticamente.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -219,27 +200,20 @@ export default function AdminRevisionesPage() {
                   {r.rationale && <p className="text-xs text-muted">{r.rationale}</p>}
                 </div>
 
-                {/* Acciones */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleAction(r.id, "approve")}
-                    disabled={actingOn === r.id}
-                    className="flex-1 gradient-primary text-black font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {actingOn === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    Aprobar y aplicar
-                  </button>
-                  <button
-                    onClick={() => handleAction(r.id, "reject")}
-                    disabled={actingOn === r.id}
-                    className="flex-1 bg-card-bg border border-card-border text-muted font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:border-danger hover:text-danger transition-colors disabled:opacity-50"
-                  >
-                    <X className="h-4 w-4" />
-                    Rechazar
-                  </button>
+                {/* Estado + acceso al cliente (auto-aplicado, sin acciones manuales) */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
+                    r.status === "applied"  ? "bg-success/10 text-success" :
+                    r.status === "rejected" ? "bg-muted/10 text-muted" :
+                    "bg-warning/10 text-warning"
+                  }`}>
+                    {r.status === "applied"  ? "Aplicado automaticamente" :
+                     r.status === "rejected" ? "Sin cambios (registrado)" :
+                     r.status}
+                  </span>
                   <Link
                     href={`/admin/clientes/${r.user_id}`}
-                    className="px-4 py-2.5 bg-card-bg border border-card-border rounded-xl text-sm hover:border-primary transition-colors"
+                    className="px-4 py-2 bg-card-bg border border-card-border rounded-xl text-sm hover:border-primary transition-colors"
                   >
                     Ver cliente
                   </Link>
