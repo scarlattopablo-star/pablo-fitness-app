@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock, ShoppingCart, Wallet } from "lucide-react";
+import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock, ShoppingCart, Wallet, Pill } from "lucide-react";
 import RestTimer from "@/components/rest-timer";
 import { suggestRecipe, type Recipe } from "@/lib/recipes-database";
 import { RatLoader } from "@/components/rat-loader";
@@ -27,6 +27,11 @@ import { resolveSupermarket } from "@/lib/supermarket-resolver";
 import type { ShoppingList } from "@/lib/shopping-list";
 import type { BudgetReport } from "@/lib/budget-validator";
 import type { Supermarket } from "@/lib/supermarket-resolver";
+// F3: variedad semanal
+import { WEEK_DAYS, WEEK_DAY_LABELS, type WeekDay, type WeekMenu } from "@/lib/generate-week-meal-plan";
+// F4: tab Suplementos
+import { NutritionSupplementsTab } from "@/components/nutrition-supplements-tab";
+import type { SupplementRecommendation } from "@/lib/supplement-advisor";
 
 // Build foodDetails from food strings when plan was created by admin without structured data
 function enrichMealWithFoodDetails(meal: MealPlanMeal): MealPlanMeal {
@@ -155,11 +160,19 @@ function PlanContent() {
     mealName: string;
   } | null>(null);
   const [planUpdatedBanner, setPlanUpdatedBanner] = useState(false);
-  // F2: state de Compra/Presupuesto
-  const [nutritionTab, setNutritionTab] = useState<"plan" | "compra" | "presupuesto">("plan");
+  // F2 + F4: state de Compra/Presupuesto/Suplementos
+  const [nutritionTab, setNutritionTab] = useState<"plan" | "compra" | "presupuesto" | "suplementos">("plan");
   const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
   const [budget, setBudget] = useState<BudgetReport | null>(null);
   const [supermarket, setSupermarket] = useState<Supermarket | null>(null);
+  const [supplements, setSupplements] = useState<SupplementRecommendation[] | null>(null);
+  // F3: variedad semanal
+  const [weekMenu, setWeekMenu] = useState<WeekMenu | null>(null);
+  const [selectedDay, setSelectedDay] = useState<WeekDay>(() => {
+    // Auto-detectar dia actual: 0=domingo en Date.getDay()
+    const map: WeekDay[] = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
+    return map[new Date().getDay()];
+  });
 
   useEffect(() => {
     if (authLoading) return; // Esperar que auth termine antes de actuar
@@ -483,6 +496,24 @@ function PlanContent() {
       }
       if (dbNutrition?.data?.budget) {
         setBudget(dbNutrition.data.budget as BudgetReport);
+      }
+
+      // F4: extraer suplementos sugeridos
+      if (dbNutrition?.data?.supplements) {
+        setSupplements(dbNutrition.data.supplements as SupplementRecommendation[]);
+      }
+
+      // F3: extraer weekMenu si fue generado con variedad semanal
+      // Y mostrar por default el menu del dia de la semana actual
+      if (dbNutrition?.data?.weekMenu) {
+        const wm = dbNutrition.data.weekMenu as WeekMenu;
+        setWeekMenu(wm);
+        const dayMenu = wm[selectedDay];
+        if (dayMenu?.meals?.length) {
+          const enriched = dayMenu.meals.map((m: MealPlanMeal) => enrichMealWithFoodDetails(m));
+          setMealPlan({ meals: enriched, importantNotes: dayMenu.importantNotes || [] });
+          cacheData("nutrition_plan", { meals: enriched, importantNotes: dayMenu.importantNotes || [] });
+        }
       }
 
       // F2: resolver supermercado local segun region del cliente
@@ -905,12 +936,13 @@ function PlanContent() {
             Plan de Nutricion
           </h2>
 
-          {/* F2: sub-tabs Plan / Compra / Presupuesto */}
+          {/* F2 + F4: sub-tabs Plan / Compra / Presupuesto / Suplementos */}
           <div className="flex gap-2 mb-4 overflow-x-auto">
             {([
               { id: "plan",        label: "Plan",        icon: UtensilsCrossed },
               { id: "compra",      label: "Compra",      icon: ShoppingCart },
               { id: "presupuesto", label: "Presupuesto", icon: Wallet },
+              { id: "suplementos", label: "Suplementos", icon: Pill },
             ] as const).map(t => {
               const Icon = t.icon;
               const active = nutritionTab === t.id;
@@ -945,9 +977,42 @@ function PlanContent() {
             <NutritionBudgetTab budget={budget} />
           )}
 
+          {/* === TAB SUPLEMENTOS === */}
+          {nutritionTab === "suplementos" && (
+            <NutritionSupplementsTab supplements={supplements} />
+          )}
+
           {/* === TAB PLAN (contenido original envuelto) === */}
           {nutritionTab === "plan" && (
           <>
+          {/* F3: selector de dia semanal (solo si hay weekMenu y no es kitesurf) */}
+          {weekMenu && !kitesurfMealPlans && (
+            <div className="mb-4">
+              <p className="text-xs text-muted mb-2">Cambia el dia para ver un menu distinto:</p>
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {WEEK_DAYS.map((day) => {
+                  const active = selectedDay === day;
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => {
+                        setSelectedDay(day);
+                        setMealPlan(weekMenu[day]);
+                      }}
+                      className={`flex-1 min-w-[44px] py-2 rounded-xl text-xs font-bold transition-all ${
+                        active
+                          ? "gradient-primary text-black"
+                          : "bg-card-bg text-muted border border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {WEEK_DAY_LABELS[day]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Kitesurf day toggle */}
           {kitesurfMealPlans && (
             <div className="flex gap-2 mb-4">

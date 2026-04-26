@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import { generateMealPlan, generateKitesurfMealPlans } from "@/lib/generate-meal-plan";
+import { generateWeekMealPlan, flattenWeekMealsForShopping } from "@/lib/generate-week-meal-plan";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
 import { calculateMacrosV2, shouldUseV2Engine } from "@/lib/nutrition-engine";
 import { buildNutritionExtras } from "@/lib/persist-nutrition-extras";
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Get latest survey for this user (incluye campos v2 + region/budget)
     const { data: survey, error: surveyError } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level, body_fat_pct, job_activity, intolerances, disliked_foods, meals_per_day, country, city, food_budget_monthly")
+      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level, body_fat_pct, job_activity, intolerances, disliked_foods, meals_per_day, country, city, food_budget_monthly, pathologies, current_supplements, wants_supplement_advice, tdee")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -97,9 +98,14 @@ export async function POST(request: NextRequest) {
     const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
 
     const isKitesurf = objective === "kitesurf";
+    // F3: planes regulares ahora usan variedad semanal (7 dias distintos).
+    // Kitesurf mantiene su shape dual gym/kitesurf por simplicidad.
+    const week = isKitesurf
+      ? null
+      : generateWeekMealPlan(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, objective, nutritionalGoal || "");
     const nutrition = isKitesurf
       ? generateKitesurfMealPlans(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, nutritionalGoal || "")
-      : generateMealPlan(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, objective, nutritionalGoal || "");
+      : { meals: week!.baseDay.meals, importantNotes: week!.baseDay.importantNotes };
 
     // Direct clients require admin approval before client sees the plan
     // All other QR plans (free access with specific plan_slug) auto-approve
@@ -136,25 +142,45 @@ export async function POST(request: NextRequest) {
     type DualNutrition = { gymDay: SingleNutrition; kitesurfDay: SingleNutrition };
     const nutritionData: Record<string, unknown> = isKitesurf
       ? { gymDay: (nutrition as DualNutrition).gymDay, kitesurfDay: (nutrition as DualNutrition).kitesurfDay }
-      : { meals: (nutrition as SingleNutrition).meals };
+      : { meals: (nutrition as SingleNutrition).meals, weekMenu: week!.weekMenu };
     const nutritionNotes = isKitesurf
       ? [...(nutrition as DualNutrition).kitesurfDay.importantNotes]
       : (nutrition as SingleNutrition).importantNotes;
 
-    // F2: enriquecer con shopping list + budget. Para kitesurf usamos el menu
-    // del dia de gym como base (asumiendo que la lista cubre los 2 tipos de dia).
+    // F2 + F3: enriquecer con shopping list + budget.
+    // Para variedad semanal: usa los 7 dias distintos de weekMenu para que la
+    // lista sume cantidades reales (no repite × 7 el mismo menu).
+    // Para kitesurf: usa el menu de gym como base (lista cubre los 2 dias).
     try {
-      const baseMeals = isKitesurf
+      const mealsForShopping = isKitesurf
         ? (nutrition as DualNutrition).gymDay.meals
-        : (nutrition as SingleNutrition).meals;
+        : flattenWeekMealsForShopping(week!.weekMenu);
+      const daysInWeek = isKitesurf ? 7 : 1;  // shopping helper multiplica por daysInWeek
       const extras = await buildNutritionExtras(supabase, {
-        meals: baseMeals,
+        meals: mealsForShopping,
         country: survey.country,
         city: survey.city,
         userBudgetMonthly: survey.food_budget_monthly,
+        daysInWeek,
+        supplementInput: {
+          sex: userSex,
+          age: survey.age || 30,
+          objective: objective,
+          nutritionalGoal: nutritionalGoal,
+          activityLevel: activityLevel,
+          trainingDays: trainingDays,
+          dietaryRestrictions,
+          pathologies: survey.pathologies || [],
+          intolerances: survey.intolerances || [],
+          currentSupplements: survey.current_supplements || [],
+          wantsAdvice: survey.wants_supplement_advice ?? true,
+          proteinTarget: protein,
+          isDeficit: target_calories < (survey.tdee || target_calories + 1),
+        },
       });
       if (extras.shoppingList) nutritionData.shoppingList = extras.shoppingList;
       if (extras.budget) nutritionData.budget = extras.budget;
+      if (extras.supplements) nutritionData.supplements = extras.supplements;
     } catch (e) {
       // Si falla, no bloqueamos la generacion del plan — solo no enriquecemos
       console.error("[generate-plans] buildNutritionExtras failed:", e);
