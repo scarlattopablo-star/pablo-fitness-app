@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { User, Mail, Phone, Save, Shield, Loader2, Check, Camera, Pencil } from "lucide-react";
+import { User, Mail, Phone, Save, Shield, Loader2, Check, Camera, Pencil, Sparkles } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
 import { uploadProfilePhoto, getPhotoUrl } from "@/lib/upload-photo";
+// F1 retrocompat: form de campos v2 para clientes existentes
+import { ProfileSurveyV2Fields, getMissingV2Fields, type SurveyV2Values } from "@/components/profile-survey-v2-fields";
 
 interface SurveyData {
   id: string;
@@ -20,6 +22,23 @@ interface SurveyData {
   wake_hour?: number;
   sleep_hour?: number;
   emphasis?: string;
+  // Campos v2
+  body_fat_pct?: number | null;
+  training_time?: string | null;
+  job_activity?: string | null;
+  pathologies?: string[];
+  intolerances?: string[];
+  disliked_foods?: string[];
+  meals_per_day?: number | null;
+  food_budget_monthly?: number | null;
+  food_budget_currency?: string | null;
+  country?: string | null;
+  city?: string | null;
+  uses_supplements?: boolean | null;
+  current_supplements?: string[];
+  wants_supplement_advice?: boolean | null;
+  cooking_time_per_day?: number | null;
+  shopping_frequency?: string | null;
 }
 
 const ACTIVITY_OPTIONS = [
@@ -57,6 +76,8 @@ export default function PerfilPage() {
   const [surveyForm, setSurveyForm] = useState<Partial<SurveyData>>({});
   const [savingSurvey, setSavingSurvey] = useState(false);
   const [surveySuccess, setSurveySuccess] = useState(false);
+  // F1 retrocompat: state separado para los campos v2
+  const [v2Form, setV2Form] = useState<SurveyV2Values>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -208,6 +229,37 @@ export default function PerfilPage() {
           </div>
         )}
 
+        {/* F1 retrocompat: banner si faltan datos v2 importantes */}
+        {survey && !editingSurvey && (() => {
+          const missing = getMissingV2Fields({
+            body_fat_pct: survey.body_fat_pct,
+            job_activity: survey.job_activity as SurveyV2Values["job_activity"],
+            country: survey.country,
+            food_budget_monthly: survey.food_budget_monthly,
+            wants_supplement_advice: survey.wants_supplement_advice,
+          });
+          if (missing.length === 0) return null;
+          return (
+            <div className="card-premium rounded-2xl p-5 border-l-4 border-primary">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+                  <Sparkles className="h-5 w-5 text-black" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold mb-1">Mejora tu plan en 2 minutos</h3>
+                  <p className="text-sm text-muted mb-3">
+                    Faltan {missing.length} datos para activar la lista de compras, presupuesto y suplementos personalizados:
+                    <span className="text-white"> {missing.join(", ")}</span>.
+                  </p>
+                  <p className="text-xs text-muted">
+                    Tocá <span className="text-primary font-medium">Actualizar Encuesta</span> abajo y completá los campos.
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Survey Data */}
         {survey && (
           <div className="card-premium rounded-2xl p-6">
@@ -226,6 +278,24 @@ export default function PerfilPage() {
                       wake_hour: survey.wake_hour ?? 7,
                       sleep_hour: survey.sleep_hour ?? 23,
                       emphasis: survey.emphasis ?? "ninguno",
+                    });
+                    setV2Form({
+                      body_fat_pct: survey.body_fat_pct ?? null,
+                      training_time: survey.training_time ?? null,
+                      job_activity: (survey.job_activity ?? null) as SurveyV2Values["job_activity"],
+                      pathologies: survey.pathologies ?? [],
+                      intolerances: survey.intolerances ?? [],
+                      disliked_foods: survey.disliked_foods ?? [],
+                      meals_per_day: survey.meals_per_day ?? null,
+                      food_budget_monthly: survey.food_budget_monthly ?? null,
+                      food_budget_currency: survey.food_budget_currency ?? "UYU",
+                      country: survey.country ?? "UY",
+                      city: survey.city ?? null,
+                      uses_supplements: survey.uses_supplements ?? null,
+                      current_supplements: survey.current_supplements ?? [],
+                      wants_supplement_advice: survey.wants_supplement_advice ?? null,
+                      cooking_time_per_day: survey.cooking_time_per_day ?? null,
+                      shopping_frequency: (survey.shopping_frequency ?? null) as SurveyV2Values["shopping_frequency"],
                     });
                     setEditingSurvey(true);
                     setSurveySuccess(false);
@@ -374,6 +444,9 @@ export default function PerfilPage() {
                   </div>
                 </div>
 
+                {/* F1 retrocompat: campos v2 (% graso, trabajo, presupuesto, etc.) */}
+                <ProfileSurveyV2Fields value={v2Form} onChange={setV2Form} />
+
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setEditingSurvey(false)}
@@ -387,6 +460,27 @@ export default function PerfilPage() {
                       setSavingSurvey(true);
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
+                        // Construir patch SOLO con campos v2 que tengan valor
+                        // (no enviar nulls explicitos de campos vacios para no sobrescribir
+                        // datos que el cliente quizas no toco).
+                        const v2Patch: Record<string, unknown> = {};
+                        if (v2Form.body_fat_pct != null)            v2Patch.body_fat_pct = v2Form.body_fat_pct;
+                        if (v2Form.training_time)                   v2Patch.training_time = v2Form.training_time;
+                        if (v2Form.job_activity)                    v2Patch.job_activity = v2Form.job_activity;
+                        if (v2Form.pathologies !== undefined)       v2Patch.pathologies = v2Form.pathologies;
+                        if (v2Form.intolerances !== undefined)      v2Patch.intolerances = v2Form.intolerances;
+                        if (v2Form.disliked_foods !== undefined)    v2Patch.disliked_foods = v2Form.disliked_foods;
+                        if (v2Form.meals_per_day != null)           v2Patch.meals_per_day = v2Form.meals_per_day;
+                        if (v2Form.food_budget_monthly != null)     v2Patch.food_budget_monthly = v2Form.food_budget_monthly;
+                        if (v2Form.food_budget_currency)            v2Patch.food_budget_currency = v2Form.food_budget_currency;
+                        if (v2Form.country)                         v2Patch.country = v2Form.country;
+                        if (v2Form.city)                            v2Patch.city = v2Form.city;
+                        if (v2Form.uses_supplements != null)        v2Patch.uses_supplements = v2Form.uses_supplements;
+                        if (v2Form.current_supplements !== undefined) v2Patch.current_supplements = v2Form.current_supplements;
+                        if (v2Form.wants_supplement_advice != null) v2Patch.wants_supplement_advice = v2Form.wants_supplement_advice;
+                        if (v2Form.cooking_time_per_day != null)    v2Patch.cooking_time_per_day = v2Form.cooking_time_per_day;
+                        if (v2Form.shopping_frequency)              v2Patch.shopping_frequency = v2Form.shopping_frequency;
+
                         const res = await fetch("/api/encuesta", {
                           method: "PATCH",
                           headers: {
@@ -403,10 +497,11 @@ export default function PerfilPage() {
                             wake_hour: surveyForm.wake_hour,
                             sleep_hour: surveyForm.sleep_hour,
                             emphasis: surveyForm.emphasis,
+                            ...v2Patch,
                           }),
                         });
                         if (res.ok) {
-                          setSurvey({ ...survey, ...surveyForm } as SurveyData);
+                          setSurvey({ ...survey, ...surveyForm, ...v2Patch } as SurveyData);
                           setEditingSurvey(false);
                           setSurveySuccess(true);
                           setTimeout(() => setSurveySuccess(false), 5000);
