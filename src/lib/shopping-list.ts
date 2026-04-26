@@ -22,8 +22,10 @@ export interface AggregatedFood {
 export interface ShoppingList {
   byAisle: Record<AisleName, AggregatedFood[]>;
   totalItems: number;
-  weekStart: string;        // ISO date
+  weekStart: string;        // ISO date — inicio del periodo cubierto
   bufferPct: number;        // 0.10 default
+  periodDays: number;       // dias que cubre la lista (7/15/30 segun shopping_frequency del cliente)
+  periodLabel: string;      // 'Semanal' | 'Quincenal' | 'Mensual' | 'X dias'
 }
 
 export type AisleName =
@@ -116,18 +118,29 @@ export function resolveFoodId(
 interface BuildOptions {
   bufferPct?: number;        // mermas/desperdicio. Default 0.10 (10%)
   weekStart?: string;        // ISO. Default = hoy.
+  targetDays?: number;       // dias que debe cubrir la lista (7/15/30). Default 7.
 }
 
-// Agrega un meal plan de un dia repetido N veces (default 7 = una semana).
-// Nota: cuando exista weekMenu real (F3), recibira 7 dias distintos.
+// Agrega un meal plan a una lista de compras de N dias (segun shopping_frequency
+// del cliente: semanal=7, quincenal=15, mensual=30).
+//
+// daysInMealsArray = cuantos dias DISTINTOS contiene el array `dayMeals`.
+//   - 1 dia que se repite (legacy o kitesurf): pasar 1
+//   - weekMenu de 7 dias aplanado (35 comidas): pasar 7
+// targetDays = cuantos dias debe cubrir la lista final.
+//   El multiplier real es targetDays / daysInMealsArray.
 export function buildShoppingListFromDayPlan(
   dayMeals: MealPlanMeal[],
   catalog: Array<{ id: string; name: string; category: string; unit: string }>,
-  daysInWeek: number = 7,
+  daysInMealsArray: number = 7,
   options: BuildOptions = {}
 ): ShoppingList {
   const bufferPct = options.bufferPct ?? 0.10;
   const weekStart = options.weekStart ?? new Date().toISOString().slice(0, 10);
+  const targetDays = Math.max(1, Math.round(options.targetDays ?? 7));
+  // Multiplier para escalar gramos: si meals representa 1 dia y queremos 30,
+  // multiplicamos × 30. Si meals son 7 dias y queremos 15, × 2.14.
+  const multiplier = targetDays / Math.max(1, daysInMealsArray);
 
   // 1) Acumular por foodId
   const byFoodId = new Map<string, AggregatedFood>();
@@ -140,16 +153,15 @@ export function buildShoppingListFromDayPlan(
 
       const existing = byFoodId.get(foodId);
       if (existing) {
-        existing.totalGrams += item.grams * daysInWeek;
-        existing.daysUsed = [...new Set([...existing.daysUsed, ...Array.from({length: daysInWeek}, (_, i) => i)])];
+        existing.totalGrams += item.grams * multiplier;
       } else {
         byFoodId.set(foodId, {
           foodId,
           name: catFood?.name ?? item.name,
           category: catFood?.category ?? "snack",
           unit: catFood?.unit ?? item.unit ?? "g",
-          totalGrams: item.grams * daysInWeek,
-          daysUsed: Array.from({length: daysInWeek}, (_, i) => i),
+          totalGrams: item.grams * multiplier,
+          daysUsed: Array.from({length: Math.min(targetDays, 30)}, (_, i) => i),
         });
       }
     }
@@ -187,11 +199,20 @@ export function buildShoppingListFromDayPlan(
     byAisle[aisle].sort((a, b) => a.name.localeCompare(b.name, "es"));
   }
 
+  // Etiqueta amigable del periodo
+  let periodLabel: string;
+  if (targetDays === 7) periodLabel = "Semanal";
+  else if (targetDays === 15) periodLabel = "Quincenal";
+  else if (targetDays === 30) periodLabel = "Mensual";
+  else periodLabel = `${targetDays} dias`;
+
   return {
     byAisle,
     totalItems: aggregated.length,
     weekStart,
     bufferPct,
+    periodDays: targetDays,
+    periodLabel,
   };
 }
 

@@ -24,9 +24,14 @@ interface BuildExtrasInput {
   country: string | null | undefined;
   city: string | null | undefined;
   userBudgetMonthly: number | null | undefined;
-  // F3: cuando 'meals' ya contiene los 7 dias aplanados (weekMenu flatten),
-  // pasar daysInWeek=1. Cuando 'meals' es 1 dia que se repite, usar 7 (default).
+  // F3: cuantos dias DISTINTOS contiene 'meals'.
+  //   - 7 si pasas un solo dia que se repite (legacy/kitesurf: targetDays=7 → multiplier=1)
+  //   - 1 si pasas weekMenu aplanado (35 comidas distintas, ya cubren la semana)
   daysInWeek?: number;
+  // F2 update: shopping_frequency del cliente (semanal/quincenal/mensual).
+  // Determina cuantos dias debe cubrir la lista de compras (7/15/30).
+  // Default 7 si no se especifica (compatibilidad).
+  shoppingFrequency?: "semanal" | "quincenal" | "mensual" | null;
   // F4: input para el advisor de suplementos. Si no se pasa, no se generan
   // recomendaciones (los planes viejos quedan sin suplementos hasta regenerar).
   supplementInput?: {
@@ -71,7 +76,12 @@ export async function buildNutritionExtras(
 
   // 2) Construir shopping list (offline, sin precios)
   const daysInWeek = input.daysInWeek ?? 7;
-  const shoppingList = buildShoppingListFromDayPlan(input.meals, catalog, daysInWeek);
+  const targetDays = input.shoppingFrequency === "mensual" ? 30
+    : input.shoppingFrequency === "quincenal" ? 15
+    : 7; // 'semanal' o null/undefined
+  const shoppingList = buildShoppingListFromDayPlan(input.meals, catalog, daysInWeek, {
+    targetDays,
+  });
 
   // 3) Validar contra presupuesto + precios de la region
   let budget: BudgetReport | null = null;

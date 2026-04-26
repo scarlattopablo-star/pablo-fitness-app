@@ -28,11 +28,14 @@ export interface PricedShoppingList {
   totalItems: number;
   weekStart: string;
   bufferPct: number;
-  // Totales
-  weeklyCost: number;
-  monthlyCost: number;       // weeklyCost × 4.345
+  periodDays: number;        // dias que cubre la lista (7/15/30)
+  periodLabel: string;       // 'Semanal' | 'Quincenal' | 'Mensual' | ...
+  // Totales — calculados a partir del costo de los items que cubren periodDays
+  listTotal: number;         // costo total de TODA la lista (cubra los dias que cubra)
+  weeklyCost: number;        // listTotal escalado a 7 dias (para comparacion)
+  monthlyCost: number;       // listTotal escalado a 30 dias (vs userBudgetMonthly)
   currency: string;
-  itemsWithoutPrice: string[];  // foodIds que no tenian precio en la region
+  itemsWithoutPrice: string[];
 }
 
 export type BudgetStatus = "ok" | "tight" | "over";
@@ -246,7 +249,7 @@ export async function priceShoppingList(
     "Otros": [],
   };
 
-  let weeklyCost = 0;
+  let listTotal = 0;
   let currency = "UYU";
   const itemsWithoutPrice: string[] = [];
 
@@ -269,7 +272,7 @@ export async function priceShoppingList(
       const { cost, currency: itemCurrency, hasPriceData } = priceForItem(item, price);
       if (!hasPriceData) itemsWithoutPrice.push(item.foodId);
       currency = itemCurrency;
-      weeklyCost += cost;
+      listTotal += cost;
       byAisle[aisle].push({
         ...item,
         pricePerKg: price?.price_per_kg != null ? Number(price.price_per_kg) : null,
@@ -281,13 +284,21 @@ export async function priceShoppingList(
     }
   }
 
+  // Escalar a semanal/mensual segun el periodo real de la lista
+  const periodDays = Math.max(1, list.periodDays);
+  const weeklyCost = listTotal * (7 / periodDays);
+  const monthlyCost = listTotal * (30 / periodDays);
+
   return {
     byAisle,
     totalItems: list.totalItems,
     weekStart: list.weekStart,
     bufferPct: list.bufferPct,
+    periodDays,
+    periodLabel: list.periodLabel,
+    listTotal: Math.round(listTotal),
     weeklyCost: Math.round(weeklyCost),
-    monthlyCost: Math.round(weeklyCost * 4.345),
+    monthlyCost: Math.round(monthlyCost),
     currency,
     itemsWithoutPrice,
   };

@@ -56,6 +56,13 @@ export function NutritionShoppingTab({ list, supermarket, currency }: Props) {
     );
   }
 
+  // Banner del periodo arriba de todo (primero que ve el usuario)
+  const periodBanner = (
+    <div className="text-xs text-center text-muted mb-3">
+      Lista <span className="text-primary font-bold">{list.periodLabel.toLowerCase()}</span> · cubre {list.periodDays} dias de comida
+    </div>
+  );
+
   const handleCopy = async () => {
     try {
       const text = shoppingListToText(list, currency);
@@ -79,6 +86,8 @@ export function NutritionShoppingTab({ list, supermarket, currency }: Props) {
 
   return (
     <div>
+      {periodBanner}
+
       {/* Header con boton de compra online si hay super disponible */}
       {supermarket && supermarket.hasOnlineShopping && (
         <div className="glass-card rounded-2xl p-4 mb-4 border-l-4 border-primary">
@@ -167,9 +176,10 @@ export function NutritionShoppingTab({ list, supermarket, currency }: Props) {
         })}
       </div>
 
-      {/* Footer: explicacion buffer + supermercado */}
+      {/* Footer: periodo + buffer + total */}
       <p className="text-xs text-muted mt-4 text-center">
-        Cantidades incluyen un {Math.round(list.bufferPct * 100)}% extra por mermas. Total: {list.totalItems} productos.
+        Lista <span className="text-white font-bold">{list.periodLabel.toLowerCase()}</span> ({list.periodDays} dias) ·
+        Cantidades incluyen +{Math.round(list.bufferPct * 100)}% por mermas · {list.totalItems} productos
       </p>
     </div>
   );

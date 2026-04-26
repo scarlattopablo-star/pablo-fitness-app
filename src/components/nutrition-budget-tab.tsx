@@ -70,21 +70,23 @@ export function NutritionBudgetTab({ budget }: Props) {
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-muted">Costo semanal estimado</p>
-            <p className="font-bold text-lg">{pricedList.weeklyCost.toLocaleString("es-UY")} {currency}</p>
+            <p className="text-muted">Costo de esta lista ({pricedList.periodDays} dias)</p>
+            <p className="font-bold text-lg">{pricedList.listTotal.toLocaleString("es-UY")} {currency}</p>
+            <p className="text-[10px] text-muted/70">{pricedList.periodLabel.toLowerCase()}</p>
           </div>
           <div>
-            <p className="text-muted">Costo mensual estimado</p>
+            <p className="text-muted">Equivalente mensual</p>
             <p className="font-bold text-lg">{pricedList.monthlyCost.toLocaleString("es-UY")} {currency}</p>
+            <p className="text-[10px] text-muted/70">extrapolado a 30 dias</p>
           </div>
           {userBudgetMonthly != null && (
             <>
               <div>
-                <p className="text-muted">Tu presupuesto</p>
+                <p className="text-muted">Tu presupuesto mensual</p>
                 <p className="font-bold text-lg">{userBudgetMonthly.toLocaleString("es-UY")} {currency}</p>
               </div>
               <div>
-                <p className="text-muted">{status === "over" ? "Te pasas por" : "Margen disponible"}</p>
+                <p className="text-muted">{status === "over" ? "Te pasas por (mes)" : "Margen disponible"}</p>
                 <p className={`font-bold text-lg ${cfg.color}`}>
                   {status === "over"
                     ? `+${overBy.toLocaleString("es-UY")} ${currency}`
