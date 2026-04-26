@@ -23,6 +23,19 @@ export type ActivityLevel = 'sedentario' | 'moderado' | 'activo' | 'muy-activo';
 
 export type Sex = 'hombre' | 'mujer';
 
+// === Nutrition v2 ===
+// NEAT laboral — afina TDEE mas alla del entreno
+export type JobActivity = 'sedentario' | 'de-pie' | 'manual' | 'muy-activo';
+
+// Metodo usado para calcular TMB (auditable en el plan)
+export type BMRMethod = 'mifflin' | 'katch-mcardle' | 'harris-benedict';
+
+// Ritmo de cambio corporal por semana
+export type Pace = 'conservador' | 'estandar' | 'agresivo';
+
+// Frecuencia de compra que el cliente puede sostener
+export type ShoppingFrequency = 'semanal' | 'quincenal' | 'mensual';
+
 export type MuscleGroup =
   | 'pecho'
   | 'espalda'
@@ -57,6 +70,24 @@ export interface SurveyData {
   dietaryRestrictions: string[];
   nutritionalGoal?: NutritionalGoal;
   kitesurfLevel?: 'ninguna' | 'basica' | 'intermedia' | 'avanzada';
+
+  // === Nutrition v2 — todos opcionales ===
+  bodyFatPct?: number;
+  trainingTime?: string;          // 'HH:MM' formato 24h
+  jobActivity?: JobActivity;
+  pathologies?: string[];
+  intolerances?: string[];
+  dislikedFoods?: string[];
+  mealsPerDay?: number;            // 3-6
+  foodBudgetMonthly?: number;
+  foodBudgetCurrency?: string;     // 'UYU' | 'ARS' | 'USD' | ...
+  country?: string;                // 'UY','AR','ES'...
+  city?: string;
+  usesSupplements?: boolean;
+  currentSupplements?: string[];
+  wantsSupplementAdvice?: boolean;
+  cookingTimePerDay?: number;      // minutos
+  shoppingFrequency?: ShoppingFrequency;
 }
 
 export interface MacroCalculation {
@@ -66,6 +97,15 @@ export interface MacroCalculation {
   protein: number; // grams
   fats: number; // grams
   carbs: number; // grams
+}
+
+// MacroCalculationV2 — extiende v1 con metadatos de auditoria del calculo.
+// El motor v2 (nutrition-engine.ts) devuelve este shape.
+export interface MacroCalculationV2 extends MacroCalculation {
+  bmrMethod: BMRMethod;
+  direction: 'deficit' | 'surplus' | 'maintenance';
+  pace: Pace;
+  dailyDelta: number;              // kcal/dia respecto a TDEE
 }
 
 export interface Exercise {

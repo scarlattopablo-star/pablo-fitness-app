@@ -12,7 +12,9 @@ import { createClient } from "@supabase/supabase-js";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import { generateMealPlan } from "@/lib/generate-meal-plan";
 import { calculateMacros } from "@/lib/harris-benedict";
-import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
+import { calculateMacrosV2, shouldUseV2Engine } from "@/lib/nutrition-engine";
+import { buildNutritionExtras } from "@/lib/persist-nutrition-extras";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, JobActivity, BMRMethod } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -79,18 +81,42 @@ export async function POST(request: NextRequest) {
       heightFixed = true;
     }
 
-    // 3) Recalcular macros (Harris-Benedict) con altura corregida
-    const macros = calculateMacros(
-      survey.sex as Sex,
-      Number(survey.weight) || 70,
-      heightCm,
-      Number(survey.age) || 30,
-      (survey.activity_level || "moderado") as ActivityLevel,
-      (survey.objective || "quema-grasa") as PlanSlug,
-      (survey.nutritional_goal || undefined) as NutritionalGoal | undefined
-    );
+    // 3) Recalcular macros: motor v2 si la encuesta lo permite, sino harris-benedict.
+    const useV2 = shouldUseV2Engine({
+      body_fat_pct: survey.body_fat_pct,
+      job_activity: survey.job_activity,
+    });
 
-    // 4) Persistir correcciones en la survey (altura + macros)
+    let macros: { tmb: number; tdee: number; targetCalories: number; protein: number; carbs: number; fats: number };
+    let bmrMethod: BMRMethod = "harris-benedict";
+
+    if (useV2) {
+      const v2 = calculateMacrosV2({
+        sex: survey.sex as Sex,
+        weight: Number(survey.weight) || 70,
+        height: heightCm,
+        age: Number(survey.age) || 30,
+        activityLevel: (survey.activity_level || "moderado") as ActivityLevel,
+        objective: (survey.objective || "quema-grasa") as PlanSlug,
+        bodyFatPct: survey.body_fat_pct ?? undefined,
+        jobActivity: (survey.job_activity as JobActivity | null) ?? undefined,
+        nutritionalGoal: (survey.nutritional_goal || undefined) as NutritionalGoal | undefined,
+      });
+      macros = v2;
+      bmrMethod = v2.bmrMethod;
+    } else {
+      macros = calculateMacros(
+        survey.sex as Sex,
+        Number(survey.weight) || 70,
+        heightCm,
+        Number(survey.age) || 30,
+        (survey.activity_level || "moderado") as ActivityLevel,
+        (survey.objective || "quema-grasa") as PlanSlug,
+        (survey.nutritional_goal || undefined) as NutritionalGoal | undefined
+      );
+    }
+
+    // 4) Persistir correcciones en la survey (altura + macros + bmr_method)
     const surveyPatch: Record<string, unknown> = {
       tmb: macros.tmb,
       tdee: macros.tdee,
@@ -98,6 +124,7 @@ export async function POST(request: NextRequest) {
       protein: macros.protein,
       carbs: macros.carbs,
       fats: macros.fats,
+      bmr_method: bmrMethod,
     };
     if (heightFixed) surveyPatch.height = heightCm;
     await supabaseAdmin.from("surveys").update(surveyPatch).eq("id", survey.id);
@@ -143,7 +170,24 @@ export async function POST(request: NextRequest) {
     }
 
     const trainingData = { days: trainingDays };
-    const nutritionData = { meals: mealPlan.meals, importantNotes: mealPlan.importantNotes };
+    const nutritionData: Record<string, unknown> = {
+      meals: mealPlan.meals,
+      importantNotes: mealPlan.importantNotes,
+    };
+
+    // F2: enriquecer con shopping list + budget si la encuesta tiene region
+    try {
+      const extras = await buildNutritionExtras(supabaseAdmin, {
+        meals: mealPlan.meals,
+        country: survey.country,
+        city: survey.city,
+        userBudgetMonthly: survey.food_budget_monthly,
+      });
+      if (extras.shoppingList) nutritionData.shoppingList = extras.shoppingList;
+      if (extras.budget) nutritionData.budget = extras.budget;
+    } catch (e) {
+      console.error("[admin/generate-plans-for-user] buildNutritionExtras failed:", e);
+    }
 
     if (existingTraining) {
       await supabaseAdmin.from("training_plans")

@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import { generateMealPlan, generateKitesurfMealPlans } from "@/lib/generate-meal-plan";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
-import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
+import { calculateMacrosV2, shouldUseV2Engine } from "@/lib/nutrition-engine";
+import { buildNutritionExtras } from "@/lib/persist-nutrition-extras";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, JobActivity } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,10 +20,10 @@ export async function POST(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Get latest survey for this user
+    // Get latest survey for this user (incluye campos v2 + region/budget)
     const { data: survey, error: surveyError } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level")
+      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level, body_fat_pct, job_activity, intolerances, disliked_foods, meals_per_day, country, city, food_budget_monthly")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -51,9 +53,32 @@ export async function POST(request: NextRequest) {
     const activityLevel = (survey.activity_level || "moderado") as ActivityLevel;
     const nutritionalGoal = survey.nutritional_goal as NutritionalGoal | null;
 
-    // Si el plan necesita objetivo y el cliente eligió uno, recalcular macros
+    // Si la encuesta tiene datos extra (% graso o trabajo), usar motor v2.
+    // Si no, mantener calculo viejo persistido o recalcular con harris-benedict
+    // cuando el plan necesita un goal del cliente.
     let { target_calories, protein, carbs, fats } = survey;
-    if (nutritionalGoal && PLANS_NEEDING_GOAL.includes(objective as PlanSlug)) {
+    const useV2 = shouldUseV2Engine({
+      body_fat_pct: survey.body_fat_pct,
+      job_activity: survey.job_activity,
+    });
+
+    if (useV2) {
+      const recalc = calculateMacrosV2({
+        sex: userSex,
+        weight: userWeight,
+        height: survey.height || 170,
+        age: survey.age || 25,
+        activityLevel,
+        objective: objective as PlanSlug,
+        bodyFatPct: survey.body_fat_pct ?? undefined,
+        jobActivity: (survey.job_activity as JobActivity | null) ?? undefined,
+        nutritionalGoal: nutritionalGoal ?? undefined,
+      });
+      target_calories = recalc.targetCalories;
+      protein = recalc.protein;
+      carbs = recalc.carbs;
+      fats = recalc.fats;
+    } else if (nutritionalGoal && PLANS_NEEDING_GOAL.includes(objective as PlanSlug)) {
       const recalc = calculateMacros(
         userSex,
         userWeight,
@@ -107,12 +132,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Build nutrition data for storage
-    const nutritionData = isKitesurf
-      ? { gymDay: (nutrition as { gymDay: { meals: unknown[]; importantNotes: string[] }; kitesurfDay: { meals: unknown[]; importantNotes: string[] } }).gymDay, kitesurfDay: (nutrition as { gymDay: { meals: unknown[]; importantNotes: string[] }; kitesurfDay: { meals: unknown[]; importantNotes: string[] } }).kitesurfDay }
-      : { meals: (nutrition as { meals: unknown[]; importantNotes: string[] }).meals };
+    type SingleNutrition = { meals: import("@/lib/generate-meal-plan").MealPlanMeal[]; importantNotes: string[] };
+    type DualNutrition = { gymDay: SingleNutrition; kitesurfDay: SingleNutrition };
+    const nutritionData: Record<string, unknown> = isKitesurf
+      ? { gymDay: (nutrition as DualNutrition).gymDay, kitesurfDay: (nutrition as DualNutrition).kitesurfDay }
+      : { meals: (nutrition as SingleNutrition).meals };
     const nutritionNotes = isKitesurf
-      ? [...(nutrition as { gymDay: { meals: unknown[]; importantNotes: string[] }; kitesurfDay: { meals: unknown[]; importantNotes: string[] } }).kitesurfDay.importantNotes]
-      : (nutrition as { meals: unknown[]; importantNotes: string[] }).importantNotes;
+      ? [...(nutrition as DualNutrition).kitesurfDay.importantNotes]
+      : (nutrition as SingleNutrition).importantNotes;
+
+    // F2: enriquecer con shopping list + budget. Para kitesurf usamos el menu
+    // del dia de gym como base (asumiendo que la lista cubre los 2 tipos de dia).
+    try {
+      const baseMeals = isKitesurf
+        ? (nutrition as DualNutrition).gymDay.meals
+        : (nutrition as SingleNutrition).meals;
+      const extras = await buildNutritionExtras(supabase, {
+        meals: baseMeals,
+        country: survey.country,
+        city: survey.city,
+        userBudgetMonthly: survey.food_budget_monthly,
+      });
+      if (extras.shoppingList) nutritionData.shoppingList = extras.shoppingList;
+      if (extras.budget) nutritionData.budget = extras.budget;
+    } catch (e) {
+      // Si falla, no bloqueamos la generacion del plan — solo no enriquecemos
+      console.error("[generate-plans] buildNutritionExtras failed:", e);
+    }
 
     if (existingNP) {
       // Update existing nutrition plan

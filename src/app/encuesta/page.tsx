@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Dumbbell, Check, Camera, Upload, Sparkles, Target, Utensils, Clock } from "lucide-react";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
+import { calculateMacrosV2 } from "@/lib/nutrition-engine";
 import { getPlanBySlug, DURATION_LABELS, formatPrice } from "@/lib/plans-data";
 import { supabase } from "@/lib/supabase";
-import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, MacroCalculation } from "@/types";
+import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, MacroCalculation, MacroCalculationV2, JobActivity, ShoppingFrequency } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
   sedentario: { label: "Sedentario", desc: "Trabajo de oficina, poco movimiento" },
@@ -26,6 +27,65 @@ const RESTRICTIONS = [
   "Otra",
 ];
 
+// === Nutrition v2 — opciones de pasos opcionales ===
+const JOB_ACTIVITIES: { value: JobActivity; label: string; desc: string }[] = [
+  { value: "sedentario", label: "Sedentario", desc: "Oficina, pocas horas de pie" },
+  { value: "de-pie", label: "De pie", desc: "Atencion al publico, comercio" },
+  { value: "manual", label: "Manual", desc: "Construccion, almacen, repartidor" },
+  { value: "muy-activo", label: "Muy activo", desc: "Entrenador, mudanzas, oficio fisico" },
+];
+
+const PATHOLOGIES_OPTIONS = [
+  "Hipertension",
+  "Diabetes tipo 1",
+  "Diabetes tipo 2",
+  "Hipotiroidismo",
+  "Hipertiroidismo",
+  "Colesterol alto",
+  "Acido urico",
+  "Higado graso",
+  "Sindrome ovario poliquistico",
+  "Reflujo",
+];
+
+const INTOLERANCES_OPTIONS = [
+  "Gluten",
+  "Lactosa",
+  "Frutos secos",
+  "Mariscos",
+  "Soja",
+  "Huevo",
+];
+
+const COUNTRIES = [
+  { value: "UY", label: "Uruguay", currency: "UYU" },
+  { value: "AR", label: "Argentina", currency: "ARS" },
+  { value: "ES", label: "Espana", currency: "EUR" },
+  { value: "BR", label: "Brasil", currency: "BRL" },
+  { value: "CL", label: "Chile", currency: "CLP" },
+  { value: "MX", label: "Mexico", currency: "MXN" },
+  { value: "OTRO", label: "Otro", currency: "USD" },
+];
+
+const SUPPLEMENTS_OPTIONS = [
+  "Whey protein",
+  "Creatina",
+  "Omega 3",
+  "Multivitaminico",
+  "Magnesio",
+  "Vitamina D",
+  "Cafeina",
+  "Pre-entreno",
+  "BCAAs",
+  "Glutamina",
+];
+
+const SHOPPING_FREQUENCIES: { value: ShoppingFrequency; label: string }[] = [
+  { value: "semanal", label: "Semanal" },
+  { value: "quincenal", label: "Cada 15 dias" },
+  { value: "mensual", label: "Mensual" },
+];
+
 export default function EncuestaPage() {
   const [step, setStep] = useState(1);
   const [sex, setSex] = useState<Sex | "">("");
@@ -42,6 +102,24 @@ export default function EncuestaPage() {
 
   const [nutritionalGoal, setNutritionalGoal] = useState<NutritionalGoal | "">("");
   const [kitesurfLevel, setKitesurfLevel] = useState("");
+
+  // === Nutrition v2 — campos opcionales ===
+  const [bodyFatPct, setBodyFatPct] = useState("");
+  const [jobActivity, setJobActivity] = useState<JobActivity | "">("");
+  const [trainingTime, setTrainingTime] = useState("");
+  const [pathologies, setPathologies] = useState<string[]>([]);
+  const [intolerances, setIntolerances] = useState<string[]>([]);
+  const [dislikedFoods, setDislikedFoods] = useState("");
+  const [mealsPerDay, setMealsPerDay] = useState<number | null>(null);
+  const [country, setCountry] = useState("UY");
+  const [city, setCity] = useState("");
+  const [foodBudgetMonthly, setFoodBudgetMonthly] = useState("");
+  const [foodBudgetCurrency, setFoodBudgetCurrency] = useState("UYU");
+  const [cookingTimePerDay, setCookingTimePerDay] = useState("");
+  const [shoppingFrequency, setShoppingFrequency] = useState<ShoppingFrequency | "">("");
+  const [usesSupplements, setUsesSupplements] = useState<boolean | null>(null);
+  const [currentSupplements, setCurrentSupplements] = useState<string[]>([]);
+  const [wantsSupplementAdvice, setWantsSupplementAdvice] = useState<boolean | null>(null);
 
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
   const planSlug = (searchParams?.get("plan") || "quema-grasa") as PlanSlug;
@@ -61,43 +139,88 @@ export default function EncuestaPage() {
 
   const needsGoal = PLANS_NEEDING_GOAL.includes(planSlug);
   const isKitesurf = planSlug === "kitesurf";
-  const totalSteps = (needsGoal ? 6 : 5) + (isKitesurf ? 1 : 0);
+  // Pasos extras opcionales (skipeables): perfil avanzado, salud/comida, presupuesto/suplementos
+  const totalSteps = (needsGoal ? 9 : 8) + (isKitesurf ? 1 : 0);
 
-  // Mapeo de pasos: si needsGoal, paso 1=objetivo, 2=datos, 3=medidas, 4=actividad, 5=fotos, 6=fin
-  // Si no needsGoal: 1=datos, 2=medidas, 3=actividad, 4=fotos, 5=fin
-  // Si kitesurf: agrega paso extra de nivel kitesurf antes de fotos
+  // Mapeo de pasos:
+  //   1 (opt). objetivo nutricional (si needsGoal)
+  //   N. datos basicos (sex+age)
+  //   N+1. medidas (peso+altura)
+  //   N+2. actividad (entreno + restricciones)
+  //   N+3. perfil avanzado [SKIPEABLE]: %graso + trabajo + horario entreno
+  //   N+4. salud y comida [SKIPEABLE]: patologias + intolerancias + comidas/dia
+  //   N+5. presupuesto y suplementos [SKIPEABLE]: pais + budget + cocina + supps
+  //   N+6 (opt). kitesurf level (si isKitesurf)
+  //   N+7. fotos
+  //   N+8. fin (CTA pago)
   const stepGoal = needsGoal ? 1 : -1;
   const stepData = needsGoal ? 2 : 1;
   const stepMedidas = needsGoal ? 3 : 2;
   const stepActividad = needsGoal ? 4 : 3;
-  const stepKitesurf = isKitesurf ? (needsGoal ? 5 : 4) : -1;
-  const stepFotos = (needsGoal ? 5 : 4) + (isKitesurf ? 1 : 0);
-  const stepFin = (needsGoal ? 6 : 5) + (isKitesurf ? 1 : 0);
+  const stepPerfilExtra = needsGoal ? 5 : 4;
+  const stepSaludComida = needsGoal ? 6 : 5;
+  const stepPresupuesto = needsGoal ? 7 : 6;
+  const stepKitesurf = isKitesurf ? (needsGoal ? 8 : 7) : -1;
+  const stepFotos = (needsGoal ? 8 : 7) + (isKitesurf ? 1 : 0);
+  const stepFin = (needsGoal ? 9 : 8) + (isKitesurf ? 1 : 0);
 
   const canProceed = () => {
     if (step === stepGoal) return nutritionalGoal !== "";
     if (step === stepData) return sex !== "" && age !== "" && Number(age) > 0;
     if (step === stepMedidas) return weight !== "" && height !== "" && Number(weight) > 0 && Number(height) > 0;
     if (step === stepActividad) return activityLevel !== "";
+    // Pasos opcionales — siempre se puede avanzar (skip incluido)
+    if (step === stepPerfilExtra) return true;
+    if (step === stepSaludComida) return true;
+    if (step === stepPresupuesto) return true;
     if (step === stepKitesurf) return kitesurfLevel !== "";
     if (step === stepFotos) return true;
     return true;
   };
 
+  // Decide motor v2 vs v1: usa v2 SOLO si el cliente completo datos extra que
+  // realmente afinen el calculo (%graso o jobActivity).
+  const shouldUseV2 = (bodyFatPct !== "" && Number(bodyFatPct) > 0) || jobActivity !== "";
+
   const handleNext = () => {
     if (step === stepFotos && sex && activityLevel) {
-      const result = calculateMacros(
-        sex,
-        Number(weight),
-        Number(height),
-        Number(age),
-        activityLevel,
-        planSlug,
-        needsGoal && nutritionalGoal ? nutritionalGoal : undefined
-      );
+      let result: MacroCalculation | MacroCalculationV2;
+      if (shouldUseV2) {
+        result = calculateMacrosV2({
+          sex,
+          weight: Number(weight),
+          height: Number(height),
+          age: Number(age),
+          activityLevel,
+          objective: planSlug,
+          bodyFatPct: bodyFatPct ? Number(bodyFatPct) : undefined,
+          jobActivity: jobActivity || undefined,
+          nutritionalGoal: needsGoal && nutritionalGoal ? nutritionalGoal : undefined,
+        });
+      } else {
+        result = calculateMacros(
+          sex,
+          Number(weight),
+          Number(height),
+          Number(age),
+          activityLevel,
+          planSlug,
+          needsGoal && nutritionalGoal ? nutritionalGoal : undefined
+        );
+      }
       setMacros(result);
     }
     setStep(step + 1);
+  };
+
+  const toggleInList = (list: string[], setList: (l: string[]) => void, value: string) => {
+    setList(list.includes(value) ? list.filter(x => x !== value) : [...list, value]);
+  };
+
+  const handleCountryChange = (newCountry: string) => {
+    setCountry(newCountry);
+    const found = COUNTRIES.find(c => c.value === newCountry);
+    if (found) setFoodBudgetCurrency(found.currency);
   };
 
   const toggleRestriction = (r: string) => {
@@ -330,6 +453,289 @@ export default function EncuestaPage() {
           </div>
         )}
 
+        {/* STEP PERFIL EXTRA (opcional): %graso, trabajo, horario entreno */}
+        {step === stepPerfilExtra && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">Perfil Avanzado</h2>
+            <p className="text-muted mb-2">Datos opcionales que afinan el calculo de tus calorias y macros.</p>
+            <p className="text-xs text-primary mb-8">Podes saltarlo — usaremos formulas estandar.</p>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-2">Porcentaje de grasa corporal (opcional)</label>
+                <p className="text-xs text-muted mb-3">Si lo conoces (balanza, plicometro o DEXA), nos permite usar Katch-McArdle: la formula mas precisa.</p>
+                <input
+                  type="number"
+                  value={bodyFatPct}
+                  onChange={(e) => setBodyFatPct(e.target.value)}
+                  placeholder="Ej: 18"
+                  min={3}
+                  max={50}
+                  step={0.1}
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-3">Tipo de trabajo</label>
+                <p className="text-xs text-muted mb-3">Tu trabajo afecta el gasto calorico tanto como el entreno.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {JOB_ACTIVITIES.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setJobActivity(opt.value)}
+                      className={`text-left p-3 rounded-xl border transition-all ${
+                        jobActivity === opt.value ? "border-primary bg-primary/5" : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      <p className="font-medium text-sm">{opt.label}</p>
+                      <p className="text-[10px] text-muted">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Horario habitual de entrenamiento (opcional)</label>
+                <p className="text-xs text-muted mb-3">Distribuimos tus comidas alrededor del entreno para mejor rendimiento.</p>
+                <input
+                  type="time"
+                  value={trainingTime}
+                  onChange={(e) => setTrainingTime(e.target.value)}
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP SALUD Y COMIDA (opcional): patologias, intolerancias, comidas/dia */}
+        {step === stepSaludComida && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">Salud y Comidas</h2>
+            <p className="text-muted mb-2">Para evitar alimentos que no podes consumir y adaptar el plan a tus condiciones.</p>
+            <p className="text-xs text-primary mb-8">Todo opcional — si no aplica, saltalo.</p>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-3">Patologias o condiciones medicas</label>
+                <div className="flex flex-wrap gap-2">
+                  {PATHOLOGIES_OPTIONS.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => toggleInList(pathologies, setPathologies, p)}
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                        pathologies.includes(p)
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-3">Intolerancias o alergias alimentarias</label>
+                <div className="flex flex-wrap gap-2">
+                  {INTOLERANCES_OPTIONS.map((i) => (
+                    <button
+                      key={i}
+                      onClick={() => toggleInList(intolerances, setIntolerances, i)}
+                      className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                        intolerances.includes(i)
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {i}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Alimentos que NO consumis</label>
+                <p className="text-xs text-muted mb-3">Separados por coma. Ej: pescado, palta, brocoli.</p>
+                <input
+                  type="text"
+                  value={dislikedFoods}
+                  onChange={(e) => setDislikedFoods(e.target.value)}
+                  placeholder="Ej: pescado, palta, brocoli"
+                  maxLength={200}
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-3">Cuantas comidas al dia preferis</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[3, 4, 5, 6].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setMealsPerDay(n)}
+                      className={`p-3 rounded-xl border text-center font-medium transition-all ${
+                        mealsPerDay === n ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP PRESUPUESTO (opcional): pais, budget, cocina, suplementos */}
+        {step === stepPresupuesto && (
+          <div className="animate-fade-in-up">
+            <h2 className="text-2xl font-black mb-2">Presupuesto y Suplementos</h2>
+            <p className="text-muted mb-2">Adaptamos la lista de compras a tu bolsillo y rutina.</p>
+            <p className="text-xs text-primary mb-8">Opcional — si lo dejas en blanco no calculamos presupuesto.</p>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium mb-3">Pais</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {COUNTRIES.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => handleCountryChange(c.value)}
+                      className={`p-2 rounded-xl border text-center text-sm font-medium transition-all ${
+                        country === c.value ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Ciudad (opcional)</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="Ej: Montevideo"
+                  maxLength={50}
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Presupuesto mensual de comida ({foodBudgetCurrency})
+                </label>
+                <p className="text-xs text-muted mb-3">Te avisamos si el plan se pasa y proponemos ajustes.</p>
+                <input
+                  type="number"
+                  value={foodBudgetMonthly}
+                  onChange={(e) => setFoodBudgetMonthly(e.target.value)}
+                  placeholder="Ej: 8000"
+                  min={0}
+                  step={100}
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Tiempo de cocina por dia (minutos)</label>
+                <input
+                  type="number"
+                  value={cookingTimePerDay}
+                  onChange={(e) => setCookingTimePerDay(e.target.value)}
+                  placeholder="Ej: 30"
+                  min={0}
+                  max={240}
+                  step={5}
+                  className="w-full bg-card-bg border border-card-border rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-3">Frecuencia de compras</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SHOPPING_FREQUENCIES.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setShoppingFrequency(opt.value)}
+                      className={`p-3 rounded-xl border text-center font-medium text-sm transition-all ${
+                        shoppingFrequency === opt.value ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-3">¿Usas suplementos actualmente?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: true, label: "Si" },
+                    { value: false, label: "No" },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      onClick={() => setUsesSupplements(opt.value)}
+                      className={`p-3 rounded-xl border text-center font-medium transition-all ${
+                        usesSupplements === opt.value ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {usesSupplements === true && (
+                <div>
+                  <label className="block text-sm font-medium mb-3">¿Cuales?</label>
+                  <div className="flex flex-wrap gap-2">
+                    {SUPPLEMENTS_OPTIONS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => toggleInList(currentSupplements, setCurrentSupplements, s)}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                          currentSupplements.includes(s)
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-card-border hover:border-muted"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium mb-3">¿Queres que te recomendemos suplementos?</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: true, label: "Si, recomienden" },
+                    { value: false, label: "No, gracias" },
+                  ].map((opt) => (
+                    <button
+                      key={String(opt.value)}
+                      onClick={() => setWantsSupplementAdvice(opt.value)}
+                      className={`p-3 rounded-xl border text-center font-medium text-sm transition-all ${
+                        wantsSupplementAdvice === opt.value ? "border-primary bg-primary/5 text-primary" : "border-card-border hover:border-muted"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* STEP KITESURF: Kitesurf experience level */}
         {step === stepKitesurf && (
           <div className="animate-fade-in-up">
@@ -507,6 +913,32 @@ export default function EncuestaPage() {
             <button
               disabled={finishing}
               onClick={async () => {
+                // Campos v2 — solo se incluyen si el usuario los completo (snake_case
+                // porque van directo a la columna en supabase).
+                const dislikedFoodsArray = dislikedFoods
+                  .split(",")
+                  .map(s => s.trim())
+                  .filter(s => s.length > 0);
+                const extraSurveyFields = {
+                  ...(bodyFatPct ? { body_fat_pct: Number(bodyFatPct) } : {}),
+                  ...(jobActivity ? { job_activity: jobActivity } : {}),
+                  ...(trainingTime ? { training_time: trainingTime } : {}),
+                  ...(pathologies.length > 0 ? { pathologies } : {}),
+                  ...(intolerances.length > 0 ? { intolerances } : {}),
+                  ...(dislikedFoodsArray.length > 0 ? { disliked_foods: dislikedFoodsArray } : {}),
+                  ...(mealsPerDay ? { meals_per_day: mealsPerDay } : {}),
+                  ...(country ? { country } : {}),
+                  ...(city ? { city } : {}),
+                  ...(foodBudgetMonthly ? { food_budget_monthly: Number(foodBudgetMonthly) } : {}),
+                  ...(foodBudgetCurrency ? { food_budget_currency: foodBudgetCurrency } : {}),
+                  ...(cookingTimePerDay ? { cooking_time_per_day: Number(cookingTimePerDay) } : {}),
+                  ...(shoppingFrequency ? { shopping_frequency: shoppingFrequency } : {}),
+                  ...(usesSupplements !== null ? { uses_supplements: usesSupplements } : {}),
+                  ...(currentSupplements.length > 0 ? { current_supplements: currentSupplements } : {}),
+                  ...(wantsSupplementAdvice !== null ? { wants_supplement_advice: wantsSupplementAdvice } : {}),
+                  ...("bmrMethod" in macros ? { bmr_method: (macros as MacroCalculationV2).bmrMethod } : {}),
+                };
+
                 const payload = {
                   sex, age: Number(age), weight: Number(weight), height: Number(height),
                   activityLevel, restrictions, emphasis, planSlug,
@@ -517,6 +949,7 @@ export default function EncuestaPage() {
                     targetCalories: macros.targetCalories,
                     protein: macros.protein, carbs: macros.carbs, fats: macros.fats,
                   },
+                  extraSurveyFields,
                 };
 
                 // FLOW TRIAL: user YA tiene cuenta. Persistimos survey + creamos sub + onboarding.
@@ -549,6 +982,7 @@ export default function EncuestaPage() {
                       protein: payload.macros.protein,
                       carbs: payload.macros.carbs,
                       fats: payload.macros.fats,
+                      ...payload.extraSurveyFields,
                     });
 
                     const subRes = await fetch("/api/create-subscription", {
@@ -631,6 +1065,14 @@ export default function EncuestaPage() {
             >
               Siguiente <ArrowRight className="h-5 w-5" />
             </button>
+            {(step === stepPerfilExtra || step === stepSaludComida || step === stepPresupuesto) && (
+              <button
+                onClick={() => setStep(step + 1)}
+                className="w-full text-sm text-muted hover:text-white text-center py-3 mt-2"
+              >
+                Saltar este paso
+              </button>
+            )}
           </div>
         )}
       </div>
