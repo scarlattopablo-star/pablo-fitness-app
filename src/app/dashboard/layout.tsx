@@ -219,8 +219,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-2 space-y-0.5">
+        {/* Nav (scrollable cuando la pantalla es chica para que el boton Salir
+            del bottom siempre quede visible) */}
+        <nav className="flex-1 overflow-y-auto min-h-0 px-3 py-2 space-y-0.5">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
             return (
