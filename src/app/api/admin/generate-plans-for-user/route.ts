@@ -186,6 +186,7 @@ export async function POST(request: NextRequest) {
         city: survey.city,
         userBudgetMonthly: survey.food_budget_monthly,
         daysInWeek: 1,
+        shoppingFrequency: survey.shopping_frequency as "semanal" | "quincenal" | "mensual" | null,
         supplementInput: {
           sex: survey.sex || "hombre",
           age: Number(survey.age) || 30,

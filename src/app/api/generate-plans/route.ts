@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Get latest survey for this user (incluye campos v2 + region/budget)
     const { data: survey, error: surveyError } = await supabase
       .from("surveys")
-      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level, body_fat_pct, job_activity, intolerances, disliked_foods, meals_per_day, country, city, food_budget_monthly, pathologies, current_supplements, wants_supplement_advice, tdee")
+      .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, dietary_restrictions, weight, height, age, sex, activity_level, kitesurf_level, body_fat_pct, job_activity, intolerances, disliked_foods, meals_per_day, country, city, food_budget_monthly, pathologies, current_supplements, wants_supplement_advice, tdee, shopping_frequency")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -162,6 +162,7 @@ export async function POST(request: NextRequest) {
         city: survey.city,
         userBudgetMonthly: survey.food_budget_monthly,
         daysInWeek,
+        shoppingFrequency: survey.shopping_frequency as "semanal" | "quincenal" | "mensual" | null,
         supplementInput: {
           sex: userSex,
           age: survey.age || 30,
