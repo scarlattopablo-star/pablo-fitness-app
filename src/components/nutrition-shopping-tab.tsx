@@ -8,12 +8,11 @@
 // copia la lista al portapapeles + abre la home del super.
 
 import { useState } from "react";
-import { ShoppingCart, Copy, Check, ExternalLink, Search } from "lucide-react";
+import { ShoppingCart, Copy, Check, ExternalLink } from "lucide-react";
 import type { ShoppingList, AggregatedFood, AisleName } from "@/lib/shopping-list";
 import { shoppingListToText } from "@/lib/shopping-list";
 import type { PricedShoppingList } from "@/lib/budget-validator";
 import type { Supermarket } from "@/lib/supermarket-resolver";
-import { buildSearchUrl } from "@/lib/supermarket-resolver";
 
 interface Props {
   list: ShoppingList | PricedShoppingList | null;
@@ -154,18 +153,6 @@ export function NutritionShoppingTab({ list, supermarket, currency }: Props) {
                         <span className="text-xs text-muted shrink-0">
                           ~{Math.round(item.estimatedCost)} {item.currency}
                         </span>
-                      )}
-                      {supermarket?.hasOnlineShopping && (
-                        <button
-                          onClick={() => {
-                            const url = buildSearchUrl(supermarket, item.name);
-                            if (url) window.open(url, "_blank", "noopener,noreferrer");
-                          }}
-                          className="text-muted hover:text-primary p-1 shrink-0"
-                          title={`Buscar ${item.name} en ${supermarket.name}`}
-                        >
-                          <Search className="h-4 w-4" />
-                        </button>
                       )}
                     </li>
                   );
