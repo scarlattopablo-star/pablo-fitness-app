@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockups · Glúteos 360 + Sorteo IG + Reto Público</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a1a; font-family: 'Inter', system-ui, sans-serif; color: #fff; padding: 32px 16px; }
+
+  .page { max-width: 1400px; margin: 0 auto; }
+  .page-title { font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+  .page-sub { color: #888; font-size: 15px; margin-bottom: 40px; }
+
+  .section { margin-bottom: 64px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    padding-bottom: 12px; border-bottom: 2px solid #333;
+  }
+  .section-num {
+    background: #CDFF00; color: #000; font-weight: 900;
+    width: 36px; height: 36px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 18px;
+  }
+  .section-title { font-size: 22px; font-weight: 800; }
+  .section-meta { color: #888; font-size: 13px; margin-left: auto; }
+
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+
+  /* ========== EMAIL PREVIEW ========== */
+  .device-mail {
+    background: #2a2a2a; border-radius: 16px; padding: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5); flex: 1; min-width: 600px;
+  }
+  .device-mail-header {
+    display: flex; align-items: center; gap: 10px; padding: 8px 4px 16px;
+    border-bottom: 1px solid #444; margin-bottom: 16px;
+  }
+  .mail-from { font-size: 13px; color: #ccc; }
+  .mail-from strong { color: #fff; }
+  .mail-to { font-size: 12px; color: #888; }
+  .mail-subject { font-size: 15px; font-weight: 700; color: #fff; margin-top: 4px; }
+
+  /* ========== INSTAGRAM POSTS ========== */
+  .ig-post {
+    width: 360px; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden;
+    position: relative; flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .ig-story {
+    width: 240px; aspect-ratio: 9/16; border-radius: 24px; overflow: hidden;
+    position: relative; flex-shrink: 0;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    border: 6px solid #1a1a1a;
+  }
+  .ig-label {
+    position: absolute; top: -28px; left: 0; font-size: 11px; color: #888;
+    font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .ig-wrap { position: relative; padding-top: 32px; }
+
+  /* SORTEO POST 1 - HOOK */
+  .sorteo-1 {
+    background: linear-gradient(135deg, #CDFF00 0%, #9eff00 100%);
+    color: #000; padding: 40px 32px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .sorteo-1 .badge {
+    background: #000; color: #CDFF00; padding: 6px 14px; border-radius: 99px;
+    font-size: 11px; font-weight: 900; letter-spacing: 1px; align-self: flex-start;
+  }
+  .sorteo-1 .gift { font-size: 80px; text-align: center; margin: 12px 0 8px; }
+  .sorteo-1 h2 {
+    font-size: 38px; font-weight: 900; line-height: 1; text-align: center;
+    margin-bottom: 8px;
+  }
+  .sorteo-1 .prize {
+    font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 4px;
+  }
+  .sorteo-1 .footer {
+    font-size: 11px; font-weight: 700; text-align: center;
+    background: #000; color: #CDFF00; padding: 10px;
+    border-radius: 10px; letter-spacing: 1px;
+  }
+
+  /* SORTEO POST 2 - REGLAS */
+  .sorteo-2 {
+    background: #0a0a0a; color: #fff; padding: 32px 28px;
+    display: flex; flex-direction: column;
+  }
+  .sorteo-2 h3 {
+    font-size: 22px; font-weight: 900; margin-bottom: 18px;
+    color: #CDFF00;
+  }
+  .sorteo-2 .rule {
+    display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px;
+  }
+  .sorteo-2 .rule-num {
+    background: #CDFF00; color: #000; min-width: 28px; height: 28px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; flex-shrink: 0;
+  }
+  .sorteo-2 .rule-txt { font-size: 14px; line-height: 1.4; padding-top: 4px; }
+  .sorteo-2 .rule-txt strong { color: #CDFF00; }
+
+  /* SORTEO POST 3 - CIERRE */
+  .sorteo-3 {
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+    color: #fff; padding: 36px 32px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+  }
+  .sorteo-3 .countdown {
+    font-size: 14px; color: #CDFF00; font-weight: 800;
+    letter-spacing: 2px; margin-bottom: 10px;
+  }
+  .sorteo-3 .date {
+    font-size: 56px; font-weight: 900; line-height: 1; margin-bottom: 8px;
+    background: linear-gradient(135deg, #CDFF00, #fff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .sorteo-3 .month { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+  .sorteo-3 .live {
+    background: #ff3030; color: #fff; padding: 8px 18px; border-radius: 99px;
+    font-size: 12px; font-weight: 800; letter-spacing: 1px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .sorteo-3 .live::before {
+    content: ''; width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    animation: blink 1s infinite;
+  }
+  .sorteo-3 .nota { color: #aaa; font-size: 12px; margin-top: 18px; line-height: 1.5; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  /* STORY SORTEO */
+  .story-sorteo {
+    background: linear-gradient(135deg, #CDFF00 0%, #9eff00 60%, #1a1a1a 100%);
+    color: #000; padding: 40px 24px;
+    display: flex; flex-direction: column; justify-content: space-between; height: 100%;
+  }
+  .story-sorteo .badge-top {
+    background: #000; color: #CDFF00; padding: 6px 12px; border-radius: 99px;
+    font-size: 10px; font-weight: 900; align-self: flex-start;
+  }
+  .story-sorteo .center { text-align: center; }
+  .story-sorteo .gift { font-size: 64px; }
+  .story-sorteo h2 { font-size: 30px; font-weight: 900; line-height: 1; margin-top: 8px; }
+  .story-sorteo .prize { font-size: 16px; font-weight: 700; margin-top: 10px; color: #1a1a1a; }
+  .story-sorteo .swipe {
+    background: #000; color: #fff; padding: 14px;
+    border-radius: 12px; text-align: center; font-weight: 800;
+    font-size: 13px; letter-spacing: 0.5px;
+  }
+  .story-sorteo .swipe::after { content: ' →'; color: #CDFF00; }
+
+  /* ========== RETO PUBLICO ========== */
+  /* Post lanzamiento */
+  .reto-1 {
+    background: linear-gradient(135deg, #ff6ec7 0%, #c084fc 50%, #8b5cf6 100%);
+    color: #fff; padding: 32px 28px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .reto-1 .hashtag {
+    background: #fff; color: #8b5cf6; padding: 6px 12px; border-radius: 99px;
+    font-size: 11px; font-weight: 900; letter-spacing: 0.5px;
+    align-self: flex-start;
+  }
+  .reto-1 .body { display: flex; flex-direction: column; gap: 6px; }
+  .reto-1 .label {
+    font-size: 12px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; opacity: 0.85;
+  }
+  .reto-1 h2 {
+    font-size: 38px; font-weight: 900; line-height: 0.95;
+    margin-bottom: 4px;
+  }
+  .reto-1 .desc { font-size: 13px; line-height: 1.5; opacity: 0.95; margin-bottom: 14px; }
+  .reto-1 .features { display: grid; gap: 6px; font-size: 12px; }
+  .reto-1 .feature { display: flex; gap: 8px; align-items: center; }
+  .reto-1 .feature::before { content: '✓'; font-weight: 900; color: #fff; }
+  .reto-1 .cta {
+    background: #fff; color: #8b5cf6; padding: 10px;
+    border-radius: 10px; text-align: center; font-weight: 900;
+    font-size: 13px; letter-spacing: 0.5px;
+  }
+
+  /* Post: Antes/Despues */
+  .reto-2 {
+    background: #0a0a0a; padding: 24px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .reto-2 .ad-header { display: flex; justify-content: space-between; align-items: center; }
+  .reto-2 .ad-tag {
+    background: #ff6ec7; color: #000; padding: 4px 10px; border-radius: 6px;
+    font-size: 10px; font-weight: 900; letter-spacing: 0.5px;
+  }
+  .reto-2 .ad-day { color: #888; font-size: 11px; font-weight: 700; }
+  .reto-2 .photos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1; }
+  .reto-2 .photo {
+    border-radius: 10px; aspect-ratio: 3/4;
+    background-size: cover; background-position: center;
+    position: relative; overflow: hidden;
+    display: flex; align-items: flex-end; padding: 8px;
+  }
+  .reto-2 .photo::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.8));
+  }
+  .reto-2 .photo span {
+    position: relative; color: #fff; font-weight: 900; font-size: 12px;
+    background: rgba(0,0,0,0.6); padding: 3px 8px; border-radius: 4px;
+  }
+  .reto-2 .photo-before { background: linear-gradient(135deg, #444, #2a2a2a); }
+  .reto-2 .photo-after { background: linear-gradient(135deg, #ff6ec7, #8b5cf6); }
+  .reto-2 .caption {
+    color: #fff; font-weight: 700; font-size: 13px; line-height: 1.4;
+  }
+  .reto-2 .caption .pink { color: #ff6ec7; }
+
+  /* Story reto público */
+  .story-reto {
+    background: linear-gradient(180deg, #ff6ec7 0%, #8b5cf6 60%, #0a0a0a 100%);
+    color: #fff; padding: 36px 24px;
+    display: flex; flex-direction: column; justify-content: space-between; height: 100%;
+  }
+  .story-reto .top { text-align: center; }
+  .story-reto .label {
+    background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 99px;
+    font-size: 10px; font-weight: 900; letter-spacing: 1px;
+    display: inline-block; margin-bottom: 16px;
+  }
+  .story-reto h2 { font-size: 36px; font-weight: 900; line-height: 0.95; }
+  .story-reto .days {
+    font-size: 80px; font-weight: 900; line-height: 1;
+    margin: 14px 0; text-align: center;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .story-reto .center { text-align: center; }
+  .story-reto .price-tag {
+    background: #fff; color: #8b5cf6; padding: 14px;
+    border-radius: 12px; text-align: center;
+  }
+  .story-reto .price-tag .small { font-size: 11px; font-weight: 700; }
+  .story-reto .price-tag .big { font-size: 22px; font-weight: 900; }
+
+  /* ========== TIPS ========== */
+  .tip {
+    background: #0a0a0a; border-left: 4px solid #CDFF00;
+    padding: 14px 18px; border-radius: 8px; margin-top: 24px;
+    font-size: 13px; line-height: 1.6; color: #ccc;
+  }
+  .tip strong { color: #CDFF00; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1 class="page-title">Mockups visuales</h1>
+<p class="page-sub">Vista previa de las 3 piezas — email Glúteos 360 + sorteo Instagram + reto público #RetoPablo</p>
+
+<!-- ============ SECCIÓN 1: EMAIL GLÚTEOS 360 ============ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <div class="section-title">Email Glúteos 360 (re-envío con sorteo cruzado)</div>
+    <div class="section-meta">Para clientes activos · 28 destinatarios</div>
+  </div>
+
+  <div class="device-mail">
+    <div class="device-mail-header">
+      <div style="width:38px;height:38px;border-radius:50%;background:#CDFF00;color:#000;display:flex;align-items:center;justify-content:center;font-weight:900;">P</div>
+      <div>
+        <div class="mail-from"><strong>Pablo Scarlatto</strong> &lt;pablo@pabloscarlattoentrenamientos.com&gt;</div>
+        <div class="mail-to">Para: maria@gmail.com</div>
+        <div class="mail-subject">María, lanzamos el reto Glúteos 360 + sorteo de 1 mes GRATIS 💪</div>
+      </div>
+    </div>
+
+    <!-- INICIO HTML EMAIL -->
+    <div style="background:#0a0a0a;color:#fff;font-family:Arial,sans-serif;border-radius:8px;overflow:hidden;">
+      <div style="max-width:600px;margin:0 auto;padding:40px 20px;">
+        <div style="text-align:center;margin-bottom:32px;">
+          <div style="display:inline-block;background:#CDFF00;color:#000;font-weight:900;font-size:13px;padding:6px 16px;border-radius:99px;letter-spacing:1px;">PABLO SCARLATTO ENTRENAMIENTOS</div>
+        </div>
+
+        <h1 style="font-size:28px;font-weight:900;margin:0 0 8px;line-height:1.2;color:#fff;">Hola María! 👋</h1>
+        <p style="color:#aaa;font-size:15px;line-height:1.6;margin:0 0 28px;">
+          Te cuento dos cosas en 30 segundos:
+        </p>
+
+        <!-- Reto Gluteos 360 -->
+        <div style="background:#111;border:2px solid #ff6ec7;border-radius:16px;padding:24px;margin-bottom:20px;">
+          <p style="color:#ff6ec7;font-weight:900;font-size:13px;margin:0 0 8px;letter-spacing:1px;">💪 RETO · GLÚTEOS 360</p>
+          <p style="font-size:22px;font-weight:800;margin:0 0 6px;line-height:1.3;color:#fff;">21 días enfocados en glúteos y abdomen.</p>
+          <p style="color:#aaa;font-size:14px;line-height:1.6;margin:0 0 16px;">
+            Rutina simple <strong style="color:#fff;">en casa o gym</strong>, guía de alimentación flexible, y seguimiento directo conmigo. Pensado para mujeres que entrenan y no ven cambios.
+          </p>
+          <ul style="color:#ccc;font-size:13px;line-height:1.7;padding-left:20px;margin:0 0 18px;">
+            <li>Rutina adaptada para casa o gimnasio</li>
+            <li>Guía de alimentación flexible</li>
+            <li>Seguimiento de fotos, peso y medidas</li>
+            <li>Chat directo conmigo durante los 21 días</li>
+          </ul>
+          <div style="display:inline-block;background:#ff6ec7;color:#000;font-weight:900;font-size:22px;padding:12px 24px;border-radius:14px;">
+            $599 UYU
+          </div>
+          <p style="color:#888;font-size:11px;margin:14px 0 0;">Cupos limitados cada mes.</p>
+        </div>
+
+        <!-- SORTEO IG -->
+        <div style="background:#111;border:1px solid #CDFF00;border-radius:16px;padding:24px;margin-bottom:20px;">
+          <p style="color:#CDFF00;font-weight:900;font-size:13px;margin:0 0 8px;letter-spacing:1px;">🎁 BONUS · SORTEO EN INSTAGRAM</p>
+          <p style="font-size:18px;font-weight:800;margin:0 0 6px;line-height:1.3;color:#fff;">Sorteamos 1 mes GRATIS del plan completo.</p>
+          <p style="color:#aaa;font-size:14px;line-height:1.6;margin:0 0 14px;">
+            Ya estás dentro como cliente — pero <strong style="color:#fff;">si etiquetás a 2 amigas en el post de Instagram</strong>, también podés ganarte un mes extra para vos. Y ellas se enganchan a la app. Win-win.
+          </p>
+          <p style="color:#CDFF00;font-size:12px;font-weight:800;margin:0;">Cierra el viernes 9 de mayo · Sorteamos en vivo en stories</p>
+        </div>
+
+        <!-- CTAs -->
+        <div style="text-align:center;margin:32px 0;">
+          <a href="#" style="display:inline-block;background:#ff6ec7;color:#000;font-weight:900;font-size:16px;padding:16px 32px;border-radius:14px;text-decoration:none;margin:6px;">Quiero el reto →</a>
+          <a href="#" style="display:inline-block;background:#CDFF00;color:#000;font-weight:900;font-size:16px;padding:16px 32px;border-radius:14px;text-decoration:none;margin:6px;">Ver post del sorteo →</a>
+        </div>
+
+        <p style="color:#555;font-size:13px;line-height:1.6;text-align:center;">
+          Cualquier duda escribime directo por el chat de la app.<br>— Pablo
+        </p>
+
+        <hr style="border:none;border-top:1px solid #1a1a1a;margin:28px 0;">
+        <p style="color:#333;font-size:11px;text-align:center;">
+          Pablo Scarlatto Entrenamientos · pabloscarlattoentrenamientos.com
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>📝 Cambios vs el endpoint actual:</strong> saqué la card de "Actividad extra" (ya no es novedad), agregué la card del sorteo IG cruzado, y cambié el subject para que mencione el sorteo (boost de open rate).
+  </div>
+</div>
+
+<!-- ============ SECCIÓN 2: SORTEO INSTAGRAM ============ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div class="section-title">Sorteo Instagram (carrusel 3 slides + 2 stories)</div>
+    <div class="section-meta">Premio: 1 mes gratis del plan completo · Cierre 9 mayo</div>
+  </div>
+
+  <div class="row">
+    <!-- POST CARRUSEL -->
+    <div class="ig-wrap">
+      <div class="ig-label">Post · Slide 1 (hook)</div>
+      <div class="ig-post sorteo-1">
+        <div class="badge">SORTEO</div>
+        <div>
+          <div class="gift">🎁</div>
+          <h2>1 MES<br>GRATIS</h2>
+          <div class="prize">Plan personalizado completo</div>
+        </div>
+        <div class="footer">DESLIZÁ PARA PARTICIPAR →</div>
+      </div>
+    </div>
+
+    <div class="ig-wrap">
+      <div class="ig-label">Post · Slide 2 (reglas)</div>
+      <div class="ig-post sorteo-2">
+        <h3>CÓMO PARTICIPAR</h3>
+        <div class="rule">
+          <div class="rule-num">1</div>
+          <div class="rule-txt">Seguime en <strong>@pabloscarlattoentrenamientos</strong></div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">2</div>
+          <div class="rule-txt">Etiquetá a <strong>2 amigos</strong> en este post</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">3</div>
+          <div class="rule-txt">Comentá <strong>"YO ENTRENO"</strong> 💪</div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">4</div>
+          <div class="rule-txt">Compartilo en stories <strong>(suma chances)</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ig-wrap">
+      <div class="ig-label">Post · Slide 3 (cierre)</div>
+      <div class="ig-post sorteo-3">
+        <div class="countdown">CIERRA EL</div>
+        <div class="date">09</div>
+        <div class="month">de MAYO</div>
+        <div class="live">SORTEO EN VIVO</div>
+        <div class="nota">Anuncio el ganador en stories.<br>Buena suerte 🍀</div>
+      </div>
+    </div>
+
+    <!-- STORIES -->
+    <div class="ig-wrap">
+      <div class="ig-label">Story · anuncio</div>
+      <div class="ig-story story-sorteo">
+        <div class="badge-top">SORTEO ACTIVO</div>
+        <div class="center">
+          <div class="gift">🎁</div>
+          <h2>1 MES<br>GRATIS</h2>
+          <div class="prize">Etiquetá a 2 amigos<br>en mi último post</div>
+        </div>
+        <div class="swipe">VER POST</div>
+      </div>
+    </div>
+
+    <div class="ig-wrap">
+      <div class="ig-label">Story · countdown</div>
+      <div class="ig-story story-sorteo" style="background:linear-gradient(135deg,#1a1a1a 0%,#CDFF00 100%);color:#fff;">
+        <div class="badge-top" style="background:#CDFF00;color:#000;">ÚLTIMOS DÍAS</div>
+        <div class="center">
+          <div style="font-size:14px;font-weight:700;letter-spacing:2px;color:#CDFF00;">QUEDAN</div>
+          <div style="font-size:120px;font-weight:900;line-height:1;">3</div>
+          <div style="font-size:18px;font-weight:700;">DÍAS PARA EL SORTEO</div>
+        </div>
+        <div class="swipe" style="background:#CDFF00;color:#000;">PARTICIPAR</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>💡 Tip de cronograma:</strong> Post lunes 28/4 → Stories diarias del countdown desde el 5/5 → Sorteo en vivo viernes 9/5 a las 20hs (anunciar ganador con random.org en stories grabadas).
+  </div>
+</div>
+
+<!-- ============ SECCIÓN 3: RETO PÚBLICO ============ -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div class="section-title">Reto público #RetoPablo (Antes/Después 30 días)</div>
+    <div class="section-meta">Premio mejor transformación: 3 meses GRATIS · Arranca 12 mayo</div>
+  </div>
+
+  <div class="row">
+    <!-- POST LANZAMIENTO -->
+    <div class="ig-wrap">
+      <div class="ig-label">Post · Lanzamiento del reto</div>
+      <div class="ig-post reto-1">
+        <div class="hashtag">#RetoPablo</div>
+        <div class="body">
+          <div class="label">DESAFÍO ABIERTO · 30 DÍAS</div>
+          <h2>Cambiá tu cuerpo en 30 días.</h2>
+          <p class="desc">Subís tu foto antes, entrenás 30 días con guía gratis mía, y al final el mejor cambio se lleva 3 meses GRATIS.</p>
+          <div class="features">
+            <div class="feature">Rutina semanal gratis (yo te la mando)</div>
+            <div class="feature">Tips diarios en stories</div>
+            <div class="feature">Etiquetás @pabloscarlattoentrenamientos</div>
+            <div class="feature">Usás #RetoPablo</div>
+          </div>
+        </div>
+        <div class="cta">ARRANCA EL 12 DE MAYO</div>
+      </div>
+    </div>
+
+    <!-- POST ANTES/DESPUES -->
+    <div class="ig-wrap">
+      <div class="ig-label">Post · Update semanal</div>
+      <div class="ig-post reto-2">
+        <div class="ad-header">
+          <div class="ad-tag">#RetoPablo</div>
+          <div class="ad-day">DÍA 14 / 30</div>
+        </div>
+        <div class="photos">
+          <div class="photo photo-before"><span>ANTES</span></div>
+          <div class="photo photo-after"><span>HOY</span></div>
+        </div>
+        <div class="caption">
+          <span class="pink">Lucía</span> ya en la mitad del reto 🔥<br>
+          <span style="color:#888;font-weight:400;">Rutina + alimentación gratis. Sumate.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STORY RETO -->
+    <div class="ig-wrap">
+      <div class="ig-label">Story · Sumarse al reto</div>
+      <div class="ig-story story-reto">
+        <div class="top">
+          <div class="label">DESAFÍO ABIERTO</div>
+          <h2>Cambiá tu cuerpo</h2>
+        </div>
+        <div class="center">
+          <div class="days">30</div>
+          <div style="font-size:18px;font-weight:800;">DÍAS · GRATIS</div>
+        </div>
+        <div class="price-tag">
+          <div class="small">PREMIO MEJOR TRANSFORMACIÓN</div>
+          <div class="big">3 MESES GRATIS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STORY DAY UPDATE -->
+    <div class="ig-wrap">
+      <div class="ig-label">Story · Día X (motivacional)</div>
+      <div class="ig-story" style="background:linear-gradient(180deg,#0a0a0a,#1a1a1a);padding:36px 24px;display:flex;flex-direction:column;justify-content:space-between;height:100%;">
+        <div style="text-align:center;">
+          <div style="background:#ff6ec7;color:#000;padding:6px 14px;border-radius:99px;font-size:10px;font-weight:900;display:inline-block;letter-spacing:1px;">#RETOPABLO · DÍA 7</div>
+        </div>
+        <div style="text-align:center;color:#fff;">
+          <div style="font-size:80px;line-height:1;">🔥</div>
+          <div style="font-size:24px;font-weight:900;margin-top:14px;line-height:1.1;">"Ya hice mis<br>4 entrenos<br>esta semana"</div>
+          <div style="color:#ff6ec7;font-weight:700;margin-top:14px;font-size:13px;">— Camila, Salto</div>
+        </div>
+        <div style="background:#ff6ec7;color:#000;padding:14px;border-radius:12px;text-align:center;font-weight:900;font-size:13px;">SUMATE AL RETO →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <strong>💡 Cronograma sugerido:</strong> Anuncio 5/5 → Inscripciones 5–11/5 → Día 1 = 12/5 → Día 30 = 10/6 → Anuncio ganador 13/6.<br>
+    <strong>⚠️ Riesgo:</strong> si nadie completa los 30 días, queda mal. Mitigación: Pablo postea Día 1, 7, 14, 21, 30 con casos reales (aunque sea de clientes actuales) para mantener el momentum.
+  </div>
+</div>
+
+</div>
+</body>
+</html>
