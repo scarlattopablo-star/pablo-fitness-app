@@ -213,14 +213,17 @@ export async function POST(req: NextRequest) {
       .single();
     revisionId = rev?.id ?? null;
 
-    // Regenerar plan con los nuevos macros (best-effort)
+    // Regenerar SOLO la dieta con los nuevos macros (best-effort).
+    // El check-in semanal nunca debe pisar el plan de entrenamiento — Pablo
+    // arma esos planes manualmente y los macros nuevos del check-in solo
+    // afectan calorias/macros de la nutricion.
     if (applied) {
       try {
         const baseUrl = req.nextUrl.origin;
         await fetch(`${baseUrl}/api/generate-plans`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.id }),
+          body: JSON.stringify({ userId: user.id, mode: "nutrition-only" }),
         });
       } catch {
         // Si falla la regeneracion, el survey ya quedo actualizado.

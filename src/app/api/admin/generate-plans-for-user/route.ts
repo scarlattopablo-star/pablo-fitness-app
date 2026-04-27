@@ -185,7 +185,8 @@ export async function POST(request: NextRequest) {
         country: survey.country,
         city: survey.city,
         userBudgetMonthly: survey.food_budget_monthly,
-        daysInWeek: 1,
+        // 7 = los meals son weekMenu aplanado (7 dias distintos en 35 comidas)
+        daysInWeek: 7,
         shoppingFrequency: survey.shopping_frequency as "semanal" | "quincenal" | "mensual" | null,
         supplementInput: {
           sex: survey.sex || "hombre",
