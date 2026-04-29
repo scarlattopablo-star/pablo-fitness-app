@@ -53,3 +53,7 @@ ios/App/ExportOptions.plist
 # Capacitor assets source
 /assets/
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# Tmp artifacts generados por scripts (mockups, screenshots intermedios)
+tmp-mockups/

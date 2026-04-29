@@ -8,14 +8,21 @@ import { calculateMacrosV2, shouldUseV2Engine } from "@/lib/nutrition-engine";
 import { buildNutritionExtras } from "@/lib/persist-nutrition-extras";
 import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, JobActivity } from "@/types";
 
+type GenerateMode = "both" | "training-only" | "nutrition-only";
+
 export async function POST(request: NextRequest) {
   try {
-    const { userId, planSlug, mode } = await request.json();
+    const { userId, planSlug, mode } = (await request.json()) as {
+      userId?: string;
+      planSlug?: string;
+      mode?: GenerateMode;
+    };
     if (!userId) {
       return NextResponse.json({ error: "userId requerido" }, { status: 400 });
     }
-    const planMode: "both" | "training" | "nutrition" =
-      mode === "training" || mode === "nutrition" ? mode : "both";
+    const genMode: GenerateMode = mode === "training-only" || mode === "nutrition-only"
+      ? mode
+      : "both";
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -100,17 +107,13 @@ export async function POST(request: NextRequest) {
     // Direct clients (efectivo / acceso por codigo manual) requieren que Pablo
     // apruebe el plan antes de mostrarlo. Cualquier otro plan se auto-aprueba.
     const needsApproval = objective === "direct-client";
-    const isKitesurf = objective === "kitesurf";
 
-    // Solo generar/actualizar el training plan si mode lo incluye.
-    // mode === "nutrition" deja el plan de entrenamiento intacto.
-    let training: ReturnType<typeof generateTrainingPlan> | null = null;
-    if (planMode !== "nutrition") {
-      training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
-
+    // ===== TRAINING (solo si genMode !== "nutrition-only") =====
+    let trainingResult: { days: number } | "skipped" = "skipped";
+    if (genMode !== "nutrition-only") {
+      const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
       const { data: existingTP } = await supabase.from("training_plans")
         .select("id").eq("user_id", userId).limit(1).maybeSingle();
-
       if (existingTP) {
         const { error: tpError } = await supabase.from("training_plans")
           .update({ data: { days: training }, plan_approved: !needsApproval })
@@ -129,17 +132,20 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
         }
       }
+      trainingResult = { days: training.length };
     }
 
-    // Si mode === "training", saltamos toda la generacion de nutricion.
-    if (planMode === "training") {
+    // ===== NUTRITION (solo si genMode !== "training-only") =====
+    if (genMode === "training-only") {
       return NextResponse.json({
         success: true,
-        mode: planMode,
-        training: training ? { days: training.length } : null,
+        mode: genMode,
+        training: trainingResult,
+        nutrition: "skipped",
       });
     }
 
+    const isKitesurf = objective === "kitesurf";
     // F3: planes regulares ahora usan variedad semanal (7 dias distintos).
     // Kitesurf mantiene su shape dual gym/kitesurf por simplicidad.
     const week = isKitesurf
@@ -170,7 +176,10 @@ export async function POST(request: NextRequest) {
       const mealsForShopping = isKitesurf
         ? (nutrition as DualNutrition).gymDay.meals
         : flattenWeekMealsForShopping(week!.weekMenu);
-      const daysInWeek = isKitesurf ? 7 : 1;  // shopping helper multiplica por daysInWeek
+      // daysInWeek = cuantos dias DISTINTOS contiene mealsForShopping.
+      // weekMenu aplanado = 7 (35 comidas, 7 dias variados)
+      // kitesurf usa 1 dia de gym repetido = 1
+      const daysInWeek = isKitesurf ? 1 : 7;
       const extras = await buildNutritionExtras(supabase, {
         meals: mealsForShopping,
         country: survey.country,
@@ -224,8 +233,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      mode: planMode,
-      training: training ? { days: training.length } : null,
+      mode: genMode,
+      training: trainingResult,
       nutrition: { meals: isKitesurf ? "dual" : (nutrition as { meals: unknown[] }).meals.length },
     });
   } catch {

@@ -25,8 +25,11 @@ interface BuildExtrasInput {
   city: string | null | undefined;
   userBudgetMonthly: number | null | undefined;
   // F3: cuantos dias DISTINTOS contiene 'meals'.
-  //   - 7 si pasas un solo dia que se repite (legacy/kitesurf: targetDays=7 → multiplier=1)
-  //   - 1 si pasas weekMenu aplanado (35 comidas distintas, ya cubren la semana)
+  //   - 1 si pasas un solo dia que se repite (legacy/kitesurf)
+  //   - 7 si pasas weekMenu aplanado (35 comidas que cubren 7 dias distintos)
+  // El helper calcula multiplier = targetDays / daysInWeek para escalar las
+  // cantidades al periodo (semanal/quincenal/mensual). Pasarlo invertido
+  // infla las cantidades 7x y dispara el presupuesto.
   daysInWeek?: number;
   // F2 update: shopping_frequency del cliente (semanal/quincenal/mensual).
   // Determina cuantos dias debe cubrir la lista de compras (7/15/30).

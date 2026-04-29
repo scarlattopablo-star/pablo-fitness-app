@@ -224,13 +224,13 @@ export async function PATCH(request: NextRequest) {
       const generateRes = await fetch(`${baseUrl}/api/generate-plans`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, mode: "nutrition" }),
+        body: JSON.stringify({ userId, mode: "nutrition-only" }),
       });
       if (!generateRes.ok) {
         // Survey updated but plan generation failed - still return success
         console.error("Plan regeneration failed after survey update:", await generateRes.text());
       } else {
-        regenerated = { mode: "nutrition" };
+        regenerated = { mode: "nutrition-only" };
       }
     }
 
