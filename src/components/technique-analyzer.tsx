@@ -45,6 +45,41 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
       video.currentTime = time;
     });
 
+  const isBlackFrame = (canvas: HTMLCanvasElement): boolean => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return true;
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const sampleStep = Math.max(4, Math.floor(data.length / (4 * 200)) * 4);
+    let lumaSum = 0;
+    let samples = 0;
+    for (let i = 0; i < data.length; i += sampleStep) {
+      lumaSum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      samples++;
+    }
+    return samples > 0 && lumaSum / samples < 8;
+  };
+
+  const captureFrame = async (
+    video: HTMLVideoElement,
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    targetTime: number | null,
+  ): Promise<string | null> => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (targetTime !== null) await seekTo(video, targetTime);
+      await new Promise(r => setTimeout(r, 300 + attempt * 400));
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch {
+        continue;
+      }
+      if (!isBlackFrame(canvas)) {
+        return canvas.toDataURL("image/jpeg", 0.65);
+      }
+    }
+    return null;
+  };
+
   const handleFile = async (file: File) => {
     setError(null);
     setAnalysis(null);
@@ -64,21 +99,21 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
     // Wait for metadata
     if (video.readyState < 1) await waitForEvent(video, "loadedmetadata");
 
-    // iOS CRITICAL: play briefly so the decoder actually loads frames
-    // Without this, canvas.drawImage() renders black on iOS
+    // CRITICAL: play briefly so the decoder actually loads frames into memory.
+    // Without this, canvas.drawImage() renders black on iOS AND Android Chrome.
     try {
-      // Race play() against a 2s timeout — some browsers never resolve the promise
       await Promise.race([
         video.play(),
         new Promise<void>(r => setTimeout(r, 2000)),
       ]);
-      await new Promise(r => setTimeout(r, 400)); // let it decode a few frames
+      await new Promise(r => setTimeout(r, 600));
       video.pause();
     } catch {
       // Some browsers block autoplay even muted — that's OK, continue anyway
     }
 
-    // Wait until enough data to seek
+    // Wait until first frame is actually decoded (loadeddata > canplay for our purposes)
+    if (video.readyState < 2) await waitForEvent(video, "loadeddata", 6000);
     if (video.readyState < 3) await waitForEvent(video, "canplay", 6000);
 
     const duration = video.duration;
@@ -86,7 +121,6 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) { setStatus("error"); setError("Error al procesar"); return; }
 
-    // 480px width keeps file sizes small (~20-40KB each) for fast API response
     const W = 480;
     const aspect = (video.videoHeight > 0 && video.videoWidth > 0)
       ? video.videoHeight / video.videoWidth
@@ -97,21 +131,21 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
     const frames: string[] = [];
 
     if (!isFinite(duration) || duration <= 0) {
-      // Can't seek — capture current frame (whatever the video shows now)
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      frames.push(canvas.toDataURL("image/jpeg", 0.8));
+      const f = await captureFrame(video, canvas, ctx, null);
+      if (f) frames.push(f);
     } else {
-      // Max 3 frames keeps request size small and API fast (avoids Vercel timeout)
       const count = Math.min(3, Math.max(2, Math.floor(duration)));
       const timestamps = Array.from({ length: count }, (_, i) => ((i + 0.5) / count) * duration);
       for (const t of timestamps) {
-        await seekTo(video, t);
-        // iOS needs more time after seeked fires to actually decode the frame into memory
-        await new Promise(r => setTimeout(r, 300));
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // Quality 0.65 — good enough for technique analysis, ~20-40KB per frame
-        frames.push(canvas.toDataURL("image/jpeg", 0.65));
+        const f = await captureFrame(video, canvas, ctx, t);
+        if (f) frames.push(f);
       }
+    }
+
+    if (frames.length === 0) {
+      setStatus("error");
+      setError("No pudimos leer el video. Probá grabar de nuevo con buena luz, o subir un archivo .mp4.");
+      return;
     }
 
     await analyzeFrames(frames);
@@ -163,8 +197,10 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
         </div>
 
         <div className="p-4">
-          {/* Video element — must be a real size off-screen so iOS decoder works.
-               iOS will NOT decode frames for a 1x1px or display:none video element. */}
+          {/* Video element — must be inside the viewport with non-zero opacity for the
+               decoder to actually load frames. Android Chrome and iOS Safari skip frame
+               decoding for off-screen (top:-9999px) or fully-transparent (opacity:0) videos.
+               Solution: place inside viewport, opacity 0.01, behind everything via z-index. */}
           <video
             ref={videoRef}
             playsInline
@@ -172,12 +208,13 @@ export function TechniqueAnalyzer({ open, onClose, exerciseName }: Props) {
             preload="auto"
             style={{
               position: "fixed",
-              top: "-9999px",
-              left: "-9999px",
+              top: 0,
+              left: 0,
               width: "320px",
               height: "568px",
-              opacity: 0,
+              opacity: 0.01,
               pointerEvents: "none",
+              zIndex: -1,
             }}
           />
 
