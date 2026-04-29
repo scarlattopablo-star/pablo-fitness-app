@@ -15,7 +15,7 @@
 // - Sin frutos secos: reemplazar frutos secos por semillas (no tree nuts) (FARE Guidelines)
 // - Diabetes: priorizar carbohidratos complejos, bajo IG, más fibra (ADA Standards of Care)
 
-import { FOOD_DATABASE, calculateFoodMacros, type FoodItem } from "./food-database";
+import { FOOD_DATABASE, calculateFoodMacros, getMaxGramsFor, type FoodItem } from "./food-database";
 
 export interface MealFood {
   name: string;
@@ -61,7 +61,11 @@ const MIN_GRAMS: Record<string, number> = {
 function buildFood(foodId: string, grams: number): MealFood {
   const food = getFood(foodId);
   const minGrams = MIN_GRAMS[food.category] || 20;
-  const g = Math.max(minGrams, round5(grams));
+  const maxGrams = getMaxGramsFor(food);
+  // Cap a la porcion maxima realista — evita disparates como 190g de avena en una comida.
+  // Si el target requiere mas, el algoritmo de la comida llena con un alimento secundario
+  // (banana, otro carb, otra fuente de proteina, etc.) usando remaining().
+  const g = Math.max(minGrams, Math.min(maxGrams, round5(grams)));
   const macros = calculateFoodMacros(food, g);
   return { name: food.name, grams: g, unit: food.unit, ...macros };
 }
@@ -306,6 +310,17 @@ export function generateMealPlan(
   const m3Carb = buildFood(mainCarbId, gramsFor(getFood(mainCarbId), r2b.c, "carbs"));
   const almuerzoFoods: MealFood[] = [m3Protein, m3Carb, m3Veg];
 
+  // Si el carb principal quedo capeado y aun faltan carbs, sumar una fuente secundaria
+  // (boniato/papa/quinoa segun restriccion) para evitar comidas sin coherencia macro.
+  const r2carbCheck = remaining(t2, almuerzoFoods);
+  if (r2carbCheck.c > 15) {
+    const secondaryCarbId = mainCarbId === "boniato" ? "papa"
+      : flags.glutenFree ? "boniato"
+      : flags.diabetes ? "lentejas"
+      : "boniato";
+    almuerzoFoods.push(buildFood(secondaryCarbId, gramsFor(getFood(secondaryCarbId), r2carbCheck.c, "carbs")));
+  }
+
   // Vegan/vegetarian: add legumes for complete amino acids (AND: complementary proteins)
   if (flags.vegan && mainProteinId === "tofu") {
     const r2extra = remaining(t2, almuerzoFoods);
@@ -352,6 +367,16 @@ export function generateMealPlan(
   const altCarbId = getCarbAlt(flags);
   const m5Carb = buildFood(altCarbId, gramsFor(getFood(altCarbId), r4b.c, "carbs"));
   const cenaFoods: MealFood[] = [m5Protein, m5Carb, m5Veg];
+
+  // Carbo secundario si el principal esta capeado y aun faltan >15g de carbos
+  const r4carbCheck = remaining(t4, cenaFoods);
+  if (r4carbCheck.c > 15) {
+    const secondaryCarbId = altCarbId === "boniato" ? "papa"
+      : altCarbId === "lentejas" ? "quinoa"
+      : flags.glutenFree ? "quinoa"
+      : "boniato";
+    cenaFoods.push(buildFood(secondaryCarbId, gramsFor(getFood(secondaryCarbId), r4carbCheck.c, "carbs")));
+  }
 
   // Vegan complementary protein
   if (flags.vegan && altProteinId === "lentejas") {

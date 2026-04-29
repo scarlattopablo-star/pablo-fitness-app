@@ -187,10 +187,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    // Find existing survey
+    // Find existing survey (need objective to decide regeneration policy)
     const { data: existing, error: findError } = await supabase
       .from("surveys")
-      .select("id")
+      .select("id, objective")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -210,21 +210,31 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    // Regenerate plans after survey update
-    const baseUrl = request.nextUrl.origin;
-    const generateRes = await fetch(`${baseUrl}/api/generate-plans`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    });
+    // Politica de regeneracion:
+    // - Cliente directo (objective === "direct-client"): el admin es el unico que
+    //   regenera planes. No tocamos nada al actualizar la encuesta.
+    // - Cliente regular: actualizar encuesta SOLO regenera el plan de alimentacion
+    //   (el de entrenamiento queda intacto para no perder el progreso del cliente).
+    const newObjective = typeof body.objective === "string" ? body.objective : existing.objective;
+    const isDirectClient = newObjective === "direct-client";
+    let regenerated: { mode?: string; skipped?: true } = { skipped: true };
 
-    if (!generateRes.ok) {
-      // Survey updated but plan generation failed - still return success
-      // Plans can be regenerated later
-      console.error("Plan regeneration failed after survey update:", await generateRes.text());
+    if (!isDirectClient) {
+      const baseUrl = request.nextUrl.origin;
+      const generateRes = await fetch(`${baseUrl}/api/generate-plans`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, mode: "nutrition-only" }),
+      });
+      if (!generateRes.ok) {
+        // Survey updated but plan generation failed - still return success
+        console.error("Plan regeneration failed after survey update:", await generateRes.text());
+      } else {
+        regenerated = { mode: "nutrition-only" };
+      }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, regenerated });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Error desconocido";
     return NextResponse.json({ error: `Error al actualizar encuesta: ${msg}` }, { status: 500 });
