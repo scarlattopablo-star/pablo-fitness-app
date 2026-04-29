@@ -10,10 +10,12 @@ import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal, JobActivity } from 
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, planSlug } = await request.json();
+    const { userId, planSlug, mode } = await request.json();
     if (!userId) {
       return NextResponse.json({ error: "userId requerido" }, { status: 400 });
     }
+    const planMode: "both" | "training" | "nutrition" =
+      mode === "training" || mode === "nutrition" ? mode : "both";
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -95,9 +97,49 @@ export async function POST(request: NextRequest) {
       fats = recalc.fats;
     }
 
-    const training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
-
+    // Direct clients (efectivo / acceso por codigo manual) requieren que Pablo
+    // apruebe el plan antes de mostrarlo. Cualquier otro plan se auto-aprueba.
+    const needsApproval = objective === "direct-client";
     const isKitesurf = objective === "kitesurf";
+
+    // Solo generar/actualizar el training plan si mode lo incluye.
+    // mode === "nutrition" deja el plan de entrenamiento intacto.
+    let training: ReturnType<typeof generateTrainingPlan> | null = null;
+    if (planMode !== "nutrition") {
+      training = generateTrainingPlan(trainingDays, objective, emphasis, userWeight, userSex, activityLevel);
+
+      const { data: existingTP } = await supabase.from("training_plans")
+        .select("id").eq("user_id", userId).limit(1).maybeSingle();
+
+      if (existingTP) {
+        const { error: tpError } = await supabase.from("training_plans")
+          .update({ data: { days: training }, plan_approved: !needsApproval })
+          .eq("id", existingTP.id);
+        if (tpError) {
+          return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
+        }
+      } else {
+        const { error: tpError } = await supabase.from("training_plans").insert({
+          user_id: userId,
+          week_number: 1,
+          data: { days: training },
+          plan_approved: !needsApproval,
+        });
+        if (tpError) {
+          return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
+        }
+      }
+    }
+
+    // Si mode === "training", saltamos toda la generacion de nutricion.
+    if (planMode === "training") {
+      return NextResponse.json({
+        success: true,
+        mode: planMode,
+        training: training ? { days: training.length } : null,
+      });
+    }
+
     // F3: planes regulares ahora usan variedad semanal (7 dias distintos).
     // Kitesurf mantiene su shape dual gym/kitesurf por simplicidad.
     const week = isKitesurf
@@ -107,35 +149,8 @@ export async function POST(request: NextRequest) {
       ? generateKitesurfMealPlans(target_calories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, nutritionalGoal || "")
       : { meals: week!.baseDay.meals, importantNotes: week!.baseDay.importantNotes };
 
-    // Direct clients (efectivo / acceso por codigo manual) requieren que Pablo
-    // apruebe el plan antes de mostrarlo. Cualquier otro plan se auto-aprueba.
-    const needsApproval = objective === "direct-client";
-
-    // Check if plans already exist (don't overwrite admin-edited plans on retry)
-    const { data: existingTP } = await supabase.from("training_plans")
-      .select("id").eq("user_id", userId).limit(1).maybeSingle();
     const { data: existingNP } = await supabase.from("nutrition_plans")
       .select("id").eq("user_id", userId).limit(1).maybeSingle();
-
-    if (existingTP) {
-      // Update existing training plan
-      const { error: tpError } = await supabase.from("training_plans")
-        .update({ data: { days: training }, plan_approved: !needsApproval })
-        .eq("id", existingTP.id);
-      if (tpError) {
-        return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
-      }
-    } else {
-      const { error: tpError } = await supabase.from("training_plans").insert({
-        user_id: userId,
-        week_number: 1,
-        data: { days: training },
-        plan_approved: !needsApproval,
-      });
-      if (tpError) {
-        return NextResponse.json({ error: `Error guardando entrenamiento: ${tpError.message}` }, { status: 500 });
-      }
-    }
 
     // Build nutrition data for storage
     type SingleNutrition = { meals: import("@/lib/generate-meal-plan").MealPlanMeal[]; importantNotes: string[] };
@@ -209,7 +224,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      training: { days: training.length },
+      mode: planMode,
+      training: training ? { days: training.length } : null,
       nutrition: { meals: isKitesurf ? "dual" : (nutrition as { meals: unknown[] }).meals.length },
     });
   } catch {
