@@ -9,10 +9,12 @@ import { supabase } from "@/lib/supabase";
 import {
   fetchMessages,
   sendMessage,
+  uploadChatFile,
   markMessagesAsRead,
   getConversationPartner,
   checkUserBlocked,
   recordWarning,
+  type FileAttachment,
 } from "@/lib/chat-helpers";
 import { checkMessage, WARNING_MESSAGES } from "@/lib/chat-moderation";
 import { sendPushNotification } from "@/lib/push-notifications";
@@ -26,6 +28,9 @@ interface Message {
   read_at: string | null;
   flagged: boolean;
   created_at: string;
+  file_url?: string | null;
+  file_type?: string | null;
+  file_name?: string | null;
 }
 
 interface Partner {
@@ -117,27 +122,33 @@ export default function ConversationPage() {
     };
   }, [conversationId, user]);
 
-  async function handleSend(content: string) {
+  async function handleUploadFile(file: File): Promise<FileAttachment> {
+    if (!user) throw new Error("Not authenticated");
+    return uploadChatFile(file, user.id);
+  }
+
+  async function handleSend(content: string, file?: FileAttachment) {
     if (!user || !conversationId || blocked) return;
 
-    // Check moderation
-    const modResult = checkMessage(content);
-    if (modResult.flagged) {
-      const warningCount = await recordWarning(user.id, modResult.reason);
+    // Check moderation (only on text)
+    if (content) {
+      const modResult = checkMessage(content);
+      if (modResult.flagged) {
+        const warningCount = await recordWarning(user.id, modResult.reason);
 
-      if (warningCount >= 3) {
-        setBlocked(true);
-        setWarning(WARNING_MESSAGES.blocked);
-        return;
+        if (warningCount >= 3) {
+          setBlocked(true);
+          setWarning(WARNING_MESSAGES.blocked);
+          return;
+        }
+
+        setWarning(warningCount === 1 ? WARNING_MESSAGES.first : WARNING_MESSAGES.second);
+        setTimeout(() => setWarning(null), 6000);
       }
-
-      setWarning(warningCount === 1 ? WARNING_MESSAGES.first : WARNING_MESSAGES.second);
-      setTimeout(() => setWarning(null), 6000);
-      // Still send the message but flagged
     }
 
     try {
-      const msg = await sendMessage(conversationId, user.id, content);
+      const msg = await sendMessage(conversationId, user.id, content, file);
       // Add optimistically (realtime will deduplicate)
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
@@ -241,6 +252,9 @@ export default function ConversationPage() {
                 time={msg.created_at}
                 flagged={msg.flagged}
                 readAt={msg.read_at}
+                fileUrl={msg.file_url}
+                fileType={msg.file_type}
+                fileName={msg.file_name}
               />
             </div>
           );
@@ -250,7 +264,7 @@ export default function ConversationPage() {
 
       {/* Input */}
       <div className="shrink-0">
-        <MessageInput onSend={handleSend} disabled={blocked} />
+        <MessageInput onSend={handleSend} onUploadFile={handleUploadFile} disabled={blocked} />
       </div>
     </div>
   );

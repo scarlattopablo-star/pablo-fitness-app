@@ -315,8 +315,8 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* CRO: banner reto Gluteos 360 para clientes existentes */}
-      <Glutes360ClientBanner />
+      {/* CRO: banner reto Transformacion para clientes existentes (no directos) */}
+      {!isDirectClient && <Glutes360ClientBanner />}
 
       {/* Logger de actividad extra (correr, futbol, kitesurf, etc. por fuera del plan) */}
       {user && <ExtraActivityLogger userId={user.id} weightKg={currentWeight ?? survey?.weight ?? null} />}

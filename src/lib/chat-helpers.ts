@@ -60,7 +60,7 @@ export async function fetchConversations(userId: string) {
 export async function fetchMessages(conversationId: string, cursor?: string, limit = 50) {
   let query = supabase
     .from("messages")
-    .select("id, sender_id, content, read_at, flagged, created_at")
+    .select("id, sender_id, content, read_at, flagged, created_at, file_url, file_type, file_name")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -74,19 +74,41 @@ export async function fetchMessages(conversationId: string, cursor?: string, lim
   return (data || []).reverse(); // Return in chronological order
 }
 
-export async function sendMessage(conversationId: string, senderId: string, content: string) {
+export interface FileAttachment {
+  url: string;
+  type: "image" | "file";
+  name: string;
+}
+
+export async function sendMessage(
+  conversationId: string,
+  senderId: string,
+  content: string,
+  file?: FileAttachment
+) {
   const { data, error } = await supabase
     .from("messages")
     .insert({
       conversation_id: conversationId,
       sender_id: senderId,
       content: content.trim(),
+      ...(file ? { file_url: file.url, file_type: file.type, file_name: file.name } : {}),
     })
-    .select("id, sender_id, content, read_at, flagged, created_at")
+    .select("id, sender_id, content, read_at, flagged, created_at, file_url, file_type, file_name")
     .single();
 
   if (error) throw error;
   return data;
+}
+
+export async function uploadChatFile(file: File, userId: string): Promise<FileAttachment> {
+  const ext = file.name.split(".").pop() || "bin";
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("chat-media").upload(path, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from("chat-media").getPublicUrl(path);
+  const isImage = file.type.startsWith("image/");
+  return { url: publicUrl, type: isImage ? "image" : "file", name: file.name };
 }
 
 export async function markMessagesAsRead(conversationId: string, currentUserId: string) {
