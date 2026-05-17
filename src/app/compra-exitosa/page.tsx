@@ -42,7 +42,7 @@ export default function CompraExitosaPage() {
         const sawSlides = typeof window !== "undefined" && localStorage.getItem("hasSeenOnboarding") === "true";
         // Reto Gluteos 360 → briefing antes del onboarding.
         const planSlugFromUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("plan") : null;
-        const isReto = planSlugFromUrl === "glutes-360";
+        const isReto = planSlugFromUrl === "reto-transformacion";
 
         let destination = coreDestination;
         if (!profile?.is_admin) {
@@ -116,7 +116,7 @@ export default function CompraExitosaPage() {
                   const saw = localStorage.getItem("hasSeenOnboarding") === "true";
                   const onboarding = saw ? core : `/onboarding?next=${encodeURIComponent(core)}`;
                   const slugParam = new URLSearchParams(window.location.search).get("plan");
-                  const isRetoBtn = slugParam === "glutes-360";
+                  const isRetoBtn = slugParam === "reto-transformacion";
                   router.push(isRetoBtn ? `/reto-briefing?next=${encodeURIComponent(onboarding)}` : onboarding);
                 } else {
                   router.push("/login");

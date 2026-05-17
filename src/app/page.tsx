@@ -207,23 +207,23 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left — Copy */}
             <div>
-              {/* Badge del reto: NO confundir con el trial de 30 dias de los planes regulares — este reto es pago ($599 UYU). */}
+              {/* Badge del reto: NO confundir con el trial de 30 dias de los planes regulares — este reto es pago ($990 UYU). */}
               <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 animate-fade-in-up">
                 <Sparkles className="h-4 w-4 text-accent" />
-                <span className="text-sm font-bold text-accent">RETO 21 DIAS</span>
+                <span className="text-sm font-bold text-accent">RETO 30 DIAS</span>
                 <span className="text-xs text-muted">cupos limitados</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1] mb-6 animate-fade-in-up animate-delay-100 tracking-tight">
-                Gluteos y abdomen
+                Transformate
                 <br />
-                en 21 dias
+                en 30 dias
                 <br />
-                <span className="text-gradient">sin dietas extremas</span>
+                <span className="text-gradient">entrenamiento + nutricion</span>
               </h1>
 
               <p className="text-base sm:text-lg text-muted max-w-md mb-8 animate-fade-in-up animate-delay-200 leading-relaxed">
-                Programa disenado para mujeres que quieren resultados reales con un metodo simple — sin vivir en el gym.
+                Plan guiado para hombres y mujeres que quieren resultados reales — sin complicaciones, sin dietas extremas.
               </p>
 
               {/* Social proof - avatar stack */}
@@ -243,7 +243,7 @@ export default function HomePage() {
 
               <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up animate-delay-300 mb-3">
                 <a
-                  href="#oferta-glutes-360"
+                  href="#oferta-transformacion"
                   onClick={() => trackEvent("cta_hero_click", { destino: "oferta" })}
                   className="btn-shimmer text-base px-8 py-4 rounded-full flex items-center justify-center gap-2 font-bold"
                 >
@@ -258,7 +258,7 @@ export default function HomePage() {
                 </Link>
               </div>
               <p className="text-xs text-muted mb-10 animate-fade-in-up animate-delay-300">
-                ✓ Acceso inmediato &nbsp;·&nbsp; ✓ Sin compromiso a largo plazo &nbsp;·&nbsp; ✓ Resultados en 21 dias
+                ✓ Acceso inmediato &nbsp;·&nbsp; ✓ Sin compromiso a largo plazo &nbsp;·&nbsp; ✓ Resultados en 30 dias
               </p>
 
               {/* Animated counters - enhanced */}
@@ -557,19 +557,19 @@ export default function HomePage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent/[0.04] rounded-full blur-[100px]" />
         <ScrollReveal className="max-w-2xl mx-auto text-center relative">
           <h2 className="text-3xl sm:text-5xl font-black mb-4 tracking-tight">
-            Empeza el reto
+            Empeza el reto hoy
             <br />
-            <span className="text-gradient">Gluteos 360 hoy</span>
+            <span className="text-gradient">Transformacion 30 dias</span>
           </h2>
           <p className="text-muted mb-8 max-w-md mx-auto">
-            Acceso inmediato. Resultados en 21 dias. Cupos limitados este mes.
+            Acceso inmediato. Entrenamiento + nutricion incluidos. Cupos limitados este mes.
           </p>
           <a
-            href="#oferta-glutes-360"
+            href="#oferta-transformacion"
             onClick={() => trackEvent("cta_final_click", { destino: "oferta" })}
             className="btn-shimmer inline-flex items-center gap-2 text-lg px-10 py-4 rounded-full font-bold hover:scale-105 transition-transform"
           >
-            Unirme al programa <ArrowRight className="h-5 w-5" />
+            Unirme al reto <ArrowRight className="h-5 w-5" />
           </a>
           <div className="mt-4">
             <Link href="/planes" className="text-sm text-muted hover:text-primary transition-colors">

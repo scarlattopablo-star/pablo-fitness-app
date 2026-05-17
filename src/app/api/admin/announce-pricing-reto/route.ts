@@ -77,7 +77,7 @@ function buildEmail(name: string): string {
 
   <!-- CTAs -->
   <div style="text-align:center;margin:32px 0;">
-    <a href="https://pabloscarlattoentrenamientos.com/planes/glutes-360"
+    <a href="https://pabloscarlattoentrenamientos.com/planes/reto-transformacion"
        style="display:inline-block;background:#ff6ec7;color:#000;font-weight:900;font-size:16px;padding:16px 32px;border-radius:14px;text-decoration:none;margin:6px;">
       Quiero el reto →
     </a>

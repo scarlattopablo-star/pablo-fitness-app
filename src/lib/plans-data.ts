@@ -17,8 +17,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Flame',
     color: '#FF4444',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '2',
@@ -36,8 +36,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Dumbbell',
     color: '#4CAF50',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '3',
@@ -55,8 +55,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Sparkles',
     color: '#FF9800',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '4',
@@ -74,8 +74,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'GraduationCap',
     color: '#2196F3',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '5',
@@ -93,8 +93,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Trophy',
     color: '#9C27B0',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '6',
@@ -112,8 +112,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Heart',
     color: '#E91E63',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '7',
@@ -131,8 +131,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Shield',
     color: '#607D8B',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '8',
@@ -150,8 +150,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'RefreshCw',
     color: '#00BCD4',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '9',
@@ -169,8 +169,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Users',
     color: '#FF5722',
-    prices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
     isCouple: true,
   },
   {
@@ -189,8 +189,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Home',
     color: '#8BC34A',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '11',
@@ -208,8 +208,8 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Medal',
     color: '#FFD700',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '12',
@@ -229,28 +229,28 @@ export const PLANS: Plan[] = [
     ],
     icon: 'Wind',
     color: '#0097A7',
-    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '21-dias': 0 },
-    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '21-dias': 0 },
+    prices: { '1-mes': 1800, '3-meses': 4320, '6-meses': 7200, '1-ano': 10800, '30-dias': 0 },
+    couplePrices: { '1-mes': 2880, '3-meses': 6900, '6-meses': 11500, '1-ano': 17300, '30-dias': 0 },
   },
   {
     id: '13',
-    slug: 'glutes-360',
-    name: 'Gluteos 360 - 21 dias',
-    shortDescription: 'Reto de 21 dias para gluteos y abdomen firmes sin dietas extremas',
-    description: 'Reto corto, intenso y guiado para mujeres. En 21 dias activas gluteos y abdomen con una rutina simple en la app y una guia de alimentacion flexible. Pensado para quienes sienten que entrenan y no ven cambios.',
+    slug: 'reto-transformacion',
+    name: 'Reto Transformacion - 30 dias',
+    shortDescription: 'Reto de 30 dias para transformar tu cuerpo con entrenamiento y nutricion incluidos',
+    description: 'Reto guiado de 30 dias con plan de entrenamiento + nutricion personalizada. Para hombres y mujeres que quieren resultados reales sin complicaciones. Metodo simple, progresion semana a semana y soporte directo con Pablo.',
     includes: [
-      'Rutina simple en la app (acceso inmediato)',
-      'Guia de alimentacion flexible (sin dietas extremas)',
-      'Seguimiento de fotos, peso y medidas dentro de la app',
-      'Progresion semana a semana durante 21 dias',
+      'Plan de entrenamiento 30 dias (acceso inmediato)',
+      'Plan de nutricion con macros calculados',
+      'Seguimiento de fotos, peso y medidas en la app',
+      'Progresion semana a semana durante 30 dias',
       'Acceso al chat con Pablo para dudas',
       'Recordatorios para no perderte ningun dia',
     ],
     icon: 'Sparkles',
     color: '#C3FF3A',
-    // Solo se comercializa en la duracion '21-dias'. Las otras duraciones quedan en 0 (no se venden).
-    prices: { '1-mes': 0, '3-meses': 0, '6-meses': 0, '1-ano': 0, '21-dias': 599 },
-    couplePrices: { '1-mes': 0, '3-meses': 0, '6-meses': 0, '1-ano': 0, '21-dias': 999 },
+    // Solo se comercializa en la duracion '30-dias'. Las otras duraciones quedan en 0 (no se venden).
+    prices: { '1-mes': 0, '3-meses': 0, '6-meses': 0, '1-ano': 0, '30-dias': 990 },
+    couplePrices: { '1-mes': 0, '3-meses': 0, '6-meses': 0, '1-ano': 0, '30-dias': 1690 },
   },
 ];
 
@@ -259,7 +259,7 @@ export const DURATION_LABELS: Record<string, string> = {
   '3-meses': '3 Meses',
   '6-meses': '6 Meses',
   '1-ano': '1 Año',
-  '21-dias': 'Reto 21 dias',
+  '30-dias': 'Reto 30 dias',
 };
 
 export const DURATION_DESCRIPTIONS: Record<string, string> = {
@@ -267,7 +267,7 @@ export const DURATION_DESCRIPTIONS: Record<string, string> = {
   '3-meses': 'Resultados visibles',
   '6-meses': 'Transformación real',
   '1-ano': 'Cambio de vida',
-  '21-dias': 'Reto intensivo',
+  '30-dias': 'Reto intensivo',
 };
 
 // Duracion en dias para calcular fin de suscripcion.
@@ -276,7 +276,7 @@ export const DURATION_DAYS: Record<string, number> = {
   '3-meses': 90,
   '6-meses': 180,
   '1-ano': 365,
-  '21-dias': 21,
+  '30-dias': 30,
 };
 
 export function getPlanBySlug(slug: string): Plan | undefined {
@@ -293,7 +293,7 @@ export function getDiscountPercentage(duration: string): number {
     '3-meses': 20,
     '6-meses': 33,
     '1-ano': 50,
-    '21-dias': 0,
+    '30-dias': 0,
   };
   return discounts[duration] ?? 0;
 }
