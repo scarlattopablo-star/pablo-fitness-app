@@ -128,7 +128,7 @@ export default function EncuestaPage() {
   const flow = searchParams?.get("flow") || "";
   const isTrialFlow = flow === "trial";
   const plan = getPlanBySlug(planSlug);
-  const isRetoGlutes = planSlug === "glutes-360";
+  const isRetoGlutes = planSlug === "reto-transformacion";
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState("");
 

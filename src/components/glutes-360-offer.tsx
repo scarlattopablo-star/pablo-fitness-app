@@ -2,38 +2,53 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Clock, Sparkles, MessageCircle, ArrowRight, XCircle } from "lucide-react";
+import { Check, Clock, Sparkles, MessageCircle, ArrowRight, XCircle, Dumbbell, UtensilsCrossed } from "lucide-react";
 import { trackEvent } from "@/lib/track-event";
-import {
-  formatFinDeCupos,
-  diasHastaCierre,
-  CUPOS_AGOTADOS_ESTE_MES,
-  CUPOS_RESTANTES_ESTE_MES,
-  formatProximoCohorte,
-  getWaitlistWhatsAppUrl,
-} from "@/lib/reto-glutes-360-plan";
 
-// El flujo formal de compra: /planes/glutes-360 usa la pagina de detalle + encuesta + MercadoPago
-// que ya existe para todos los planes. WhatsApp queda como fallback "hablar primero".
-const CHECKOUT_URL = "/planes/glutes-360";
+// Cupos por mes — ajustar manualmente segun disponibilidad
+const CUPOS_RESTANTES: number = 5;
+const CUPOS_AGOTADOS = false;
+
+const CHECKOUT_URL = "/planes/reto-transformacion";
 
 const WA_RETO_URL =
   "https://wa.me/59897336318?text=" +
-  encodeURIComponent("Hola, quiero info del reto Gluteos 360");
+  encodeURIComponent("Hola Pablo, quiero info del Reto Transformacion 30 dias");
+
+const WA_WAITLIST_URL =
+  "https://wa.me/59897336318?text=" +
+  encodeURIComponent("Hola Pablo, me anoto para el proximo Reto Transformacion 30 dias");
+
+function formatProximoCohorte(): string {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return next.toLocaleDateString("es-UY", { day: "numeric", month: "long" });
+}
+
+function diasHastaProximoCohorte(): number {
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return Math.ceil((next.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function formatCierreMes(): string {
+  const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return last.toLocaleDateString("es-UY", { day: "numeric", month: "long" });
+}
 
 const INCLUYE = [
-  "Rutina simple en la app",
-  "Guia de alimentacion flexible",
-  "Seguimiento personalizado",
-  "Acceso inmediato",
+  { icon: Dumbbell, text: "Plan de entrenamiento 30 dias (casa o gym)" },
+  { icon: UtensilsCrossed, text: "Plan de nutricion con macros calculados" },
+  { icon: Check, text: "Seguimiento semanal de progreso en la app" },
+  { icon: Check, text: "Chat directo con Pablo para dudas" },
 ];
 
 export default function Glutes360Offer() {
   const ref = useRef<HTMLElement>(null);
   const [viewed, setViewed] = useState(false);
-  // Cohorte mensual: cierra el 1ro de cada mes. Se recalcula en cliente.
-  const cierre = useMemo(() => formatFinDeCupos(), []);
-  const diasRestantes = useMemo(() => diasHastaCierre(), []);
+  const cierre = useMemo(() => formatCierreMes(), []);
+  const diasRestantes = useMemo(() => diasHastaProximoCohorte(), []);
 
   useEffect(() => {
     const el = ref.current;
@@ -51,13 +66,9 @@ export default function Glutes360Offer() {
     return () => obs.disconnect();
   }, [viewed]);
 
-  const onReservar = () => {
-    trackEvent("cta_oferta_click", { origen: "glutes_360_card" });
-  };
-
   return (
     <section
-      id="oferta-glutes-360"
+      id="oferta-transformacion"
       ref={ref}
       className="py-20 px-4 relative overflow-hidden scroll-mt-24"
     >
@@ -69,53 +80,53 @@ export default function Glutes360Offer() {
           <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-accent/15 border border-accent/30">
             <Sparkles className="h-4 w-4 text-accent" />
             <span className="text-xs font-bold text-accent uppercase tracking-wider">
-              Nuevo reto
+              Reto del mes
             </span>
           </div>
 
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-3">
-            Gluteos 360
+            Reto Transformacion
             <br />
-            <span className="text-gradient">21 dias</span>
+            <span className="text-gradient">30 dias</span>
           </h2>
           <p className="text-muted text-sm sm:text-base mb-8 max-w-md mx-auto">
-            Para mujeres que quieren resultados reales con un metodo simple.
+            Para hombres y mujeres que quieren resultados reales. Entrenamiento + nutricion incluidos.
           </p>
 
           <ul className="space-y-3 mb-8 max-w-sm mx-auto text-left">
-            {INCLUYE.map((item) => (
-              <li key={item} className="flex items-center gap-3">
-                <Check className="h-5 w-5 text-accent shrink-0" />
-                <span className="text-base">{item}</span>
+            {INCLUYE.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3">
+                <Icon className="h-5 w-5 text-accent shrink-0" />
+                <span className="text-base">{text}</span>
               </li>
             ))}
           </ul>
 
           <div className="mb-5">
             <div className="text-xs text-muted uppercase tracking-wider mb-1">
-              Precio por este mes
+              Precio unico — acceso completo
             </div>
             <div className="text-5xl sm:text-6xl font-black">
-              <span className="text-accent">$599</span>
+              <span className="text-accent">$990</span>
               <span className="text-lg sm:text-2xl text-muted font-bold ml-1">
                 UYU
               </span>
             </div>
           </div>
 
-          {CUPOS_AGOTADOS_ESTE_MES ? (
+          {CUPOS_AGOTADOS ? (
             <>
               <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-6 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-sm font-bold">
                 <XCircle className="h-4 w-4 text-red-400" />
                 <span className="text-red-400">Sin cupos este mes</span>
-                <span className="text-muted">· Proximo cohorte: {formatProximoCohorte()}</span>
+                <span className="text-muted">· Proximo inicio: {formatProximoCohorte()}</span>
               </div>
 
               <a
-                href={getWaitlistWhatsAppUrl()}
+                href={WA_WAITLIST_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackEvent("cta_oferta_click", { origen: "waitlist_landing" })}
+                onClick={() => trackEvent("cta_oferta_click", { origen: "waitlist_transformacion" })}
                 className="btn-shimmer inline-flex items-center justify-center gap-2 text-base sm:text-lg px-10 py-4 rounded-full font-bold w-full sm:w-auto"
               >
                 <MessageCircle className="h-5 w-5" />
@@ -131,14 +142,14 @@ export default function Glutes360Offer() {
               <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-8 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-sm font-bold">
                 <Clock className="h-4 w-4 text-accent animate-pulse" />
                 <span className="text-accent">
-                  Ultimos {CUPOS_RESTANTES_ESTE_MES} {CUPOS_RESTANTES_ESTE_MES === 1 ? "cupo" : "cupos"} este mes
+                  Ultimos {CUPOS_RESTANTES} {CUPOS_RESTANTES === 1 ? "cupo" : "cupos"} este mes
                 </span>
                 <span className="text-muted">· Cierra el {cierre} ({diasRestantes} {diasRestantes === 1 ? "dia" : "dias"})</span>
               </div>
 
               <Link
                 href={CHECKOUT_URL}
-                onClick={onReservar}
+                onClick={() => trackEvent("cta_oferta_click", { origen: "transformacion_card" })}
                 className="btn-shimmer inline-flex items-center justify-center gap-2 text-base sm:text-lg px-10 py-4 rounded-full font-bold w-full sm:w-auto"
               >
                 Reservar mi lugar <ArrowRight className="h-5 w-5" />

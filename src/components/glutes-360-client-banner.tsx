@@ -1,30 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, X, Clock, ArrowRight, MessageCircle } from "lucide-react";
 import { trackEvent } from "@/lib/track-event";
-import {
-  formatFinDeCupos,
-  CUPOS_AGOTADOS_ESTE_MES,
-  CUPOS_RESTANTES_ESTE_MES,
-  formatProximoCohorte,
-  getWaitlistWhatsAppUrl,
-} from "@/lib/reto-glutes-360-plan";
 
-// Una key por mes: cada mes la cohorte es "nueva" y el banner vuelve a aparecer aunque el cliente lo haya cerrado.
+const CUPOS_RESTANTES: number = 5;
+const CUPOS_AGOTADOS = false;
+const RETO_URL = "/planes/reto-transformacion";
+const WA_WAITLIST_URL =
+  "https://wa.me/59897336318?text=" +
+  encodeURIComponent("Hola Pablo, me anoto para el proximo Reto Transformacion 30 dias");
+
 function getDismissKey(): string {
   const now = new Date();
-  return `glutes360_banner_dismissed_${now.getFullYear()}_${now.getMonth()}`;
+  return `reto_transformacion_banner_dismissed_${now.getFullYear()}_${now.getMonth()}`;
 }
 
-// Cliente existente ya tiene cuenta — va directo a la pagina del reto (usa checkout MP compartido).
-const RETO_URL = "/planes/glutes-360";
+function formatCierreMes(): string {
+  const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return last.toLocaleDateString("es-UY", { day: "numeric", month: "long" });
+}
 
 export default function Glutes360ClientBanner() {
-  const [dismissed, setDismissed] = useState(true); // evita flash hasta leer localStorage
-  const cierre = useMemo(() => formatFinDeCupos(), []);
-  const dismissKey = useMemo(() => getDismissKey(), []);
+  const [dismissed, setDismissed] = useState(true);
+  const [cierre] = useState(() => formatCierreMes());
+  const [dismissKey] = useState(() => getDismissKey());
 
   useEffect(() => {
     try {
@@ -70,15 +72,15 @@ export default function Glutes360ClientBanner() {
             Nuevo reto
           </div>
           <h3 className="font-black text-base sm:text-lg leading-tight mb-1">
-            Sumate al reto <span className="text-accent">Gluteos 360 · 21 dias</span>
+            Sumate al <span className="text-accent">Reto Transformacion 30 dias</span>
           </h3>
-          {CUPOS_AGOTADOS_ESTE_MES ? (
+          {CUPOS_AGOTADOS ? (
             <>
               <p className="text-xs text-muted mb-3">
-                <span className="text-red-400 font-bold">Sin cupos este mes.</span> Proximo cohorte: {formatProximoCohorte()}.
+                <span className="text-red-400 font-bold">Sin cupos este mes.</span> Proximo inicio el 1 del mes.
               </p>
               <a
-                href={getWaitlistWhatsAppUrl()}
+                href={WA_WAITLIST_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
@@ -94,7 +96,7 @@ export default function Glutes360ClientBanner() {
           ) : (
             <>
               <p className="text-xs text-muted mb-3">
-                <span className="text-accent font-bold">Ultimos {CUPOS_RESTANTES_ESTE_MES} {CUPOS_RESTANTES_ESTE_MES === 1 ? "cupo" : "cupos"}</span> · Cierra el {cierre}
+                <span className="text-accent font-bold">Ultimos {CUPOS_RESTANTES} {CUPOS_RESTANTES === 1 ? "cupo" : "cupos"}</span> · Cierra el {cierre}
               </p>
               <Link
                 href={RETO_URL}

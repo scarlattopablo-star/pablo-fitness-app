@@ -63,7 +63,7 @@ const OBJECTIVE_LABELS: Record<string, string> = {
   "competicion": "Competicion",
   "kitesurf": "Kitesurf",
   "entrenamiento-casa": "En casa",
-  "glutes-360": "Glutes 360",
+  "reto-transformacion": "Reto Transformacion",
   "direct-client": "Personalizado",
   "sin-definir": "Sin definir",
 };

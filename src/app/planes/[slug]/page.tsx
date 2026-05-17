@@ -125,7 +125,7 @@ export default function PlanDetailPage({
             </ul>
 
             {/* Para el reto: timeline visual de las 3 semanas (pre-venta) */}
-            {plan.slug === "glutes-360" && <Glutes360Timeline />}
+            {plan.slug === "reto-transformacion" && <Glutes360Timeline />}
 
             <h2 className="text-xl font-bold mb-4">Cómo funciona</h2>
             <div className="space-y-4">
@@ -151,7 +151,7 @@ export default function PlanDetailPage({
           <div className="lg:col-span-2">
             <div className="glass-card rounded-2xl p-6 sticky top-24">
               {/* Free month badge — NO aplica al reto de 21 dias (es un producto aparte). */}
-              {plan.slug !== "glutes-360" && (
+              {plan.slug !== "reto-transformacion" && (
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mb-4 text-center">
                   <p className="text-sm font-bold text-emerald-400">Primer mes GRATIS</p>
                   <p className="text-[10px] text-muted">Proba todo sin compromiso. Despues elegis si continuar.</p>
@@ -177,7 +177,7 @@ export default function PlanDetailPage({
                     d === "3-meses" ? Math.round(p / 3) :
                     d === "6-meses" ? Math.round(p / 6) :
                     d === "1-ano" ? Math.round(p / 12) :
-                    p; // 21-dias: no desglosamos mensual, es precio total del reto.
+                    p; // 30-dias: no desglosamos mensual, es precio total del reto.
 
                   return (
                     <button
@@ -198,10 +198,10 @@ export default function PlanDetailPage({
                             </span>
                           )}
                         </div>
-                        {d !== "1-mes" && d !== "21-dias" && (
+                        {d !== "1-mes" && d !== "30-dias" && (
                           <p className="text-xs text-muted">${formatPrice(monthly)}/mes</p>
                         )}
-                        {d === "21-dias" && (
+                        {d === "30-dias" && (
                           <p className="text-xs text-accent font-bold">Acceso inmediato</p>
                         )}
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-// Pantalla que recibe a la clienta del reto Gluteos 360 justo despues de la encuesta.
+// Pantalla que recibe a la clienta del reto Reto Transformacion justo despues de la encuesta.
 // Objetivo: fijar expectativa realista, bajar ansiedad y activar compromiso antes
 // de entrar al onboarding general. Se ve una sola vez (flag en localStorage).
 
@@ -44,7 +44,7 @@ const EJERCICIOS_ESTRELLA = [
 const REGLAS = [
   { icon: UtensilsCrossed, text: "Proteina en TODAS las comidas (100–130g al dia)" },
   { icon: Droplet,         text: "2.5 L de agua por dia" },
-  { icon: Ban,             text: "Sin alcohol por 21 dias (acelera el resultado x2)" },
+  { icon: Ban,             text: "Sin alcohol por 30 dias (acelera el resultado x2)" },
 ];
 
 const HITOS = [
@@ -81,9 +81,9 @@ export default function RetoBriefingPage() {
             </span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-[1.05] mb-4">
-            Gluteos 360
+            Reto Transformacion
             <br />
-            <span className="text-gradient">21 dias que cambian el cuerpo</span>
+            <span className="text-gradient">30 dias que cambian el cuerpo</span>
           </h1>
           <p className="text-muted max-w-xl mx-auto">
             Antes de arrancar, te dejo clarisimo como son las proximas 3 semanas para que sepas exactamente que esperar.
@@ -173,7 +173,7 @@ export default function RetoBriefingPage() {
         <div className="relative max-w-xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-black mb-3">Ya esta todo claro?</h2>
           <p className="text-muted mb-8">
-            Desde ahora, cada dia cuenta. Dale play a tus 21 dias.
+            Desde ahora, cada dia cuenta. Dale play a tus 30 dias.
           </p>
           <Link
             href={nextUrl}
