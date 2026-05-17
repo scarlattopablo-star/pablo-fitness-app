@@ -134,6 +134,61 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "repollo", name: "Repollo (cocido)", category: "vegetable", calories: 23, protein: 1.3, carbs: 5.4, fat: 0.1, fiber: 2.5, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
 ];
 
+// ============================================================
+// Dietary restriction blocklists
+// Based on AND Position Papers, ADA, Celiac Foundation, NIH/NIDDK, FARE Guidelines
+// ============================================================
+
+const VEGAN_BLOCKED_IDS = new Set([
+  "pollo-pechuga", "pollo-muslo", "carne-magra", "carne-molida", "cerdo-lomo",
+  "pavo-pechuga", "salmon", "atun", "merluza", "tilapia", "camarones", "sardina",
+  "caballa", "huevo-entero", "clara-huevo", "whey-protein", "jamon-pavo",
+  "jamon-cocido", "bondiola", "caseina", "queso-dambo-light",
+  "yogurt-descremado", "yogurt-griego", "leche-descremada", "leche-entera",
+  "queso-cottage", "queso-ricota", "queso-untable", "queso-muzzarella",
+]);
+
+const VEGETARIAN_BLOCKED_IDS = new Set([
+  "pollo-pechuga", "pollo-muslo", "carne-magra", "carne-molida", "cerdo-lomo",
+  "pavo-pechuga", "salmon", "atun", "merluza", "tilapia", "camarones", "sardina",
+  "caballa", "jamon-pavo", "jamon-cocido", "bondiola",
+]);
+
+const GLUTEN_FREE_BLOCKED_IDS = new Set([
+  "avena", "pan-integral", "pan-blanco", "fideos", "fideos-integrales",
+  "tortilla-trigo", "granola",
+]);
+
+const LACTOSE_FREE_BLOCKED_IDS = new Set([
+  "yogurt-descremado", "yogurt-griego", "leche-descremada", "leche-entera",
+  "queso-cottage", "queso-ricota", "queso-untable", "queso-muzzarella",
+  "whey-protein", "caseina", "queso-dambo-light",
+]);
+
+// Frutos secos (tree nuts) — mani (mani mantequilla) es legumbre, no fruto seco (FARE)
+const NUT_FREE_BLOCKED_IDS = new Set([
+  "almendras", "nueces", "castanas-caju", "pistachos", "mantequilla-almendras",
+]);
+
+export function filterFoodsByRestrictions(foods: FoodItem[], restrictions: string[]): FoodItem[] {
+  if (!restrictions.length) return foods;
+  const r = restrictions.map(s => s.toLowerCase());
+  const isVegan = r.some(s => s.includes("vegano"));
+  const isVegetarian = r.some(s => s.includes("vegetariano"));
+  const isGlutenFree = r.some(s => s.includes("gluten") || s.includes("celiaco") || s.includes("celíaco"));
+  const isLactoseFree = r.some(s => s.includes("lactosa"));
+  const isNutFree = r.some(s => s.includes("frutos secos"));
+
+  return foods.filter(food => {
+    if (isVegan && VEGAN_BLOCKED_IDS.has(food.id)) return false;
+    if (isVegetarian && !isVegan && VEGETARIAN_BLOCKED_IDS.has(food.id)) return false;
+    if (isGlutenFree && GLUTEN_FREE_BLOCKED_IDS.has(food.id)) return false;
+    if (isLactoseFree && LACTOSE_FREE_BLOCKED_IDS.has(food.id)) return false;
+    if (isNutFree && NUT_FREE_BLOCKED_IDS.has(food.id)) return false;
+    return true;
+  });
+}
+
 // Get food by ID
 export function getFoodById(id: string): FoodItem | undefined {
   return FOOD_DATABASE.find(f => f.id === id);
