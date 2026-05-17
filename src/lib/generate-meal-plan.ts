@@ -203,6 +203,27 @@ function getProteinShake(flags: RestrictionFlags): string {
   return "whey-protein";
 }
 
+// Frutas para desayuno — variedad diaria para evitar monotonia
+// Diabetes: solo bajo IG (ADA: berries, manzana, pera, ciruela)
+function getBreakfastFruit(flags: RestrictionFlags, dayVariant: number): string {
+  if (flags.diabetes) {
+    const options = ["arandanos", "frutilla", "manzana", "frambuesa", "pera", "ciruela", "arandanos"];
+    return options[dayVariant % options.length];
+  }
+  const options = ["banana", "frutilla", "kiwi", "arandanos", "mango", "anana", "naranja", "melon", "frambuesa"];
+  return options[dayVariant % options.length];
+}
+
+// Frutas para snacks — mas livianas que banana
+function getSnackFruit(flags: RestrictionFlags, dayVariant: number): string {
+  if (flags.diabetes) {
+    const options = ["manzana", "pera", "arandanos", "frambuesa", "frutilla", "ciruela", "durazno"];
+    return options[dayVariant % options.length];
+  }
+  const options = ["manzana", "pera", "naranja", "durazno", "ciruela", "mandarina", "kiwi", "uvas", "sandia"];
+  return options[(dayVariant + 2) % options.length]; // offset para no repetir la fruta del desayuno
+}
+
 export function generateMealPlan(
   targetCalories: number,
   protein: number,
@@ -212,7 +233,8 @@ export function generateMealPlan(
   sleepHour: number = 23,
   dietaryRestrictions: string[] = [],
   objective: string = "",
-  nutritionalGoal: string = ""
+  nutritionalGoal: string = "",
+  dayVariant: number = 0
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
   const flags = parseRestrictions(dietaryRestrictions);
   const awakeHours = (sleepHour > wakeHour ? sleepHour : sleepHour + 24) - wakeHour;
@@ -265,12 +287,16 @@ export function generateMealPlan(
     desayunoFoods.push(buildFood(breakfastCarbId, gramsFor(getFood(breakfastCarbId), r0.c, "carbs")));
   }
 
+  // Siempre agregar fruta en el desayuno — varia segun dayVariant para evitar
+  // la banana todos los dias. Minimo 50g (MIN_GRAMS[fruit]). Si no quedan carbos,
+  // se agrega la porcion minima igual (fibra, vitaminas, variedad).
+  const breakfastFruitId = getBreakfastFruit(flags, dayVariant);
   const r0b = remaining(t0, desayunoFoods);
-  if (r0b.c > 10 && !flags.diabetes) {
-    desayunoFoods.push(buildFoodByUnit("banana", 1, 120));
-  } else if (r0b.c > 10 && flags.diabetes) {
-    // ADA: berries have lower GI than banana
-    desayunoFoods.push(buildFood("arandanos", gramsFor(getFood("arandanos"), r0b.c, "carbs")));
+  const bfFruitGrams = r0b.c > 5
+    ? gramsFor(getFood(breakfastFruitId), r0b.c, "carbs")
+    : 0; // no forzar fruta si el desayuno ya cubre todos los carbos (e.g. plan alto en grasas)
+  if (bfFruitGrams > 0 || r0b.c > 3) {
+    desayunoFoods.push(buildFood(breakfastFruitId, Math.max(bfFruitGrams, 50)));
   }
 
   const r0c = remaining(t0, desayunoFoods);
@@ -351,11 +377,11 @@ export function generateMealPlan(
       snack2Foods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
     }
   }
+  // Fruta en merienda si quedan carbos disponibles — variada por dia
   const r3b = remaining(t3, snack2Foods);
-  if (r3b.c > 15 && !flags.diabetes) {
-    snack2Foods.push(buildFoodByUnit("banana", 1, 120));
-  } else if (r3b.c > 15 && flags.diabetes) {
-    snack2Foods.push(buildFood("manzana", 180)); // Low GI fruit
+  if (r3b.c > 8) {
+    const snackFruitId = getSnackFruit(flags, dayVariant);
+    snack2Foods.push(buildFood(snackFruitId, gramsFor(getFood(snackFruitId), r3b.c, "carbs")));
   }
 
   // === MEAL 5: CENA ===
@@ -486,16 +512,17 @@ export function generateKitesurfMealPlans(
   wakeHour: number = 7,
   sleepHour: number = 23,
   dietaryRestrictions: string[] = [],
-  nutritionalGoal: string = ""
+  nutritionalGoal: string = "",
+  dayVariant: number = 0
 ): { gymDay: { meals: MealPlanMeal[]; importantNotes: string[] }; kitesurfDay: { meals: MealPlanMeal[]; importantNotes: string[] } } {
   // Gym day: standard macros
-  const gymDay = generateMealPlan(targetCalories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal);
+  const gymDay = generateMealPlan(targetCalories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal, dayVariant);
 
   // Kitesurf day: higher carbs for energy, slightly less fat, more total calories
   const kiteCals = targetCalories + 200;
   const kiteCarbs = Math.round(carbs * 1.15);
   const kiteFats = Math.round(fats * 0.90);
-  const kiteDay = generateMealPlan(kiteCals, protein, kiteCarbs, kiteFats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal);
+  const kiteDay = generateMealPlan(kiteCals, protein, kiteCarbs, kiteFats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal, dayVariant);
 
   // Add kitesurf-specific hydration and electrolyte notes
   kiteDay.importantNotes = [

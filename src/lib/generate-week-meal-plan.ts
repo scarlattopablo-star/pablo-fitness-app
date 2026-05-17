@@ -73,6 +73,7 @@ const VEGGIE_ROTATION_CENA: string[] = [
 
 const FRUIT_ROTATION_DESAYUNO: string[] = [
   "banana", "frutilla", "arandanos", "kiwi", "manzana", "anana", "mango",
+  "naranja", "frambuesa", "pera", "melon", "durazno", "mandarina",
 ];
 
 const DAIRY_ROTATION_SNACK: string[] = [
