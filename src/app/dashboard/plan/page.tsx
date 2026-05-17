@@ -1098,7 +1098,7 @@ function PlanContent() {
                         const mealFoods = meal.foodDetails
                           ? meal.foodDetails.map((fd: { name: string }) => fd.name)
                           : meal.foods;
-                        const recipe = suggestRecipe(meal.name, mealFoods as string[]);
+                        const recipe = suggestRecipe(meal.name, mealFoods as string[], dietaryRestrictions);
                         if (!recipe) return null;
                         return (
                           <button
