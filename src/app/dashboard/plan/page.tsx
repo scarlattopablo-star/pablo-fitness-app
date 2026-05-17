@@ -124,6 +124,7 @@ function PlanContent() {
   const [view, setView] = useState<"overview" | "entrenamiento" | "nutricion">(initialView);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [mealPlan, setMealPlan] = useState<{ meals: MealPlanMeal[]; importantNotes: string[] } | null>(null);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [kitesurfMealPlans, setKitesurfMealPlans] = useState<{ gymDay: { meals: MealPlanMeal[]; importantNotes: string[] }; kitesurfDay: { meals: MealPlanMeal[]; importantNotes: string[] } } | null>(null);
   const [kiteDayType, setKiteDayType] = useState<"gym" | "kitesurf">("gym");
   const [trainingPlan, setTrainingPlan] = useState<TrainingDay[]>([]);
@@ -428,7 +429,7 @@ function PlanContent() {
       // Load all data in parallel
       const [surveyRes, trainingRes, nutritionRes] = await Promise.all([
         supabase.from("surveys")
-          .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee, country, city")
+          .select("target_calories, protein, carbs, fats, objective, nutritional_goal, training_days, wake_hour, sleep_hour, emphasis, sex, activity_level, tdee, country, city, dietary_restrictions")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("training_plans")
           .select("data, plan_approved")
@@ -447,6 +448,7 @@ function PlanContent() {
         setObjective(data.objective || "");
         setNutritionalGoal(data.nutritional_goal || "");
         setTdee(data.tdee || 0);
+        setDietaryRestrictions(data.dietary_restrictions || []);
         setHasSurvey(true);
         cacheData("survey", data);
       } else {
@@ -1324,6 +1326,7 @@ function PlanContent() {
           currentFood={swapTarget.food}
           onSwap={handleSwap}
           onClose={() => setSwapTarget(null)}
+          dietaryRestrictions={dietaryRestrictions}
         />
       )}
 

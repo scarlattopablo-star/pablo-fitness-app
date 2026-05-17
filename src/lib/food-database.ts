@@ -37,7 +37,7 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "huevo-entero", name: "Huevo entero", category: "protein", calories: 143, protein: 13, carbs: 0.7, fat: 9.5, unit: "unidad (50g)", mealTypes: ["desayuno", "almuerzo", "snack"], maxGrams: 200 },
   { id: "clara-huevo", name: "Clara de huevo", category: "protein", calories: 52, protein: 11, carbs: 0.7, fat: 0.2, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
   { id: "whey-protein", name: "Proteina whey (scoop)", category: "protein", calories: 120, protein: 24, carbs: 3, fat: 1.5, unit: "scoop (30g)", mealTypes: ["desayuno", "snack"], maxGrams: 60 },
-  { id: "tofu", name: "Tofu firme", category: "protein", calories: 144, protein: 17, carbs: 3, fat: 8, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
+  { id: "tofu", name: "Tofu firme", category: "protein", calories: 76, protein: 8, carbs: 2, fat: 5, unit: "g", mealTypes: ["desayuno", "almuerzo", "cena", "snack"], maxGrams: 250 },
   { id: "jamon-pavo", name: "Jamon de pavo", category: "protein", calories: 104, protein: 18, carbs: 2, fat: 2.5, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 80 },
   { id: "jamon-cocido", name: "Jamon cocido", category: "protein", calories: 145, protein: 18, carbs: 1, fat: 8, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 80 },
   { id: "bondiola", name: "Bondiola de cerdo (cocida)", category: "protein", calories: 280, protein: 24, carbs: 0, fat: 20, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 180 },
@@ -47,7 +47,7 @@ export const FOOD_DATABASE: FoodItem[] = [
 
   // === CARBOHIDRATOS (19) ===
   { id: "arroz-blanco", name: "Arroz blanco (cocido)", category: "carb", calories: 130, protein: 2.7, carbs: 28, fat: 0.3, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 250 },
-  { id: "arroz-integral", name: "Arroz integral (cocido)", category: "carb", calories: 123, protein: 2.7, carbs: 26, fat: 1, fiber: 1.6, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 250 },
+  { id: "arroz-integral", name: "Arroz integral (cocido)", category: "carb", calories: 111, protein: 2.6, carbs: 23, fat: 0.9, fiber: 1.8, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 250 },
   { id: "avena", name: "Avena (cruda)", category: "carb", calories: 389, protein: 17, carbs: 66, fat: 7, fiber: 10, unit: "g", mealTypes: ["desayuno"], maxGrams: 80 },
   { id: "boniato", name: "Boniato/Batata (cocido)", category: "carb", calories: 90, protein: 2, carbs: 21, fat: 0.1, fiber: 3, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 300 },
   { id: "papa", name: "Papa (cocida)", category: "carb", calories: 87, protein: 1.9, carbs: 20, fat: 0.1, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 300 },
@@ -81,8 +81,8 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "semillas-girasol", name: "Semillas de girasol", category: "fat", calories: 584, protein: 21, carbs: 20, fat: 51, fiber: 9, unit: "g", mealTypes: ["snack"], maxGrams: 30 },
 
   // === LACTEOS (8) ===
-  { id: "yogurt-descremado", name: "Yogurt descremado", category: "dairy", calories: 56, protein: 10, carbs: 4, fat: 0.2, unit: "g (200g)", mealTypes: ["desayuno", "snack"], maxGrams: 300 },
-  { id: "yogurt-griego", name: "Yogurt griego", category: "dairy", calories: 97, protein: 9, carbs: 3.6, fat: 5, unit: "g (170g)", mealTypes: ["desayuno", "snack"], maxGrams: 250 },
+  { id: "yogurt-descremado", name: "Yogurt descremado", category: "dairy", calories: 56, protein: 5.7, carbs: 7.7, fat: 0.1, unit: "g (200g)", mealTypes: ["desayuno", "snack"], maxGrams: 300 },
+  { id: "yogurt-griego", name: "Yogurt griego (entero)", category: "dairy", calories: 97, protein: 9, carbs: 3.6, fat: 5, unit: "g (170g)", mealTypes: ["desayuno", "snack"], maxGrams: 250 },
   { id: "leche-descremada", name: "Leche descremada", category: "dairy", calories: 34, protein: 3.4, carbs: 5, fat: 0.1, unit: "ml (200ml)", mealTypes: ["desayuno"], maxGrams: 500 },
   { id: "leche-entera", name: "Leche entera", category: "dairy", calories: 61, protein: 3.2, carbs: 4.8, fat: 3.3, unit: "ml (200ml)", mealTypes: ["desayuno"], maxGrams: 500 },
   { id: "queso-cottage", name: "Queso cottage", category: "dairy", calories: 98, protein: 11, carbs: 3.4, fat: 4.3, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
@@ -92,23 +92,23 @@ export const FOOD_DATABASE: FoodItem[] = [
 
   // === FRUTAS (19) ===
   { id: "banana", name: "Banana", category: "fruit", calories: 89, protein: 1.1, carbs: 23, fat: 0.3, unit: "unidad (120g)", mealTypes: ["desayuno", "snack"], maxGrams: 120 },
-  { id: "manzana", name: "Manzana", category: "fruit", calories: 52, protein: 0.3, carbs: 14, fat: 0.2, unit: "unidad (180g)", mealTypes: ["snack"], maxGrams: 180 },
+  { id: "manzana", name: "Manzana", category: "fruit", calories: 52, protein: 0.3, carbs: 14, fat: 0.2, unit: "unidad (180g)", mealTypes: ["desayuno", "snack"], maxGrams: 180 },
   { id: "arandanos", name: "Arandanos", category: "fruit", calories: 57, protein: 0.7, carbs: 14, fat: 0.3, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
   { id: "frutilla", name: "Frutillas/Fresas", category: "fruit", calories: 32, protein: 0.7, carbs: 7.7, fat: 0.3, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
-  { id: "naranja", name: "Naranja", category: "fruit", calories: 47, protein: 0.9, carbs: 12, fat: 0.1, unit: "unidad (130g)", mealTypes: ["snack"], maxGrams: 130 },
-  { id: "mandarina", name: "Mandarina", category: "fruit", calories: 53, protein: 0.8, carbs: 13, fat: 0.3, unit: "unidad (90g)", mealTypes: ["snack"], maxGrams: 180 },
-  { id: "pera", name: "Pera", category: "fruit", calories: 57, protein: 0.4, carbs: 15, fat: 0.1, unit: "unidad (180g)", mealTypes: ["snack"], maxGrams: 180 },
-  { id: "durazno", name: "Durazno", category: "fruit", calories: 39, protein: 0.9, carbs: 10, fat: 0.3, unit: "unidad (150g)", mealTypes: ["snack"], maxGrams: 150 },
-  { id: "sandia", name: "Sandia", category: "fruit", calories: 30, protein: 0.6, carbs: 8, fat: 0.2, unit: "g", mealTypes: ["snack"], maxGrams: 250 },
+  { id: "naranja", name: "Naranja", category: "fruit", calories: 47, protein: 0.9, carbs: 12, fat: 0.1, unit: "unidad (130g)", mealTypes: ["desayuno", "snack"], maxGrams: 130 },
+  { id: "mandarina", name: "Mandarina", category: "fruit", calories: 53, protein: 0.8, carbs: 13, fat: 0.3, unit: "unidad (90g)", mealTypes: ["desayuno", "snack"], maxGrams: 180 },
+  { id: "pera", name: "Pera", category: "fruit", calories: 57, protein: 0.4, carbs: 15, fat: 0.1, unit: "unidad (180g)", mealTypes: ["desayuno", "snack"], maxGrams: 180 },
+  { id: "durazno", name: "Durazno", category: "fruit", calories: 39, protein: 0.9, carbs: 10, fat: 0.3, unit: "unidad (150g)", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
+  { id: "sandia", name: "Sandia", category: "fruit", calories: 30, protein: 0.6, carbs: 8, fat: 0.2, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 250 },
   { id: "mango", name: "Mango", category: "fruit", calories: 60, protein: 0.8, carbs: 15, fat: 0.4, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
   { id: "anana", name: "Anana/Piña", category: "fruit", calories: 50, protein: 0.5, carbs: 13, fat: 0.1, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
   { id: "kiwi", name: "Kiwi", category: "fruit", calories: 61, protein: 1.1, carbs: 15, fat: 0.5, unit: "unidad (75g)", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
-  { id: "uvas", name: "Uvas", category: "fruit", calories: 69, protein: 0.7, carbs: 18, fat: 0.2, unit: "g", mealTypes: ["snack"], maxGrams: 150 },
-  { id: "ciruela", name: "Ciruela", category: "fruit", calories: 46, protein: 0.7, carbs: 11, fat: 0.3, unit: "unidad (65g)", mealTypes: ["snack"], maxGrams: 130 },
+  { id: "uvas", name: "Uvas", category: "fruit", calories: 69, protein: 0.7, carbs: 18, fat: 0.2, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
+  { id: "ciruela", name: "Ciruela", category: "fruit", calories: 46, protein: 0.7, carbs: 11, fat: 0.3, unit: "unidad (65g)", mealTypes: ["desayuno", "snack"], maxGrams: 130 },
   { id: "pomelo", name: "Pomelo", category: "fruit", calories: 42, protein: 0.8, carbs: 11, fat: 0.1, unit: "unidad (200g)", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
   { id: "melon", name: "Melon", category: "fruit", calories: 34, protein: 0.8, carbs: 8, fat: 0.2, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 250 },
   { id: "frambuesa", name: "Frambuesa", category: "fruit", calories: 52, protein: 1.2, carbs: 12, fat: 0.7, fiber: 6.5, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
-  { id: "higo", name: "Higo", category: "fruit", calories: 74, protein: 0.7, carbs: 19, fat: 0.3, unit: "unidad (50g)", mealTypes: ["snack"], maxGrams: 150 },
+  { id: "higo", name: "Higo", category: "fruit", calories: 74, protein: 0.7, carbs: 19, fat: 0.3, unit: "unidad (50g)", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
   { id: "datil", name: "Datil", category: "fruit", calories: 282, protein: 2.5, carbs: 75, fat: 0.4, fiber: 8, unit: "unidad (8g)", mealTypes: ["desayuno", "snack"], maxGrams: 30 },
 
   // === VERDURAS (20) ===
@@ -133,6 +133,61 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "palmitos", name: "Palmitos", category: "vegetable", calories: 28, protein: 2.6, carbs: 5, fat: 0.6, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 150 },
   { id: "repollo", name: "Repollo (cocido)", category: "vegetable", calories: 23, protein: 1.3, carbs: 5.4, fat: 0.1, fiber: 2.5, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
 ];
+
+// ============================================================
+// Dietary restriction blocklists
+// Based on AND Position Papers, ADA, Celiac Foundation, NIH/NIDDK, FARE Guidelines
+// ============================================================
+
+const VEGAN_BLOCKED_IDS = new Set([
+  "pollo-pechuga", "pollo-muslo", "carne-magra", "carne-molida", "cerdo-lomo",
+  "pavo-pechuga", "salmon", "atun", "merluza", "tilapia", "camarones", "sardina",
+  "caballa", "huevo-entero", "clara-huevo", "whey-protein", "jamon-pavo",
+  "jamon-cocido", "bondiola", "caseina", "queso-dambo-light",
+  "yogurt-descremado", "yogurt-griego", "leche-descremada", "leche-entera",
+  "queso-cottage", "queso-ricota", "queso-untable", "queso-muzzarella",
+]);
+
+const VEGETARIAN_BLOCKED_IDS = new Set([
+  "pollo-pechuga", "pollo-muslo", "carne-magra", "carne-molida", "cerdo-lomo",
+  "pavo-pechuga", "salmon", "atun", "merluza", "tilapia", "camarones", "sardina",
+  "caballa", "jamon-pavo", "jamon-cocido", "bondiola",
+]);
+
+const GLUTEN_FREE_BLOCKED_IDS = new Set([
+  "avena", "pan-integral", "pan-blanco", "fideos", "fideos-integrales",
+  "tortilla-trigo", "granola",
+]);
+
+const LACTOSE_FREE_BLOCKED_IDS = new Set([
+  "yogurt-descremado", "yogurt-griego", "leche-descremada", "leche-entera",
+  "queso-cottage", "queso-ricota", "queso-untable", "queso-muzzarella",
+  "whey-protein", "caseina", "queso-dambo-light",
+]);
+
+// Frutos secos (tree nuts) — mani (mani mantequilla) es legumbre, no fruto seco (FARE)
+const NUT_FREE_BLOCKED_IDS = new Set([
+  "almendras", "nueces", "castanas-caju", "pistachos", "mantequilla-almendras",
+]);
+
+export function filterFoodsByRestrictions(foods: FoodItem[], restrictions: string[]): FoodItem[] {
+  if (!restrictions.length) return foods;
+  const r = restrictions.map(s => s.toLowerCase());
+  const isVegan = r.some(s => s.includes("vegano"));
+  const isVegetarian = r.some(s => s.includes("vegetariano"));
+  const isGlutenFree = r.some(s => s.includes("gluten") || s.includes("celiaco") || s.includes("celíaco"));
+  const isLactoseFree = r.some(s => s.includes("lactosa"));
+  const isNutFree = r.some(s => s.includes("frutos secos"));
+
+  return foods.filter(food => {
+    if (isVegan && VEGAN_BLOCKED_IDS.has(food.id)) return false;
+    if (isVegetarian && !isVegan && VEGETARIAN_BLOCKED_IDS.has(food.id)) return false;
+    if (isGlutenFree && GLUTEN_FREE_BLOCKED_IDS.has(food.id)) return false;
+    if (isLactoseFree && LACTOSE_FREE_BLOCKED_IDS.has(food.id)) return false;
+    if (isNutFree && NUT_FREE_BLOCKED_IDS.has(food.id)) return false;
+    return true;
+  });
+}
 
 // Get food by ID
 export function getFoodById(id: string): FoodItem | undefined {

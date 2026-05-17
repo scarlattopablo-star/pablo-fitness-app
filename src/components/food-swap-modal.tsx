@@ -9,6 +9,7 @@ import {
   findFoodByName,
   calculateSwapGrams,
   calculateFoodMacros,
+  filterFoodsByRestrictions,
 } from "@/lib/food-database";
 
 interface MealFood {
@@ -26,6 +27,7 @@ interface FoodSwapModalProps {
   currentFood: MealFood;
   onSwap: (newFoodId: string) => Promise<void>;
   onClose: () => void;
+  dietaryRestrictions?: string[];
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -40,7 +42,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ["protein", "carb", "fat", "dairy", "fruit", "vegetable", "snack"];
 
-export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSwapModalProps) {
+export function FoodSwapModal({ mealName, currentFood, onSwap, onClose, dietaryRestrictions = [] }: FoodSwapModalProps) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [swapping, setSwapping] = useState(false);
@@ -49,25 +51,31 @@ export function FoodSwapModal({ mealName, currentFood, onSwap, onClose }: FoodSw
 
   const currentDbFood = useMemo(() => findFoodByName(currentFood.name), [currentFood.name]);
 
+  // Base allowed foods filtered by dietary restrictions
+  const allowedFoods = useMemo(
+    () => filterFoodsByRestrictions(FOOD_DATABASE, dietaryRestrictions),
+    [dietaryRestrictions]
+  );
+
   // Same category foods (excluding current)
   const sameCategoryFoods = useMemo(() => {
     if (!currentDbFood) return [];
-    return FOOD_DATABASE.filter(f => f.id !== currentDbFood.id && f.category === currentDbFood.category);
-  }, [currentDbFood]);
+    return allowedFoods.filter(f => f.id !== currentDbFood.id && f.category === currentDbFood.category);
+  }, [currentDbFood, allowedFoods]);
 
   // All OTHER category foods (excluding current)
   const otherFoods = useMemo(() => {
-    if (!currentDbFood) return FOOD_DATABASE;
-    return FOOD_DATABASE.filter(f => f.id !== currentDbFood.id && f.category !== currentDbFood.category);
-  }, [currentDbFood]);
+    if (!currentDbFood) return allowedFoods;
+    return allowedFoods.filter(f => f.id !== currentDbFood.id && f.category !== currentDbFood.category);
+  }, [currentDbFood, allowedFoods]);
 
-  // Filter by search across ALL foods
+  // Filter by search across allowed foods
   const filteredSearch = useMemo(() => {
     if (!search.trim()) return [];
     const q = search.toLowerCase();
-    const all = FOOD_DATABASE.filter(f => !currentDbFood || f.id !== currentDbFood.id);
+    const all = allowedFoods.filter(f => !currentDbFood || f.id !== currentDbFood.id);
     return all.filter((f) => f.name.toLowerCase().includes(q) || f.id.includes(q));
-  }, [search, currentDbFood]);
+  }, [search, currentDbFood, allowedFoods]);
 
   const isSearching = search.trim().length > 0;
 

@@ -203,6 +203,27 @@ function getProteinShake(flags: RestrictionFlags): string {
   return "whey-protein";
 }
 
+// Frutas para desayuno — variedad diaria para evitar monotonia
+// Diabetes: solo bajo IG (ADA: berries, manzana, pera, ciruela)
+function getBreakfastFruit(flags: RestrictionFlags, dayVariant: number): string {
+  if (flags.diabetes) {
+    const options = ["arandanos", "frutilla", "manzana", "frambuesa", "pera", "ciruela", "arandanos"];
+    return options[dayVariant % options.length];
+  }
+  const options = ["banana", "frutilla", "kiwi", "arandanos", "mango", "anana", "naranja", "melon", "frambuesa"];
+  return options[dayVariant % options.length];
+}
+
+// Frutas para snacks — mas livianas que banana
+function getSnackFruit(flags: RestrictionFlags, dayVariant: number): string {
+  if (flags.diabetes) {
+    const options = ["manzana", "pera", "arandanos", "frambuesa", "frutilla", "ciruela", "durazno"];
+    return options[dayVariant % options.length];
+  }
+  const options = ["manzana", "pera", "naranja", "durazno", "ciruela", "mandarina", "kiwi", "uvas", "sandia"];
+  return options[(dayVariant + 2) % options.length]; // offset para no repetir la fruta del desayuno
+}
+
 export function generateMealPlan(
   targetCalories: number,
   protein: number,
@@ -212,7 +233,8 @@ export function generateMealPlan(
   sleepHour: number = 23,
   dietaryRestrictions: string[] = [],
   objective: string = "",
-  nutritionalGoal: string = ""
+  nutritionalGoal: string = "",
+  dayVariant: number = 0
 ): { meals: MealPlanMeal[]; importantNotes: string[] } {
   const flags = parseRestrictions(dietaryRestrictions);
   const awakeHours = (sleepHour > wakeHour ? sleepHour : sleepHour + 24) - wakeHour;
@@ -265,12 +287,16 @@ export function generateMealPlan(
     desayunoFoods.push(buildFood(breakfastCarbId, gramsFor(getFood(breakfastCarbId), r0.c, "carbs")));
   }
 
+  // Siempre agregar fruta en el desayuno — varia segun dayVariant para evitar
+  // la banana todos los dias. Minimo 50g (MIN_GRAMS[fruit]). Si no quedan carbos,
+  // se agrega la porcion minima igual (fibra, vitaminas, variedad).
+  const breakfastFruitId = getBreakfastFruit(flags, dayVariant);
   const r0b = remaining(t0, desayunoFoods);
-  if (r0b.c > 10 && !flags.diabetes) {
-    desayunoFoods.push(buildFoodByUnit("banana", 1, 120));
-  } else if (r0b.c > 10 && flags.diabetes) {
-    // ADA: berries have lower GI than banana
-    desayunoFoods.push(buildFood("arandanos", gramsFor(getFood("arandanos"), r0b.c, "carbs")));
+  const bfFruitGrams = r0b.c > 5
+    ? gramsFor(getFood(breakfastFruitId), r0b.c, "carbs")
+    : 0; // no forzar fruta si el desayuno ya cubre todos los carbos (e.g. plan alto en grasas)
+  if (bfFruitGrams > 0 || r0b.c > 3) {
+    desayunoFoods.push(buildFood(breakfastFruitId, Math.max(bfFruitGrams, 50)));
   }
 
   const r0c = remaining(t0, desayunoFoods);
@@ -310,10 +336,10 @@ export function generateMealPlan(
   const m3Carb = buildFood(mainCarbId, gramsFor(getFood(mainCarbId), r2b.c, "carbs"));
   const almuerzoFoods: MealFood[] = [m3Protein, m3Carb, m3Veg];
 
-  // Si el carb principal quedo capeado y aun faltan carbs, sumar una fuente secundaria
-  // (boniato/papa/quinoa segun restriccion) para evitar comidas sin coherencia macro.
+  // Solo agregar carb secundario si falta una cantidad significativa (>30g) y la comida
+  // no tiene demasiados alimentos ya. Evita comidas con 5+ items.
   const r2carbCheck = remaining(t2, almuerzoFoods);
-  if (r2carbCheck.c > 15) {
+  if (r2carbCheck.c > 30 && almuerzoFoods.length < 4) {
     const secondaryCarbId = mainCarbId === "boniato" ? "papa"
       : flags.glutenFree ? "boniato"
       : flags.diabetes ? "lentejas"
@@ -321,16 +347,17 @@ export function generateMealPlan(
     almuerzoFoods.push(buildFood(secondaryCarbId, gramsFor(getFood(secondaryCarbId), r2carbCheck.c, "carbs")));
   }
 
-  // Vegan/vegetarian: add legumes for complete amino acids (AND: complementary proteins)
-  if (flags.vegan && mainProteinId === "tofu") {
+  // Vegan: legumes for complementary amino acids, solo si la comida es simple (<=3 items)
+  // y falta proteina significativa (AND Position Paper: tofu + legumes = complete profile)
+  if (flags.vegan && mainProteinId === "tofu" && almuerzoFoods.length <= 3) {
     const r2extra = remaining(t2, almuerzoFoods);
-    if (r2extra.p > 5) {
+    if (r2extra.p > 10) {
       almuerzoFoods.push(buildFood("garbanzos", gramsFor(getFood("garbanzos"), r2extra.p, "protein")));
     }
   }
 
   const r2c = remaining(t2, almuerzoFoods);
-  if (r2c.f > 5) {
+  if (r2c.f > 5 && almuerzoFoods.length < 5) {
     const oilGrams = Math.min(14, round5(r2c.f / 1.0 * 100 / 100));
     almuerzoFoods.push(buildFood("aceite-oliva", oilGrams));
   }
@@ -350,11 +377,11 @@ export function generateMealPlan(
       snack2Foods.push(buildFoodByUnit("galleta-arroz", numCakes, 9));
     }
   }
+  // Fruta en merienda si quedan carbos disponibles — variada por dia
   const r3b = remaining(t3, snack2Foods);
-  if (r3b.c > 15 && !flags.diabetes) {
-    snack2Foods.push(buildFoodByUnit("banana", 1, 120));
-  } else if (r3b.c > 15 && flags.diabetes) {
-    snack2Foods.push(buildFood("manzana", 180)); // Low GI fruit
+  if (r3b.c > 8) {
+    const snackFruitId = getSnackFruit(flags, dayVariant);
+    snack2Foods.push(buildFood(snackFruitId, gramsFor(getFood(snackFruitId), r3b.c, "carbs")));
   }
 
   // === MEAL 5: CENA ===
@@ -368,9 +395,9 @@ export function generateMealPlan(
   const m5Carb = buildFood(altCarbId, gramsFor(getFood(altCarbId), r4b.c, "carbs"));
   const cenaFoods: MealFood[] = [m5Protein, m5Carb, m5Veg];
 
-  // Carbo secundario si el principal esta capeado y aun faltan >15g de carbos
+  // Carbo secundario solo si el deficit es significativo (>30g) y la comida es simple
   const r4carbCheck = remaining(t4, cenaFoods);
-  if (r4carbCheck.c > 15) {
+  if (r4carbCheck.c > 30 && cenaFoods.length < 4) {
     const secondaryCarbId = altCarbId === "boniato" ? "papa"
       : altCarbId === "lentejas" ? "quinoa"
       : flags.glutenFree ? "quinoa"
@@ -378,16 +405,16 @@ export function generateMealPlan(
     cenaFoods.push(buildFood(secondaryCarbId, gramsFor(getFood(secondaryCarbId), r4carbCheck.c, "carbs")));
   }
 
-  // Vegan complementary protein
-  if (flags.vegan && altProteinId === "lentejas") {
+  // Vegan complementary protein solo si la comida es simple (<=3 items) y falta proteina
+  if (flags.vegan && altProteinId === "lentejas" && cenaFoods.length <= 3) {
     const r4extra = remaining(t4, cenaFoods);
-    if (r4extra.p > 5) {
+    if (r4extra.p > 10) {
       cenaFoods.push(buildFood("tofu", gramsFor(getFood("tofu"), r4extra.p, "protein")));
     }
   }
 
   const r4c = remaining(t4, cenaFoods);
-  if (r4c.f > 3) {
+  if (r4c.f > 3 && cenaFoods.length < 5) {
     const oilGrams = Math.min(14, round5(r4c.f / 1.0 * 100 / 100));
     cenaFoods.push(buildFood("aceite-oliva", oilGrams));
   }
@@ -485,16 +512,17 @@ export function generateKitesurfMealPlans(
   wakeHour: number = 7,
   sleepHour: number = 23,
   dietaryRestrictions: string[] = [],
-  nutritionalGoal: string = ""
+  nutritionalGoal: string = "",
+  dayVariant: number = 0
 ): { gymDay: { meals: MealPlanMeal[]; importantNotes: string[] }; kitesurfDay: { meals: MealPlanMeal[]; importantNotes: string[] } } {
   // Gym day: standard macros
-  const gymDay = generateMealPlan(targetCalories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal);
+  const gymDay = generateMealPlan(targetCalories, protein, carbs, fats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal, dayVariant);
 
   // Kitesurf day: higher carbs for energy, slightly less fat, more total calories
   const kiteCals = targetCalories + 200;
   const kiteCarbs = Math.round(carbs * 1.15);
   const kiteFats = Math.round(fats * 0.90);
-  const kiteDay = generateMealPlan(kiteCals, protein, kiteCarbs, kiteFats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal);
+  const kiteDay = generateMealPlan(kiteCals, protein, kiteCarbs, kiteFats, wakeHour, sleepHour, dietaryRestrictions, "kitesurf", nutritionalGoal, dayVariant);
 
   // Add kitesurf-specific hydration and electrolyte notes
   kiteDay.importantNotes = [
