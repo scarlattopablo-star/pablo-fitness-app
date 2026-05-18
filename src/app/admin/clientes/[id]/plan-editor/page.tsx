@@ -292,27 +292,27 @@ export default function PlanEditorPage({
   };
 
   const updateMeal = (idx: number, field: "name" | "time", value: string) => {
-    const updated = [...meals];
-    updated[idx][field] = value;
-    setMeals(updated);
+    setMeals(prev => prev.map((meal, i) => i === idx ? { ...meal, [field]: value } : meal));
   };
 
   const addFood = (mealIdx: number) => {
-    const updated = [...meals];
-    updated[mealIdx].foods.push("");
-    setMeals(updated);
+    setMeals(prev => prev.map((meal, i) =>
+      i === mealIdx ? { ...meal, foods: [...meal.foods, ""] } : meal
+    ));
   };
 
   const updateFood = (mealIdx: number, foodIdx: number, value: string) => {
-    const updated = [...meals];
-    updated[mealIdx].foods[foodIdx] = value;
-    setMeals(updated);
+    setMeals(prev => prev.map((meal, i) =>
+      i === mealIdx
+        ? { ...meal, foods: meal.foods.map((f, j) => j === foodIdx ? value : f) }
+        : meal
+    ));
   };
 
   const removeFood = (mealIdx: number, foodIdx: number) => {
-    const updated = [...meals];
-    updated[mealIdx].foods = updated[mealIdx].foods.filter((_, i) => i !== foodIdx);
-    setMeals(updated);
+    setMeals(prev => prev.map((meal, i) =>
+      i === mealIdx ? { ...meal, foods: meal.foods.filter((_, j) => j !== foodIdx) } : meal
+    ));
   };
 
   const addNote = () => setNutritionNotes([...nutritionNotes, ""]);

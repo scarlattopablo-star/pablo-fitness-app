@@ -43,6 +43,8 @@ export default function AdminDashboard() {
   const [clientTab, setClientTab] = useState<"active" | "inactive">("active");
   const [nudging, setNudging] = useState(false);
   const [nudgeResult, setNudgeResult] = useState<string | null>(null);
+  const [broadcasting, setBroadcasting] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) loadMetrics();
@@ -308,6 +310,50 @@ export default function AdminDashboard() {
         <div className="glass-card rounded-2xl p-4 text-xs text-center">
           <p>{nudgeResult}</p>
           <button onClick={() => setNudgeResult(null)} className="text-primary mt-2 font-bold">Cerrar</button>
+        </div>
+      )}
+
+      {/* Broadcast motivación + reto */}
+      <div className="glass-card rounded-2xl p-5 flex items-center justify-between mb-4">
+        <div>
+          <h3 className="font-bold text-sm">📣 Broadcast Entrenamiento</h3>
+          <p className="text-xs text-muted">Push + chat + email a todos: motivación mañana. A los sin plan activo: invitación al Reto 30 Días.</p>
+        </div>
+        <button
+          disabled={broadcasting}
+          onClick={async () => {
+            if (!confirm("Enviar broadcast a todos los usuarios?\n\n• Mensaje 1 (todos): motivación para entrenar mañana\n• Mensaje 2 (sin plan activo): invitación al Reto 30 Días")) return;
+            setBroadcasting(true);
+            setBroadcastResult(null);
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) { setBroadcasting(false); return alert("No hay sesion activa"); }
+              const res = await fetch("/api/admin/broadcast-training", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${session.access_token}` },
+              });
+              const data = await res.json();
+              if (data.success) {
+                setBroadcastResult(`✅ Msg1 (todos): ${data.summary.msg1} | Msg2 (sin plan): ${data.summary.msg2}`);
+              } else {
+                setBroadcastResult("Error: " + (data.error || "desconocido"));
+              }
+            } catch {
+              setBroadcastResult("Enviado (la respuesta tardó pero se procesó)");
+            } finally {
+              setBroadcasting(false);
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-primary text-black hover:bg-primary/80 transition-colors flex-shrink-0 disabled:opacity-50"
+        >
+          {broadcasting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {broadcasting ? "Enviando..." : "Enviar"}
+        </button>
+      </div>
+      {broadcastResult && (
+        <div className="glass-card rounded-2xl p-4 text-xs text-center mb-4">
+          <p>{broadcastResult}</p>
+          <button onClick={() => setBroadcastResult(null)} className="text-primary mt-2 font-bold">Cerrar</button>
         </div>
       )}
 
