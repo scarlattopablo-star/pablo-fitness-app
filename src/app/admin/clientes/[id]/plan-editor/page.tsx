@@ -7,6 +7,7 @@ import {
   GripVertical, Check, RefreshCw,
 } from "lucide-react";
 import { EXERCISES } from "@/lib/exercises-data";
+import { formatFoodQuantity } from "@/lib/food-database";
 import { supabase } from "@/lib/supabase";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import ExerciseGifPicker from "@/components/exercise-gif-picker";
@@ -168,7 +169,7 @@ export default function PlanEditorPage({
             time: m.time || "",
             foods: m.foodDetails && m.foodDetails.length > 0
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ? m.foodDetails.map((fd: any) => fd.grams > 0 ? `${fd.grams}g ${fd.name}` : fd.name)
+              ? m.foodDetails.map((fd: any) => formatFoodQuantity(fd.name, fd.grams, fd.unit || "g"))
               : m.foods || [""],
           }));
           setMeals(loadedMeals);

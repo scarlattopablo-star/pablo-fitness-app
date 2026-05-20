@@ -15,7 +15,7 @@
 // - Sin frutos secos: reemplazar frutos secos por semillas (no tree nuts) (FARE Guidelines)
 // - Diabetes: priorizar carbohidratos complejos, bajo IG, más fibra (ADA Standards of Care)
 
-import { FOOD_DATABASE, calculateFoodMacros, getMaxGramsFor, type FoodItem } from "./food-database";
+import { FOOD_DATABASE, calculateFoodMacros, getMaxGramsFor, formatFoodQuantity, type FoodItem } from "./food-database";
 
 export interface MealFood {
   name: string;
@@ -96,7 +96,7 @@ function mealFromFoods(name: string, foodDetails: MealFood[]): MealPlanMeal {
   const totals = sumMacros(foodDetails);
   return {
     name,
-    foods: foodDetails.map(f => `${f.grams}g ${f.name}`),
+    foods: foodDetails.map(f => formatFoodQuantity(f.name, f.grams, f.unit)),
     foodDetails,
     approxCalories: totals.calories,
     approxProtein: Math.round(totals.protein),

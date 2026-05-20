@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft } = useAuth();
+  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft, isDirectClient } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
@@ -361,7 +361,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* MAIN */}
       <main className="flex-1 md:ml-60 pt-14 md:pt-0">
         {/* Trial banner */}
-        {isTrial && (
+        {isTrial && !isDirectClient && (
           <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-3">
             <div className="max-w-4xl flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">

@@ -52,6 +52,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Trigger gamification (XP, streak, achievements, ranking) on behalf of the client
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+      await fetch(`${baseUrl}/api/gamification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: clientId, action: "session_logged" }),
+      });
+    } catch {
+      // Non-critical — don't fail the session save if gamification errors
+    }
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: `Error inesperado: ${err}` }, { status: 500 });

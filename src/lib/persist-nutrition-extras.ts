@@ -10,6 +10,7 @@ import type { MealPlanMeal } from "./generate-meal-plan";
 import { buildShoppingListFromDayPlan } from "./shopping-list";
 import { validateBudget } from "./budget-validator";
 import { recommendSupplements, type SupplementRecommendation } from "./supplement-advisor";
+import { FOOD_DATABASE } from "./food-database";
 import type { ShoppingList } from "./shopping-list";
 import type { BudgetReport } from "./budget-validator";
 
@@ -68,13 +69,17 @@ export async function buildNutritionExtras(
     .select("id, name, category, unit")
     .eq("active", true);
 
-  const catalog = (catalogData ?? []) as Array<{
+  let catalog = (catalogData ?? []) as Array<{
     id: string; name: string; category: string; unit: string;
   }>;
 
   if (catalog.length === 0) {
-    // No hay catalogo seedeado todavia — degradar elegantemente
-    return { shoppingList: null, budget: null, supplements: null };
+    catalog = FOOD_DATABASE.map(f => ({
+      id: f.id,
+      name: f.name,
+      category: f.category,
+      unit: f.unit,
+    }));
   }
 
   // 2) Construir shopping list (offline, sin precios)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock, ShoppingCart, Wallet, Pill } from "lucide-react";
 import RestTimer from "@/components/rest-timer";
@@ -17,12 +17,13 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { cacheData, getCachedData } from "@/lib/offline-cache";
 import dynamic from "next/dynamic";
 const FoodSwapModal = dynamic(() => import("@/components/food-swap-modal").then(m => m.FoodSwapModal));
-import { findFoodByName, calculateFoodMacros } from "@/lib/food-database";
+const NutritionShoppingTab = dynamic(() => import("@/components/nutrition-shopping-tab").then(m => m.NutritionShoppingTab));
+const NutritionBudgetTab = dynamic(() => import("@/components/nutrition-budget-tab").then(m => m.NutritionBudgetTab));
+const NutritionSupplementsTab = dynamic(() => import("@/components/nutrition-supplements-tab").then(m => m.NutritionSupplementsTab));
+import { findFoodByName, calculateFoodMacros, formatFoodQuantity } from "@/lib/food-database";
 import { PLANS } from "@/lib/plans-data";
 import { ArrowLeft } from "lucide-react";
 // F2: tabs de Compra y Presupuesto
-import { NutritionShoppingTab } from "@/components/nutrition-shopping-tab";
-import { NutritionBudgetTab } from "@/components/nutrition-budget-tab";
 import { resolveSupermarket } from "@/lib/supermarket-resolver";
 import type { ShoppingList } from "@/lib/shopping-list";
 import type { BudgetReport } from "@/lib/budget-validator";
@@ -30,7 +31,6 @@ import type { Supermarket } from "@/lib/supermarket-resolver";
 // F3: variedad semanal
 import { WEEK_DAYS, WEEK_DAY_LABELS, type WeekDay, type WeekMenu } from "@/lib/generate-week-meal-plan";
 // F4: tab Suplementos
-import { NutritionSupplementsTab } from "@/components/nutrition-supplements-tab";
 import type { SupplementRecommendation } from "@/lib/supplement-advisor";
 
 // Build foodDetails from food strings when plan was created by admin without structured data
@@ -50,7 +50,17 @@ function enrichMealWithFoodDetails(meal: MealPlanMeal): MealPlanMeal {
       grams = parseInt(gramsMatch[1]);
       name = gramsMatch[2];
     } else if (unitsMatch) {
-      name = unitsMatch[2];
+      const count = parseFloat(unitsMatch[1]);
+      let rawName = unitsMatch[2];
+      rawName = rawName.replace(/^(rebanadas?|scoops?|cucharadas?|unidad(es)?)\s+/i, "");
+      name = rawName;
+      const tempFood = findFoodByName(name);
+      if (tempFood) {
+        const unitGrams = tempFood.unit.match(/\((\d+)\s*g\)/);
+        if (unitGrams) {
+          grams = Math.round(count * parseInt(unitGrams[1]));
+        }
+      }
     }
 
     const dbFood = findFoodByName(name);
@@ -153,7 +163,7 @@ function PlanContent() {
   const [hasSurvey, setHasSurvey] = useState(true);
   const [planPending, setPlanPending] = useState(false);
   const [expandedGif, setExpandedGif] = useState<{ src: string; name: string } | null>(null);
-  const [recipeModal, setRecipeModal] = useState<Recipe | null>(null);
+  const [recipeModal, setRecipeModal] = useState<{ recipe: Recipe; meal: MealPlanMeal } | null>(null);
   const [swapTarget, setSwapTarget] = useState<{
     mealIndex: number;
     foodIndex: number;
@@ -1064,7 +1074,7 @@ function PlanContent() {
                                 <span className="text-primary shrink-0">&#8226;</span>
                                 <div className="flex-1 min-w-0">
                                   <span className="text-muted">
-                                    {fd.grams > 0 ? `${fd.grams}g ` : ""}{fd.name}
+                                    {formatFoodQuantity(fd.name, fd.grams, fd.unit)}
                                   </span>
                                   {fd.calories > 0 && (
                                     <span className="text-[10px] text-muted/60 ml-1">({fd.calories}kcal)</span>
@@ -1102,7 +1112,7 @@ function PlanContent() {
                         if (!recipe) return null;
                         return (
                           <button
-                            onClick={() => setRecipeModal(recipe)}
+                            onClick={() => setRecipeModal({ recipe, meal })}
                             className="flex items-center gap-1 text-[10px] text-accent font-bold hover:text-accent/80 transition-colors"
                           >
                             <ChefHat className="h-3 w-3" />
@@ -1259,13 +1269,16 @@ function PlanContent() {
 
       {/* Food Swap Modal */}
       {/* RECIPE MODAL */}
-      {recipeModal && (
+      {recipeModal && (() => {
+        const { recipe: rm, meal: rmMeal } = recipeModal;
+        const hasMealDetails = rmMeal.foodDetails && rmMeal.foodDetails.length > 0;
+        return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={() => setRecipeModal(null)}>
           <div className="bg-card-bg border border-card-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-card-bg border-b border-card-border/30 p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ChefHat className="h-5 w-5 text-accent" />
-                <h3 className="font-bold">{recipeModal.name}</h3>
+                <h3 className="font-bold">{rm.name}</h3>
               </div>
               <button onClick={() => setRecipeModal(null)} className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
                 <X className="h-4 w-4" />
@@ -1275,39 +1288,46 @@ function PlanContent() {
               {/* Info badges */}
               <div className="flex gap-2 flex-wrap">
                 <span className="text-[10px] px-2.5 py-1 bg-accent/10 text-accent rounded-full font-bold flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> {recipeModal.prepTime} min
+                  <Clock className="h-3 w-3" /> {rm.prepTime} min
                 </span>
                 <span className="text-[10px] px-2.5 py-1 bg-primary/10 text-primary rounded-full font-bold">
-                  {recipeModal.difficulty === "facil" ? "Facil" : "Medio"}
+                  {rm.difficulty === "facil" ? "Facil" : "Medio"}
                 </span>
                 <span className="text-[10px] px-2.5 py-1 bg-white/10 text-muted rounded-full font-bold">
-                  {recipeModal.servings} porcion{recipeModal.servings > 1 ? "es" : ""}
+                  {rm.servings} porcion{rm.servings > 1 ? "es" : ""}
                 </span>
               </div>
-              {/* Macros */}
+              {/* Macros — from the meal plan, not the static recipe */}
               <div className="flex gap-2">
-                <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">{recipeModal.calories} kcal</span>
-                <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {recipeModal.protein}g</span>
-                <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {recipeModal.carbs}g</span>
-                <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {recipeModal.fat}g</span>
+                <span className="text-[10px] px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded">{rmMeal.approxCalories} kcal</span>
+                <span className="text-[10px] px-2 py-0.5 bg-red-500/10 text-red-400 rounded">P: {rmMeal.approxProtein}g</span>
+                <span className="text-[10px] px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded">C: {rmMeal.approxCarbs}g</span>
+                <span className="text-[10px] px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded">G: {rmMeal.approxFats}g</span>
               </div>
-              {/* Ingredients */}
+              {/* Ingredients — from the meal plan so quantities match exactly */}
               <div>
-                <h4 className="font-bold text-sm mb-2">Ingredientes</h4>
+                <h4 className="font-bold text-sm mb-2">Tu porcion</h4>
                 <ul className="space-y-1">
-                  {recipeModal.ingredients.map((ing, i) => (
-                    <li key={i} className="text-sm text-muted flex items-start gap-2">
-                      <span className="text-accent mt-0.5">&#8226;</span>
-                      {ing}
-                    </li>
-                  ))}
+                  {hasMealDetails
+                    ? rmMeal.foodDetails.map((fd: { name: string; grams: number; unit: string }, i: number) => (
+                        <li key={i} className="text-sm text-muted flex items-start gap-2">
+                          <span className="text-accent mt-0.5">&#8226;</span>
+                          {formatFoodQuantity(fd.name, fd.grams, fd.unit)}
+                        </li>
+                      ))
+                    : rmMeal.foods.map((food: string, i: number) => (
+                        <li key={i} className="text-sm text-muted flex items-start gap-2">
+                          <span className="text-accent mt-0.5">&#8226;</span>
+                          {food}
+                        </li>
+                      ))}
                 </ul>
               </div>
               {/* Steps */}
               <div>
                 <h4 className="font-bold text-sm mb-2">Preparacion</h4>
                 <ol className="space-y-2">
-                  {recipeModal.steps.map((step, i) => (
+                  {rm.steps.map((step, i) => (
                     <li key={i} className="text-sm text-muted flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</span>
                       {step}
@@ -1318,7 +1338,8 @@ function PlanContent() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {swapTarget && (
         <FoodSwapModal

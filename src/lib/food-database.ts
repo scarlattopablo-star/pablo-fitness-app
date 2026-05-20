@@ -35,7 +35,7 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "camarones", name: "Camarones (cocidos)", category: "protein", calories: 99, protein: 24, carbs: 0.2, fat: 0.3, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 150 },
   { id: "sardina", name: "Sardinas en aceite (escurridas)", category: "protein", calories: 208, protein: 25, carbs: 0, fat: 11, unit: "g", mealTypes: ["almuerzo", "cena", "snack"], maxGrams: 100 },
   { id: "huevo-entero", name: "Huevo entero", category: "protein", calories: 143, protein: 13, carbs: 0.7, fat: 9.5, unit: "unidad (50g)", mealTypes: ["desayuno", "almuerzo", "snack"], maxGrams: 200 },
-  { id: "clara-huevo", name: "Clara de huevo", category: "protein", calories: 52, protein: 11, carbs: 0.7, fat: 0.2, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
+  { id: "clara-huevo", name: "Clara de huevo", category: "protein", calories: 52, protein: 11, carbs: 0.7, fat: 0.2, unit: "unidad (33g)", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
   { id: "whey-protein", name: "Proteina whey (scoop)", category: "protein", calories: 120, protein: 24, carbs: 3, fat: 1.5, unit: "scoop (30g)", mealTypes: ["desayuno", "snack"], maxGrams: 60 },
   { id: "tofu", name: "Tofu firme", category: "protein", calories: 76, protein: 8, carbs: 2, fat: 5, unit: "g", mealTypes: ["desayuno", "almuerzo", "cena", "snack"], maxGrams: 250 },
   { id: "jamon-pavo", name: "Jamon de pavo", category: "protein", calories: 104, protein: 18, carbs: 2, fat: 2.5, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 80 },
@@ -246,6 +246,31 @@ export const DEFAULT_MAX_GRAMS: Record<string, number> = {
 // Devuelve la maxima cantidad realista de un food por comida
 export function getMaxGramsFor(food: FoodItem): number {
   return food.maxGrams ?? DEFAULT_MAX_GRAMS[food.category] ?? 200;
+}
+
+// Format food quantity for display: show units instead of grams for unit-based foods
+export function formatFoodQuantity(name: string, grams: number, unit: string): string {
+  if (/^\d+(\.\d+)?\s+/.test(name)) return name;
+
+  const unitMatch = unit.match(/^(unidad|rebanada|scoop|cucharada)\s*\((\d+)\s*g\)/);
+  if (unitMatch && grams > 0) {
+    const unitType = unitMatch[1];
+    const gramsPerUnit = parseInt(unitMatch[2]);
+    const numUnits = Math.round(grams / gramsPerUnit * 2) / 2; // round to 0.5
+    const display = numUnits === Math.floor(numUnits) ? String(numUnits) : numUnits.toFixed(1);
+
+    if (unitType === "unidad") {
+      return `${display} ${name}`;
+    }
+    const plural = numUnits !== 1 ? "s" : "";
+    return `${display} ${unitType}${plural} ${name}`;
+  }
+
+  if (unit.startsWith("ml")) {
+    return `${grams}ml ${name}`;
+  }
+
+  return grams > 0 ? `${grams}g ${name}` : name;
 }
 
 // Find food by display name (fuzzy match for stored plan names)

@@ -69,7 +69,7 @@ const DAILY_MESSAGES = [
 ];
 
 export default function DashboardPage() {
-  const { user, profile, subscription, isTrial, trialDaysLeft, hasActiveSubscription } = useAuth();
+  const { user, profile, subscription, isTrial, trialDaysLeft, hasActiveSubscription, isDirectClient } = useAuth();
   // F5: estado del check-in semanal
   const [checkInState, setCheckInState] = useState<{ canCheckIn: boolean; daysSinceLast: number; nextWeekNumber: number } | null>(null);
   const [survey, setSurvey] = useState<SurveyData | null>(null);
@@ -80,7 +80,6 @@ export default function DashboardPage() {
   const [daysSinceProgress, setDaysSinceProgress] = useState(999);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [isDirectClient, setIsDirectClient] = useState(false);
   const [gamification, setGamification] = useState<GamificationData | null>(null);
   const [trainedMuscles, setTrainedMuscles] = useState<Record<string, number>>({});
 
@@ -127,16 +126,6 @@ export default function DashboardPage() {
   const loadData = async () => {
     if (!user) return;
     try {
-      // Check if direct client (QR)
-      const { data: qrCode } = await supabase
-        .from("free_access_codes")
-        .select("id")
-        .eq("used_by", user.id)
-        .eq("plan_slug", "direct-client")
-        .limit(1)
-        .maybeSingle();
-      if (qrCode) setIsDirectClient(true);
-
       const [surveyRes, progressRes] = await Promise.all([
         supabase.from("surveys").select("*").eq("user_id", user.id)
           .order("created_at", { ascending: false }).limit(1).single(),
@@ -432,7 +421,7 @@ export default function DashboardPage() {
       })()}
 
       {/* TRIAL COUNTDOWN BANNER */}
-      {isTrial && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
+      {isTrial && !isDirectClient && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
         <div className="rounded-2xl p-4 mb-6 flex items-center gap-4 border border-warning/30 bg-warning/5">
           <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
             <Zap className="h-5 w-5 text-warning" />
