@@ -2,6 +2,8 @@
 // Tags: "vegano", "vegetariano", "sin-gluten", "sin-lactosa", "sin-frutos-secos"
 // Macros calculados contra USDA FoodData Central (valores por porcion)
 
+import { findFoodByName } from "./food-database";
+
 export interface Recipe {
   id: string;
   name: string;
@@ -884,6 +886,111 @@ export function filterRecipesByRestrictions(recipes: Recipe[], restrictions: str
     if (isLactoseFree && !tags.includes("sin-lactosa")) return false;
     return true;
   });
+}
+
+// Generate cooking steps dynamically from the meal's actual foods (never adds extra ingredients)
+const RAW_VEGS = new Set(["lechuga", "rucula", "pepino", "tomate"]);
+
+const PROTEIN_STEPS: Record<string, string> = {
+  "pollo-pechuga": "Cocina el pollo a la plancha o al horno 5-6 min por lado.",
+  "pollo-muslo": "Cocina el muslo de pollo al horno o a la plancha hasta que esté dorado.",
+  "carne-magra": "Cocina la carne a la plancha al punto deseado.",
+  "carne-molida": "Cocina la carne molida en sartén antiadherente 8-10 min.",
+  "cerdo-lomo": "Cocina el cerdo a la plancha o al horno hasta que esté cocido.",
+  "pavo-pechuga": "Cocina la pechuga de pavo a la plancha 4-5 min por lado.",
+  "salmon": "Cocina el salmón al horno a 200°C por 12-15 min o a la plancha.",
+  "atun": "Escurre el atún y desmenúzalo.",
+  "merluza": "Cocina la merluza a la plancha o al horno 4-5 min por lado.",
+  "tilapia": "Cocina la tilapia a la plancha o al horno 4-5 min por lado.",
+  "camarones": "Saltea los camarones 2-3 min por lado hasta que estén rosados.",
+  "sardina": "Escurre las sardinas.",
+  "caballa": "Escurre la caballa y desmenúzala.",
+  "huevo-entero": "Prepara los huevos al gusto: revueltos, omelette o cocidos.",
+  "clara-huevo": "Cocina las claras en sartén antiadherente.",
+  "whey-protein": "Mezcla la proteína en polvo con el líquido hasta disolver.",
+  "caseina": "Mezcla la caseína con el líquido hasta disolver.",
+  "tofu": "Corta el tofu en cubos y saltéalo 3-4 min por lado.",
+  "bondiola": "Cocina la bondiola a la plancha o al horno.",
+};
+
+const CARB_STEPS: Record<string, string> = {
+  "arroz-blanco": "Cocina el arroz según instrucciones del paquete.",
+  "arroz-integral": "Cocina el arroz integral según instrucciones del paquete.",
+  "avena": "Cocina la avena con agua o leche a fuego medio 3-4 min revolviendo.",
+  "boniato": "Pela y corta la batata en cubos. Hiérvela o hornéala 20 min.",
+  "papa": "Pela y cocina las papas hervidas o al horno 20 min.",
+  "fideos": "Cocina la pasta en agua hirviendo según el paquete. Escúrrela.",
+  "fideos-integrales": "Cocina la pasta integral en agua hirviendo según el paquete.",
+  "quinoa": "Cocina la quinoa en agua por 15 min.",
+  "lentejas": "Cocina las lentejas en agua 20-25 min hasta que estén tiernas.",
+  "garbanzos": "Si son de lata, escúrrelos y enjuágalos. Si son secos, remójalos y cocínalos.",
+  "porotos-negros": "Si son de lata, escúrrelos. Si son secos, remójalos y cocínalos.",
+  "tortilla-trigo": "Calienta la tortilla en sartén unos segundos por lado.",
+  "polenta": "Cocina la polenta en agua hirviendo 5 min revolviendo.",
+  "choclo": "Cocina el choclo al vapor o hiérvelo 5-8 min.",
+  "mandioca": "Pela y hierve la mandioca 20-25 min hasta que esté tierna.",
+};
+
+export function generateCookingSteps(
+  foods: Array<{ name: string; grams: number; unit: string }>
+): string[] {
+  const steps: string[] = [];
+  const items = foods.map(f => {
+    const db = findFoodByName(f.name);
+    return { ...f, category: db?.category || "other", id: db?.id || "" };
+  });
+
+  const byCategory = (cat: string) => items.filter(i => i.category === cat);
+  const carbs = byCategory("carb");
+  const proteins = byCategory("protein");
+  const vegetables = byCategory("vegetable");
+  const fruits = byCategory("fruit");
+  const dairy = byCategory("dairy");
+  const fats = byCategory("fat");
+
+  for (const c of carbs) {
+    const s = CARB_STEPS[c.id];
+    if (s) steps.push(s);
+    else if (!/granola|galleta/.test(c.id)) steps.push(`Prepara ${c.name.toLowerCase()}.`);
+  }
+
+  for (const p of proteins) {
+    const s = PROTEIN_STEPS[p.id];
+    if (s) steps.push(s);
+    else if (!/jamon|queso/.test(p.id)) steps.push(`Prepara ${p.name.toLowerCase()}.`);
+  }
+
+  const cookVegs = vegetables.filter(v => !RAW_VEGS.has(v.id));
+  const rawVegs = vegetables.filter(v => RAW_VEGS.has(v.id));
+  if (cookVegs.length > 0) {
+    const names = cookVegs.map(v => v.name.toLowerCase()).join(", ");
+    steps.push(`Cocina ${names} al vapor o saltéa${cookVegs.length > 1 ? "los" : "lo"} 3-4 min.`);
+  }
+  if (rawVegs.length > 0) {
+    const names = rawVegs.map(v => v.name.toLowerCase()).join(", ");
+    steps.push(`Lava y corta ${names} para ensalada.`);
+  }
+
+  for (const f of fats) {
+    if (f.id === "palta") steps.push("Corta la palta en rodajas o aplástala.");
+  }
+
+  if (fruits.length > 0) {
+    const names = fruits.map(f => f.name.toLowerCase()).join(" y ");
+    steps.push(`Corta ${names} y agrégala${fruits.length > 1 ? "s" : ""}.`);
+  }
+
+  for (const d of dairy) {
+    if (/yogurt/.test(d.id)) steps.push("Sirve el yogurt en un bowl.");
+    else if (/queso-cottage|queso-ricota|queso-untable/.test(d.id))
+      steps.push(`Agrega ${d.name.toLowerCase()}.`);
+  }
+
+  if (steps.length > 0) {
+    steps.push("Condimenta con sal, pimienta y especias al gusto.");
+    steps.push("Servi todo junto y disfruta.");
+  }
+  return steps;
 }
 
 // Match keywords from foods to find the best recipe

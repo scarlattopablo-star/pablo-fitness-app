@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Dumbbell, UtensilsCrossed, Info, Play, X, Loader2, Target, Save, Check, RefreshCw, ChefHat, Clock, ShoppingCart, Wallet, Pill } from "lucide-react";
 import RestTimer from "@/components/rest-timer";
-import { suggestRecipe, type Recipe } from "@/lib/recipes-database";
+import { suggestRecipe, generateCookingSteps, type Recipe } from "@/lib/recipes-database";
 import { RatLoader } from "@/components/rat-loader";
 import { getExerciseById, getVideoUrl } from "@/lib/exercises-data";
 import { getExerciseGif } from "@/lib/exercise-images";
@@ -1323,11 +1323,11 @@ function PlanContent() {
                       ))}
                 </ul>
               </div>
-              {/* Steps */}
+              {/* Steps — generated from meal foods so no extra ingredients sneak in */}
               <div>
                 <h4 className="font-bold text-sm mb-2">Preparacion</h4>
                 <ol className="space-y-2">
-                  {rm.steps.map((step, i) => (
+                  {(hasMealDetails ? generateCookingSteps(rmMeal.foodDetails) : rm.steps).map((step, i) => (
                     <li key={i} className="text-sm text-muted flex items-start gap-2">
                       <span className="w-5 h-5 rounded-full bg-accent/20 text-accent flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</span>
                       {step}
