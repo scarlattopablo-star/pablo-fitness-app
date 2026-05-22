@@ -143,10 +143,11 @@ function normalizeSearch(term: string): string {
   return term.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 }
 
-function searchFoodsFiltered(term: string): FoodItem[] {
+function searchFoodsFiltered(term: string, extraFoods: FoodItem[] = []): FoodItem[] {
   if (!term || term.length < 1) return [];
   const normalized = normalizeSearch(term);
-  const scored = FOOD_DATABASE.map(f => {
+  const allFoods = [...FOOD_DATABASE, ...extraFoods];
+  const scored = allFoods.map(f => {
     const nameNorm = normalizeSearch(f.name);
     const idNorm = f.id.toLowerCase();
     let score = 0;
@@ -220,6 +221,10 @@ export default function ClienteDetailPage({
   const [foodSearch, setFoodSearch] = useState<{ mealIdx: number; foodIdx: number; query: string } | null>(null);
   // Track which foods are displayed in unit mode (key = "mealIdx-foodIdx")
   const [unitMode, setUnitMode] = useState<Record<string, boolean>>({});
+  // Custom foods (admin-created, persisted in DB)
+  const [customFoods, setCustomFoods] = useState<FoodItem[]>([]);
+  const [showNewFoodForm, setShowNewFoodForm] = useState<{ mealIdx: number; foodIdx: number; name: string } | null>(null);
+  const [newFoodData, setNewFoodData] = useState({ calories: "", protein: "", carbs: "", fat: "", unit: "g" });
 
   // Email change state
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -233,6 +238,36 @@ export default function ClienteDetailPage({
   const [transferSaving, setTransferSaving] = useState(false);
   const [transferMsg, setTransferMsg] = useState("");
   const [transferConfirmed, setTransferConfirmed] = useState(false);
+
+  // Load custom foods on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        const res = await fetch("/api/admin/custom-foods", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          // Convert custom_foods rows to FoodItem shape for search
+          const mapped: FoodItem[] = (json.foods || []).map((cf: { id: string; name: string; calories: number; protein: number; carbs: number; fat: number; unit: string; category: string }) => ({
+            id: `custom-${cf.id}`,
+            name: cf.name,
+            calories: Number(cf.calories),
+            protein: Number(cf.protein),
+            carbs: Number(cf.carbs),
+            fat: Number(cf.fat),
+            unit: cf.unit || "g",
+            category: (cf.category || "other") as FoodItem["category"],
+            mealTypes: ["desayuno", "almuerzo", "merienda", "cena", "pre-entreno", "post-entreno"],
+            maxGrams: 500,
+          }));
+          setCustomFoods(mapped);
+        }
+      } catch { /* silent */ }
+    })();
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -1569,7 +1604,9 @@ export default function ClienteDetailPage({
                     const gramsMatch = food.match(/^(\d+)\s*g\s+(.+)/i);
                     const originalGrams = gramsMatch ? parseInt(gramsMatch[1]) : 100;
                     const originalName = gramsMatch ? gramsMatch[2] : food;
-                    const originalDbFood = originalName ? findFoodByName(originalName) : undefined;
+                    const originalDbFood = originalName
+                      ? (findFoodByName(originalName) || customFoods.find(cf => cf.name.toLowerCase() === originalName.toLowerCase()))
+                      : undefined;
                     const isActive = foodSearch?.mealIdx === mealIdx && foodSearch?.foodIdx === foodIdx;
                     const query = isActive ? foodSearch.query : "";
 
@@ -1581,16 +1618,17 @@ export default function ClienteDetailPage({
                     const unitCount = gpu > 0 ? Math.round(originalGrams / gpu * 2) / 2 : 0;
                     const step = inUnitMode ? 0.5 : 5;
 
-                    // Search: use fuzzy search with aliases
+                    // Search: use fuzzy search with aliases (includes custom foods)
+                    const allFoodsDB = [...FOOD_DATABASE, ...customFoods];
                     const getSearchResults = () => {
-                      if (query) return searchFoodsFiltered(query);
+                      if (query) return searchFoodsFiltered(query, customFoods);
                       // If no query, show same-category foods first
                       if (originalDbFood) {
-                        const same = FOOD_DATABASE.filter(f => f.category === originalDbFood.category && f.id !== originalDbFood.id);
-                        const other = FOOD_DATABASE.filter(f => f.category !== originalDbFood.category);
+                        const same = allFoodsDB.filter(f => f.category === originalDbFood.category && f.id !== originalDbFood.id);
+                        const other = allFoodsDB.filter(f => f.category !== originalDbFood.category);
                         return [...same.slice(0, 8), ...other.slice(0, 4)];
                       }
-                      return FOOD_DATABASE.slice(0, 12);
+                      return allFoodsDB.slice(0, 12);
                     };
 
                     // Calculate live macros for this food
@@ -1701,19 +1739,31 @@ export default function ClienteDetailPage({
                                     })}
                                   </>
                                 ) : query ? (
-                                  <button
-                                    onClick={() => {
-                                      const updated = [...editNutritionData];
-                                      const foods = [...(updated[mealIdx].foods || [])];
-                                      foods[foodIdx] = `100g ${query}`;
-                                      updated[mealIdx] = { ...meal, foods };
-                                      setEditNutritionData(updated);
-                                      setFoodSearch(null);
-                                    }}
-                                    className="w-full px-3 py-2 text-xs text-left text-primary hover:bg-primary/10"
-                                  >
-                                    Usar: &quot;{query}&quot;
-                                  </button>
+                                  <div className="p-3 space-y-2">
+                                    <button
+                                      onClick={() => {
+                                        setShowNewFoodForm({ mealIdx, foodIdx, name: query });
+                                        setNewFoodData({ calories: "", protein: "", carbs: "", fat: "", unit: "g" });
+                                        setFoodSearch(null);
+                                      }}
+                                      className="w-full text-xs text-left text-primary hover:underline font-bold"
+                                    >
+                                      + Crear &quot;{query}&quot; como alimento nuevo
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const updated = [...editNutritionData];
+                                        const foods = [...(updated[mealIdx].foods || [])];
+                                        foods[foodIdx] = `100g ${query}`;
+                                        updated[mealIdx] = { ...meal, foods };
+                                        setEditNutritionData(updated);
+                                        setFoodSearch(null);
+                                      }}
+                                      className="w-full text-xs text-left text-muted hover:text-white"
+                                    >
+                                      Usar sin macros: &quot;{query}&quot;
+                                    </button>
+                                  </div>
                                 ) : null;
                               })()}
                             </div>
@@ -1748,6 +1798,121 @@ export default function ClienteDetailPage({
                           {liveMacros && <span className="ml-2">{liveMacros.protein}P · {liveMacros.carbs}C · {liveMacros.fat}G</span>}
                         </p>
                       )}
+                      {/* Inline form to create a new custom food */}
+                      {showNewFoodForm?.mealIdx === mealIdx && showNewFoodForm?.foodIdx === foodIdx && (
+                        <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mt-2">
+                          <p className="text-xs font-bold text-primary mb-2">
+                            Nuevo alimento: &quot;{showNewFoodForm.name}&quot;
+                          </p>
+                          <p className="text-[9px] text-muted mb-2">Valores por cada 100g:</p>
+                          <div className="grid grid-cols-4 gap-2 mb-2">
+                            <div>
+                              <label className="text-[9px] text-muted block mb-0.5">Calorias</label>
+                              <input
+                                type="number"
+                                value={newFoodData.calories}
+                                onChange={(e) => setNewFoodData({ ...newFoodData, calories: e.target.value })}
+                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-muted block mb-0.5">Proteina</label>
+                              <input
+                                type="number"
+                                value={newFoodData.protein}
+                                onChange={(e) => setNewFoodData({ ...newFoodData, protein: e.target.value })}
+                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-muted block mb-0.5">Carbos</label>
+                              <input
+                                type="number"
+                                value={newFoodData.carbs}
+                                onChange={(e) => setNewFoodData({ ...newFoodData, carbs: e.target.value })}
+                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="0"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[9px] text-muted block mb-0.5">Grasas</label>
+                              <input
+                                type="number"
+                                value={newFoodData.fat}
+                                onChange={(e) => setNewFoodData({ ...newFoodData, fat: e.target.value })}
+                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const { data: { session } } = await supabase.auth.getSession();
+                                  if (!session?.access_token) return;
+                                  const res = await fetch("/api/admin/custom-foods", {
+                                    method: "POST",
+                                    headers: {
+                                      Authorization: `Bearer ${session.access_token}`,
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({
+                                      name: showNewFoodForm.name,
+                                      calories: Number(newFoodData.calories) || 0,
+                                      protein: Number(newFoodData.protein) || 0,
+                                      carbs: Number(newFoodData.carbs) || 0,
+                                      fat: Number(newFoodData.fat) || 0,
+                                      unit: newFoodData.unit,
+                                    }),
+                                  });
+                                  if (res.ok) {
+                                    const json = await res.json();
+                                    const cf = json.food;
+                                    // Add to local custom foods list
+                                    const newItem: FoodItem = {
+                                      id: `custom-${cf.id}`,
+                                      name: cf.name,
+                                      calories: Number(cf.calories),
+                                      protein: Number(cf.protein),
+                                      carbs: Number(cf.carbs),
+                                      fat: Number(cf.fat),
+                                      unit: cf.unit || "g",
+                                      category: "other" as FoodItem["category"],
+                                      mealTypes: ["desayuno", "almuerzo", "merienda", "cena", "pre-entreno", "post-entreno"],
+                                      maxGrams: 500,
+                                    };
+                                    setCustomFoods(prev => [...prev, newItem]);
+                                    // Set food in the meal
+                                    const updated = [...editNutritionData];
+                                    const foods = [...(updated[showNewFoodForm.mealIdx].foods || [])];
+                                    foods[showNewFoodForm.foodIdx] = `100g ${cf.name}`;
+                                    updated[showNewFoodForm.mealIdx] = { ...updated[showNewFoodForm.mealIdx], foods };
+                                    setEditNutritionData(updated);
+                                    setShowNewFoodForm(null);
+                                  } else {
+                                    const err = await res.json().catch(() => ({}));
+                                    alert(err.error || "Error al guardar");
+                                  }
+                                } catch {
+                                  alert("Error de conexion");
+                                }
+                              }}
+                              className="flex-1 bg-primary text-black text-xs font-bold py-1.5 rounded-lg hover:bg-primary-light transition-colors"
+                            >
+                              <Check className="h-3 w-3 inline mr-1" /> Guardar
+                            </button>
+                            <button
+                              onClick={() => setShowNewFoodForm(null)}
+                              className="px-3 py-1.5 text-xs text-muted hover:text-white border border-card-border rounded-lg"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     );
                   })}
@@ -1767,7 +1932,7 @@ export default function ClienteDetailPage({
                     const mealTotals = (meal.foods || []).reduce((acc: { cal: number; p: number; c: number; f: number }, foodStr: string) => {
                       const m = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
                       if (m) {
-                        const db = findFoodByName(m[2]);
+                        const db = findFoodByName(m[2]) || customFoods.find(cf => cf.name.toLowerCase() === m[2].trim().toLowerCase());
                         if (db) {
                           const mc = calculateFoodMacros(db, parseInt(m[1]));
                           return { cal: acc.cal + mc.calories, p: acc.p + mc.protein, c: acc.c + mc.carbs, f: acc.f + mc.fat };
@@ -1794,7 +1959,7 @@ export default function ClienteDetailPage({
                 (meal.foods || []).forEach((foodStr: string) => {
                   const m = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
                   if (m) {
-                    const db = findFoodByName(m[2]);
+                    const db = findFoodByName(m[2]) || customFoods.find(cf => cf.name.toLowerCase() === m[2].trim().toLowerCase());
                     if (db) {
                       const mc = calculateFoodMacros(db, parseInt(m[1]));
                       acc.cal += mc.calories;
@@ -1869,7 +2034,7 @@ export default function ClienteDetailPage({
                               if (gramsMatch) {
                                 const grams = parseInt(gramsMatch[1]);
                                 const name = gramsMatch[2].trim();
-                                const dbFood = findFoodByName(name);
+                                const dbFood = findFoodByName(name) || customFoods.find(cf => cf.name.toLowerCase() === name.toLowerCase());
                                 if (dbFood) {
                                   const macros = calculateFoodMacros(dbFood, grams);
                                   return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
@@ -1878,7 +2043,7 @@ export default function ClienteDetailPage({
                               } else if (unitsMatch) {
                                 const units = parseInt(unitsMatch[1]);
                                 const name = unitsMatch[2].trim();
-                                const dbFood = findFoodByName(name);
+                                const dbFood = findFoodByName(name) || customFoods.find(cf => cf.name.toLowerCase() === name.toLowerCase());
                                 if (dbFood) {
                                   const gpuVal = getGramsPerUnit(dbFood.unit);
                                   const defaultGrams = gpuVal > 0 ? units * gpuVal : units * 50;
@@ -1919,7 +2084,7 @@ export default function ClienteDetailPage({
                         if (gramsMatch) {
                           const grams = parseInt(gramsMatch[1]);
                           const name = gramsMatch[2].trim();
-                          const dbFood = findFoodByName(name);
+                          const dbFood = findFoodByName(name) || customFoods.find(cf => cf.name.toLowerCase() === name.toLowerCase());
                           if (dbFood) {
                             const macros = calculateFoodMacros(dbFood, grams);
                             return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
