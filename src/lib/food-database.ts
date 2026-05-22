@@ -307,7 +307,7 @@ export function findFoodByName(name: string): FoodItem | undefined {
     "huevo": "huevo-entero", "huevos": "huevo-entero", "clara": "clara-huevo", "claras": "clara-huevo",
     "whey": "whey-protein", "proteina": "whey-protein", "caseina": "caseina",
     "tofu": "tofu", "jamon": "jamon-pavo", "jamon cocido": "jamon-cocido",
-    "dambo": "queso-dambo-light", "queso magro": "queso-dambo-light",
+    "dambo": "queso-dambo-light",
     "arroz": "arroz-blanco", "arroz blanco": "arroz-blanco", "arroz integral": "arroz-integral",
     "avena": "avena", "batata": "boniato", "boniato": "boniato", "papa": "papa",
     "pan": "pan-integral", "pan integral": "pan-integral", "pan blanco": "pan-blanco",
