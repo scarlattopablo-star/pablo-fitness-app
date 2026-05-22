@@ -184,6 +184,102 @@ function buildMealsForSave(meals: Meal[]) {
   });
 }
 
+// ====================== FOOD SEARCH HELPERS ======================
+// Aliases and plural handling for Spanish food search
+const FOOD_ALIASES: Record<string, string[]> = {
+  "huevo-entero": ["huevo", "huevos", "huevo entero", "huevos enteros"],
+  "clara-huevo": ["clara", "claras", "clara de huevo", "claras de huevo"],
+  "whey-protein": ["whey", "proteina", "suero", "scoop", "batido"],
+  "caseina": ["caseina", "casein"],
+  "pollo-pechuga": ["pollo", "pechuga", "pechugas"],
+  "pollo-muslo": ["muslo", "muslos"],
+  "carne-magra": ["carne", "bife", "lomo vacuno"],
+  "carne-molida": ["carne molida", "picada"],
+  "arroz-blanco": ["arroz blanco", "arroz"],
+  "arroz-integral": ["arroz integral"],
+  "avena": ["avena", "avena instantanea"],
+  "boniato": ["boniato", "batata", "camote"],
+  "pan-integral": ["pan integral", "pan negro", "pan"],
+  "pan-blanco": ["pan blanco", "pan de molde"],
+  "galleta-arroz": ["galleta", "galletas", "galleta de arroz", "galletas de arroz"],
+  "aceite-oliva": ["aceite", "aceite de oliva", "oliva"],
+  "aceite-coco": ["aceite de coco", "coco aceite"],
+  "banana": ["banana", "bananas", "platano", "platanos"],
+  "manzana": ["manzana", "manzanas"],
+  "naranja": ["naranja", "naranjas"],
+  "palta": ["palta", "aguacate", "avocado"],
+  "tomate": ["tomate", "tomates"],
+  "mani": ["mani", "mantequilla de mani", "pasta de mani"],
+  "fideos": ["fideos", "pasta", "pastas", "espagueti", "spaghetti"],
+  "yogurt-descremado": ["yogurt", "yogur", "yoghurt"],
+  "yogurt-griego": ["yogurt griego", "yogur griego", "griego"],
+  "leche-descremada": ["leche", "leche descremada"],
+  "queso-cottage": ["cottage", "queso cottage"],
+  "salmon": ["salmon", "salmón"],
+  "atun": ["atun", "atún"],
+  "merluza": ["merluza"],
+  "tortilla-trigo": ["tortilla", "tortillas", "wrap", "wraps"],
+  "semillas-chia": ["chia", "chía", "semillas de chia"],
+  "semillas-lino": ["lino", "linaza", "semillas de lino"],
+  "morron": ["morron", "morrón", "pimiento", "pimientos"],
+  "frutilla": ["frutilla", "frutillas", "fresa", "fresas"],
+  "lentejas": ["lentejas", "lenteja"],
+  "garbanzos": ["garbanzos", "garbanzo"],
+};
+
+function normalizeSearch(term: string): string {
+  return term.toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "") // remove accents
+    .trim();
+}
+
+function searchFoods(term: string): FoodItem[] {
+  if (!term || term.length < 1) return [];
+  const normalized = normalizeSearch(term);
+
+  // Score each food
+  const scored = FOOD_DATABASE.map(f => {
+    const nameNorm = normalizeSearch(f.name);
+    const idNorm = f.id.toLowerCase();
+    let score = 0;
+
+    // Exact name match
+    if (nameNorm === normalized) score = 100;
+    // Name starts with search
+    else if (nameNorm.startsWith(normalized)) score = 80;
+    // Name contains search
+    else if (nameNorm.includes(normalized)) score = 60;
+    // ID contains search
+    else if (idNorm.includes(normalized)) score = 50;
+    // Alias match
+    else {
+      const aliases = FOOD_ALIASES[f.id];
+      if (aliases?.some(a => normalizeSearch(a).includes(normalized) || normalized.includes(normalizeSearch(a)))) {
+        score = 70;
+      }
+    }
+
+    // Singular/plural: strip trailing 's' and retry
+    if (score === 0 && normalized.endsWith("s")) {
+      const singular = normalized.slice(0, -1);
+      if (nameNorm.includes(singular) || idNorm.includes(singular)) score = 40;
+    }
+    // Or add 's' and retry
+    if (score === 0) {
+      const plural = normalized + "s";
+      if (nameNorm.includes(plural)) score = 35;
+    }
+
+    return { food: f, score };
+  });
+
+  return scored
+    .filter(s => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 12)
+    .map(s => s.food);
+}
+
 // ====================== FOOD ROW COMPONENT ======================
 function FoodRow({
   food,
@@ -201,12 +297,7 @@ function FoodRow({
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const filteredFoods = searchTerm.length >= 1
-    ? FOOD_DATABASE.filter(f =>
-        f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.id.includes(searchTerm.toLowerCase())
-      ).slice(0, 10)
-    : [];
+  const filteredFoods = searchFoods(searchTerm);
 
   const handleSelect = (f: FoodItem) => {
     onSelect(f);
