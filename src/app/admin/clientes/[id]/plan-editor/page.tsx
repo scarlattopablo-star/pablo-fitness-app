@@ -4,10 +4,10 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Plus, Trash2, Save, Dumbbell, UtensilsCrossed,
-  GripVertical, Check, RefreshCw,
+  GripVertical, Check, RefreshCw, History, X, RotateCcw,
 } from "lucide-react";
 import { EXERCISES } from "@/lib/exercises-data";
-import { formatFoodQuantity, findFoodByName, calculateFoodMacros } from "@/lib/food-database";
+import { FOOD_DATABASE, formatFoodQuantity, findFoodByName, calculateFoodMacros, type FoodItem } from "@/lib/food-database";
 import { supabase } from "@/lib/supabase";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import ExerciseGifPicker from "@/components/exercise-gif-picker";
@@ -52,63 +52,129 @@ interface TrainingDay {
   instructions: string;
 }
 
+// Structured food entry in the editor
+interface EditorFood {
+  foodId: string;    // food-database id, or "" for custom
+  name: string;      // display name
+  grams: number;     // total grams (computed from units or entered directly)
+  unit: string;      // unit type from food-database
+  quantity: number;   // unit count (e.g. 3 eggs) or grams if unit="g"
+  isUnitBased: boolean; // true = show unit picker, false = show grams input
+  // Live macros
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
 interface Meal {
   name: string;
   time: string;
-  foods: string[];
+  foods: EditorFood[];
 }
 
-// Parse food strings from the editor into structured foodDetails with macros.
-// Mirrors the enrichMealWithFoodDetails logic on the client side so the saved
-// data always includes proper `foodDetails` + per-meal macros.
-function parseFoodString(foodStr: string): { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number } {
+// Get grams-per-unit from unit string like "unidad (50g)"
+function getGramsPerUnit(unit: string): number {
+  const m = unit.match(/\((\d+)\s*g\)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+// Check if a food uses units (not plain grams)
+function isUnitBasedFood(food: FoodItem): boolean {
+  return /^(unidad|rebanada|scoop|cucharada)\s*\(/.test(food.unit);
+}
+
+// Get the unit label for display
+function getUnitLabel(unit: string, count: number): string {
+  const m = unit.match(/^(unidad|rebanada|scoop|cucharada)/);
+  if (!m) return "g";
+  const base = m[1];
+  if (base === "unidad") return count !== 1 ? "unidades" : "unidad";
+  if (base === "rebanada") return count !== 1 ? "rebanadas" : "rebanada";
+  if (base === "scoop") return count !== 1 ? "scoops" : "scoop";
+  if (base === "cucharada") return count !== 1 ? "cucharadas" : "cucharada";
+  return "g";
+}
+
+// Create an EditorFood from a FoodItem
+function makeEditorFood(food: FoodItem, grams: number): EditorFood {
+  const unitBased = isUnitBasedFood(food);
+  const gpu = getGramsPerUnit(food.unit);
+  const quantity = unitBased && gpu > 0 ? Math.round(grams / gpu * 2) / 2 : grams;
+  const totalGrams = unitBased && gpu > 0 ? quantity * gpu : grams;
+  const macros = calculateFoodMacros(food, totalGrams);
+  return {
+    foodId: food.id,
+    name: food.name,
+    grams: totalGrams,
+    unit: food.unit,
+    quantity,
+    isUnitBased: unitBased,
+    ...macros,
+  };
+}
+
+// Empty food placeholder
+const EMPTY_EDITOR_FOOD: EditorFood = {
+  foodId: "", name: "", grams: 0, unit: "g", quantity: 0,
+  isUnitBased: false, calories: 0, protein: 0, carbs: 0, fat: 0,
+};
+
+// Parse a food string from existing plan data into EditorFood
+function parseFoodToEditor(foodStr: string, foodDetail?: { name: string; grams: number; unit: string }): EditorFood {
+  // If we have foodDetails, use them directly
+  if (foodDetail) {
+    const dbFood = findFoodByName(foodDetail.name);
+    if (dbFood) return makeEditorFood(dbFood, foodDetail.grams);
+  }
+
   const trimmed = foodStr.trim();
-  if (!trimmed) return { name: "", grams: 0, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+  if (!trimmed) return { ...EMPTY_EDITOR_FOOD };
 
-  let name = trimmed;
-  let grams = 100;
-
-  // "150g pollo" or "150 g pollo"
+  // Try to parse "150g Pollo" or "3 Huevo entero"
   const gramsMatch = trimmed.match(/^(\d+)\s*g\s+(.+)/i);
-  // "2 Huevo entero", "0.5 Banana"
   const unitsMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s+(.+)/i);
 
   if (gramsMatch) {
-    grams = parseInt(gramsMatch[1]);
-    name = gramsMatch[2];
+    const g = parseInt(gramsMatch[1]);
+    const n = gramsMatch[2];
+    const dbFood = findFoodByName(n);
+    if (dbFood) return makeEditorFood(dbFood, g);
   } else if (unitsMatch) {
     const count = parseFloat(unitsMatch[1]);
     let rawName = unitsMatch[2];
     rawName = rawName.replace(/^(rebanadas?|scoops?|cucharadas?|unidad(es)?)\s+/i, "");
-    name = rawName;
-    const tempFood = findFoodByName(name);
-    if (tempFood) {
-      const unitGrams = tempFood.unit.match(/\((\d+)\s*g\)/);
-      if (unitGrams) {
-        grams = Math.round(count * parseInt(unitGrams[1]));
-      }
+    const dbFood = findFoodByName(rawName);
+    if (dbFood) {
+      const gpu = getGramsPerUnit(dbFood.unit);
+      if (gpu > 0) return makeEditorFood(dbFood, Math.round(count * gpu));
+      return makeEditorFood(dbFood, count);
     }
   }
 
-  const dbFood = findFoodByName(name);
-  if (dbFood) {
-    const macros = calculateFoodMacros(dbFood, grams);
-    return { name: dbFood.name, grams, unit: dbFood.unit, calories: macros.calories, protein: macros.protein, carbs: macros.carbs, fat: macros.fat };
-  }
-  return { name: trimmed, grams: 0, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+  // Fallback: try finding by name
+  const dbFood = findFoodByName(trimmed);
+  if (dbFood) return makeEditorFood(dbFood, 100);
+
+  return { ...EMPTY_EDITOR_FOOD, name: trimmed };
 }
 
-function enrichMealsForSave(meals: Meal[]) {
+// Build save payload from editor meals
+function buildMealsForSave(meals: Meal[]) {
   return meals.map(meal => {
-    const foodDetails = meal.foods.filter(f => f.trim()).map(parseFoodString);
-    const totals = foodDetails.reduce(
+    const validFoods = meal.foods.filter(f => f.name.trim());
+    const foodDetails = validFoods.map(f => ({
+      name: f.name, grams: f.grams, unit: f.unit,
+      calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat,
+    }));
+    const totals = validFoods.reduce(
       (acc, f) => ({ calories: acc.calories + f.calories, protein: acc.protein + f.protein, carbs: acc.carbs + f.carbs, fat: acc.fat + f.fat }),
       { calories: 0, protein: 0, carbs: 0, fat: 0 },
     );
     return {
       name: meal.name,
       time: meal.time,
-      foods: meal.foods.filter(f => f.trim()),
+      foods: validFoods.map(f => formatFoodQuantity(f.name, f.grams, f.unit)),
       foodDetails,
       approxCalories: Math.round(totals.calories),
       approxProtein: Math.round(totals.protein),
@@ -118,13 +184,131 @@ function enrichMealsForSave(meals: Meal[]) {
   });
 }
 
+// ====================== FOOD ROW COMPONENT ======================
+function FoodRow({
+  food,
+  onSelect,
+  onQuantityChange,
+  onRemove,
+}: {
+  food: EditorFood;
+  onSelect: (f: FoodItem) => void;
+  onQuantityChange: (qty: number) => void;
+  onRemove: () => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const filteredFoods = searchTerm.length >= 2
+    ? FOOD_DATABASE.filter(f =>
+        f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        f.id.includes(searchTerm.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  const handleSelect = (f: FoodItem) => {
+    onSelect(f);
+    setSearchTerm("");
+    setShowDropdown(false);
+  };
+
+  // Unit step: 0.5 for unit-based, 5 for grams
+  const step = food.isUnitBased ? 0.5 : 5;
+
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2">
+        <span className="text-primary text-sm shrink-0">&#8226;</span>
+
+        {food.name ? (
+          /* Selected food - show name + quantity + macros */
+          <>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-white font-medium truncate">{food.name}</span>
+                <button
+                  onClick={() => { onSelect({ id: "", name: "", category: "protein", calories: 0, protein: 0, carbs: 0, fat: 0, unit: "g", mealTypes: [], maxGrams: 0 } as FoodItem); setShowDropdown(false); }}
+                  className="text-muted hover:text-white text-xs shrink-0"
+                  title="Cambiar alimento"
+                >
+                  &#x270E;
+                </button>
+              </div>
+              {/* Macros line */}
+              <p className="text-xs text-muted">
+                {food.calories} cal &middot; {food.protein}P &middot; {food.carbs}C &middot; {food.fat}G
+              </p>
+            </div>
+            {/* Quantity input */}
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => onQuantityChange(Math.max(step, food.quantity - step))}
+                className="w-6 h-6 rounded bg-card-bg border border-card-border text-muted hover:text-white text-sm flex items-center justify-center"
+              >-</button>
+              <input
+                type="number"
+                value={food.quantity}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  if (!isNaN(v) && v > 0) onQuantityChange(v);
+                }}
+                step={step}
+                min={step}
+                className="w-14 bg-card-bg border border-card-border rounded-lg px-1 py-1 text-sm text-center focus:outline-none focus:border-primary"
+              />
+              <button
+                onClick={() => onQuantityChange(food.quantity + step)}
+                className="w-6 h-6 rounded bg-card-bg border border-card-border text-muted hover:text-white text-sm flex items-center justify-center"
+              >+</button>
+              <span className="text-xs text-muted w-16 text-center">
+                {food.isUnitBased ? getUnitLabel(food.unit, food.quantity) : "g"}
+              </span>
+            </div>
+          </>
+        ) : (
+          /* No food selected - show search input */
+          <div className="flex-1 relative">
+            <input
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); }}
+              onFocus={() => setShowDropdown(true)}
+              className="w-full bg-card-bg border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              placeholder="Buscar alimento..."
+            />
+            {showDropdown && filteredFoods.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-card-border rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
+                {filteredFoods.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleSelect(f)}
+                    className="w-full text-left px-3 py-2 hover:bg-primary/10 text-sm flex items-center justify-between"
+                  >
+                    <span className="text-white">{f.name}</span>
+                    <span className="text-xs text-muted shrink-0 ml-2">
+                      {isUnitBasedFood(f) ? f.unit.split("(")[0].trim() : "gramos"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <button onClick={onRemove} className="text-muted hover:text-danger shrink-0">
+          <Trash2 className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const EMPTY_EXERCISE: TrainingExercise = {
   exerciseId: "", name: "", sets: 4, reps: "10", rest: "60s", notes: "", method: "",
 };
 
 const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
-const EMPTY_MEAL: Meal = { name: "", time: "", foods: [""] };
+const EMPTY_MEAL: Meal = { name: "", time: "", foods: [{ ...EMPTY_EDITOR_FOOD }] };
 
 const OBJECTIVE_OPTIONS = [
   { value: "ganancia-muscular", label: "Ganancia Muscular" },
@@ -174,12 +358,12 @@ export default function PlanEditorPage({
 
   // Nutrition state
   const [meals, setMeals] = useState<Meal[]>([
-    { name: "DESAYUNO", time: "07:00", foods: [""] },
-    { name: "COMIDA 2", time: "10:00", foods: [""] },
-    { name: "COMIDA 3", time: "13:00", foods: [""] },
-    { name: "COMIDA 4", time: "16:00", foods: [""] },
-    { name: "COMIDA 5", time: "19:00", foods: [""] },
-    { name: "COMIDA 6", time: "21:00", foods: [""] },
+    { name: "DESAYUNO", time: "07:00", foods: [{ ...EMPTY_EDITOR_FOOD }] },
+    { name: "COMIDA 2", time: "10:00", foods: [{ ...EMPTY_EDITOR_FOOD }] },
+    { name: "COMIDA 3", time: "13:00", foods: [{ ...EMPTY_EDITOR_FOOD }] },
+    { name: "COMIDA 4", time: "16:00", foods: [{ ...EMPTY_EDITOR_FOOD }] },
+    { name: "COMIDA 5", time: "19:00", foods: [{ ...EMPTY_EDITOR_FOOD }] },
+    { name: "COMIDA 6", time: "21:00", foods: [{ ...EMPTY_EDITOR_FOOD }] },
   ]);
   const [nutritionNotes, setNutritionNotes] = useState<string[]>([
     "COMER CADA 3 HORAS",
@@ -187,6 +371,109 @@ export default function PlanEditorPage({
     "NO AZÚCAR, ENDULZAR CON EDULCORANTE",
     "NO ALCOHOL",
   ]);
+
+  // Version history state
+  interface PlanVersion {
+    id: string;
+    plan_type: string;
+    version_number: number;
+    created_at: string;
+  }
+  interface PlanVersionFull extends PlanVersion {
+    data: Record<string, unknown>;
+    important_notes?: string[];
+  }
+  const [showHistory, setShowHistory] = useState(false);
+  const [versions, setVersions] = useState<PlanVersion[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [previewVersion, setPreviewVersion] = useState<PlanVersionFull | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const loadVersionHistory = async () => {
+    setLoadingVersions(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const planType = tab === "entrenamiento" ? "training" : "nutrition";
+      const res = await fetch(
+        `/api/admin/plan-versions?clientId=${clientId}&type=${planType}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setVersions(json.versions || []);
+      }
+    } catch {
+      // Silent fail
+    }
+    setLoadingVersions(false);
+  };
+
+  const loadVersionPreview = async (versionId: string) => {
+    setLoadingPreview(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch(
+        `/api/admin/plan-versions?clientId=${clientId}&versionId=${versionId}`,
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
+      );
+      if (res.ok) {
+        const json = await res.json();
+        setPreviewVersion(json.version);
+      }
+    } catch {
+      // Silent fail
+    }
+    setLoadingPreview(false);
+  };
+
+  const restoreVersion = (version: PlanVersionFull) => {
+    const planType = version.plan_type;
+    if (planType === "training" && version.data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const days = (version.data as any).days || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalized = days.map((day: any) => ({
+        day: day.day || "",
+        instructions: day.instructions || "",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        exercises: (day.exercises || []).map((ex: any) => ({
+          exerciseId: ex.exerciseId || ex.id || "",
+          name: ex.name || "",
+          sets: ex.sets || 4,
+          reps: ex.reps || "10",
+          rest: ex.rest || "60s",
+          notes: ex.notes || "",
+          method: ex.method || "",
+        })),
+      }));
+      setTrainingDays(normalized);
+      setTab("entrenamiento");
+    } else if (planType === "nutrition" && version.data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const vMeals = (version.data as any).meals || [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const loadedMeals: Meal[] = vMeals.map((m: any) => {
+        const foodDetails = m.foodDetails || [];
+        const foodStrings = m.foods || [];
+        const foods: EditorFood[] = foodDetails.length > 0
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ? foodDetails.map((fd: any, i: number) => parseFoodToEditor(foodStrings[i] || "", fd))
+          : foodStrings.length > 0
+            ? foodStrings.map((f: string) => parseFoodToEditor(f))
+            : [{ ...EMPTY_EDITOR_FOOD }];
+        return { name: m.name || "", time: m.time || "", foods };
+      });
+      setMeals(loadedMeals);
+      if (version.important_notes?.length) {
+        setNutritionNotes(version.important_notes);
+      }
+      setTab("nutricion");
+    }
+    setPreviewVersion(null);
+    setShowHistory(false);
+  };
 
   // Load existing plans on mount
   const [loadingPlan, setLoadingPlan] = useState(true);
@@ -238,16 +525,19 @@ export default function PlanEditorPage({
         }
 
         if (nutritionData && nutritionData.data?.meals?.length > 0) {
-          // Convert meals: if they have foodDetails, build foods strings from them
+          // Convert meals: parse into EditorFood objects
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const loadedMeals: Meal[] = nutritionData.data.meals.map((m: any) => ({
-            name: m.name || "",
-            time: m.time || "",
-            foods: m.foodDetails && m.foodDetails.length > 0
+          const loadedMeals: Meal[] = nutritionData.data.meals.map((m: any) => {
+            const foodDetails = m.foodDetails || [];
+            const foodStrings = m.foods || [];
+            const foods: EditorFood[] = foodDetails.length > 0
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ? m.foodDetails.map((fd: any) => formatFoodQuantity(fd.name, fd.grams, fd.unit || "g"))
-              : m.foods || [""],
-          }));
+              ? foodDetails.map((fd: any, i: number) => parseFoodToEditor(foodStrings[i] || "", fd))
+              : foodStrings.length > 0
+                ? foodStrings.map((f: string) => parseFoodToEditor(f))
+                : [{ ...EMPTY_EDITOR_FOOD }];
+            return { name: m.name || "", time: m.time || "", foods };
+          });
           setMeals(loadedMeals);
         }
 
@@ -361,7 +651,7 @@ export default function PlanEditorPage({
 
   // Nutrition handlers
   const addMeal = () => {
-    setMeals([...meals, { name: `COMIDA ${meals.length + 1}`, time: "", foods: [""] }]);
+    setMeals([...meals, { name: `COMIDA ${meals.length + 1}`, time: "", foods: [{ ...EMPTY_EDITOR_FOOD }] }]);
   };
 
   const removeMeal = (idx: number) => {
@@ -376,13 +666,41 @@ export default function PlanEditorPage({
 
   const addFood = (mealIdx: number) => {
     const updated = [...meals];
-    updated[mealIdx].foods.push("");
+    updated[mealIdx].foods.push({ ...EMPTY_EDITOR_FOOD });
     setMeals(updated);
   };
 
-  const updateFood = (mealIdx: number, foodIdx: number, value: string) => {
+  const selectFood = (mealIdx: number, foodIdx: number, food: FoodItem) => {
     const updated = [...meals];
-    updated[mealIdx].foods[foodIdx] = value;
+    if (!food.id) {
+      // Reset to empty (change food)
+      updated[mealIdx].foods[foodIdx] = { ...EMPTY_EDITOR_FOOD };
+    } else {
+      const ef = makeEditorFood(food, food.unit === "g" ? 100 : getGramsPerUnit(food.unit) || 100);
+      updated[mealIdx].foods[foodIdx] = ef;
+    }
+    setMeals(updated);
+  };
+
+  const updateFoodQuantity = (mealIdx: number, foodIdx: number, qty: number) => {
+    const updated = [...meals];
+    const f = { ...updated[mealIdx].foods[foodIdx] };
+    f.quantity = qty;
+    if (f.isUnitBased) {
+      const gpu = getGramsPerUnit(f.unit);
+      f.grams = Math.round(qty * gpu);
+    } else {
+      f.grams = qty;
+    }
+    const dbFood = findFoodByName(f.name);
+    if (dbFood) {
+      const macros = calculateFoodMacros(dbFood, f.grams);
+      f.calories = macros.calories;
+      f.protein = macros.protein;
+      f.carbs = macros.carbs;
+      f.fat = macros.fat;
+    }
+    updated[mealIdx].foods[foodIdx] = f;
     setMeals(updated);
   };
 
@@ -467,7 +785,7 @@ export default function PlanEditorPage({
                   })),
                 })),
               }
-            : { meals: enrichMealsForSave(meals), importantNotes: nutritionNotes },
+            : { meals: buildMealsForSave(meals), importantNotes: nutritionNotes },
         }),
       });
 
@@ -524,7 +842,118 @@ export default function PlanEditorPage({
         >
           <UtensilsCrossed className="h-4 w-4" /> Nutrición
         </button>
+        <div className="flex-1" />
+        <button
+          onClick={() => { setShowHistory(true); loadVersionHistory(); }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm glass-card text-muted hover:text-white hover:border-primary/50 transition-all"
+        >
+          <History className="h-4 w-4" /> Historial
+        </button>
       </div>
+
+      {/* Version History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => { setShowHistory(false); setPreviewVersion(null); }}>
+          <div className="bg-[#111] border border-card-border rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-card-border">
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                <History className="h-5 w-5 text-primary" />
+                Historial de Versiones — {tab === "entrenamiento" ? "Entrenamiento" : "Nutricion"}
+              </h2>
+              <button onClick={() => { setShowHistory(false); setPreviewVersion(null); }} className="text-muted hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto flex-1 p-4">
+              {loadingVersions ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                </div>
+              ) : versions.length === 0 ? (
+                <p className="text-muted text-center py-8">No hay versiones anteriores guardadas todavia. Se guardaran automaticamente cada vez que edites y guardes un plan.</p>
+              ) : previewVersion ? (
+                /* Preview a specific version */
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setPreviewVersion(null)} className="text-muted hover:text-white text-sm flex items-center gap-1">
+                      <ArrowLeft className="h-3 w-3" /> Volver a la lista
+                    </button>
+                    <span className="text-xs text-muted">
+                      Version {previewVersion.version_number} — {new Date(previewVersion.created_at).toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+
+                  {previewVersion.plan_type === "nutrition" && (previewVersion.data as { meals?: { name: string; foods?: string[]; foodDetails?: { name: string; grams: number; unit: string }[]; approxCalories?: number; approxProtein?: number; approxCarbs?: number; approxFats?: number }[] }).meals?.map((meal: { name: string; foods?: string[]; foodDetails?: { name: string; grams: number; unit: string }[]; approxCalories?: number; approxProtein?: number; approxCarbs?: number; approxFats?: number }, mi: number) => (
+                    <div key={mi} className="glass-card rounded-xl p-3">
+                      <p className="font-bold text-sm text-primary mb-1">{meal.name}</p>
+                      {meal.approxCalories != null && (
+                        <p className="text-xs text-muted mb-2">{meal.approxCalories} cal | {meal.approxProtein}P | {meal.approxCarbs}C | {meal.approxFats}G</p>
+                      )}
+                      <ul className="text-sm text-white/80 space-y-0.5">
+                        {(meal.foodDetails && meal.foodDetails.length > 0
+                          ? meal.foodDetails.map((fd: { name: string; grams: number; unit: string }) => formatFoodQuantity(fd.name, fd.grams, fd.unit))
+                          : meal.foods || []
+                        ).map((f: string, fi: number) => (
+                          <li key={fi}>• {f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+
+                  {previewVersion.plan_type === "training" && (previewVersion.data as { days?: { day: string; exercises?: { name: string; sets: number; reps: string; rest: string }[] }[] }).days?.map((day: { day: string; exercises?: { name: string; sets: number; reps: string; rest: string }[] }, di: number) => (
+                    <div key={di} className="glass-card rounded-xl p-3">
+                      <p className="font-bold text-sm text-primary mb-2">{day.day}</p>
+                      <ul className="text-sm text-white/80 space-y-0.5">
+                        {day.exercises?.map((ex: { name: string; sets: number; reps: string; rest: string }, ei: number) => (
+                          <li key={ei}>• {ex.name} — {ex.sets}x{ex.reps} (desc: {ex.rest})</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={() => restoreVersion(previewVersion)}
+                    className="w-full gradient-primary text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    <RotateCcw className="h-4 w-4" /> Restaurar esta version
+                  </button>
+                  <p className="text-xs text-muted text-center">Esto cargara la version en el editor. Despues tenes que darle Guardar para aplicar los cambios.</p>
+                </div>
+              ) : (
+                /* Version list */
+                <div className="space-y-2">
+                  {versions.map((v) => (
+                    <button
+                      key={v.id}
+                      onClick={() => loadVersionPreview(v.id)}
+                      className="w-full glass-card rounded-xl p-3 hover:border-primary/50 transition-all text-left flex items-center gap-3"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                        v{v.version_number}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">
+                          Version {v.version_number}
+                        </p>
+                        <p className="text-xs text-muted">
+                          {new Date(v.created_at).toLocaleDateString("es-AR", {
+                            day: "2-digit", month: "long", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      <ArrowLeft className="h-4 w-4 text-muted rotate-180" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TRAINING EDITOR */}
       {tab === "entrenamiento" && (
@@ -718,9 +1147,14 @@ export default function PlanEditorPage({
           </div>
 
           {/* Meals */}
-          {meals.map((meal, mealIdx) => (
+          {meals.map((meal, mealIdx) => {
+            const mealTotals = meal.foods.reduce(
+              (acc, f) => ({ cal: acc.cal + f.calories, p: acc.p + f.protein, c: acc.c + f.carbs, f: acc.f + f.fat }),
+              { cal: 0, p: 0, c: 0, f: 0 },
+            );
+            return (
             <div key={mealIdx} className="glass-card rounded-2xl p-4">
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-1">
                 <input
                   value={meal.name}
                   onChange={(e) => updateMeal(mealIdx, "name", e.target.value)}
@@ -737,25 +1171,62 @@ export default function PlanEditorPage({
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
+              {/* Meal totals */}
+              {mealTotals.cal > 0 && (
+                <p className="text-xs text-muted mb-3 ml-1">
+                  {mealTotals.cal} cal &middot; {mealTotals.p}P &middot; {mealTotals.c}C &middot; {mealTotals.f}G
+                </p>
+              )}
               {meal.foods.map((food, foodIdx) => (
-                <div key={foodIdx} className="flex items-center gap-2 mb-2">
-                  <span className="text-primary text-sm">&#8226;</span>
-                  <input
-                    value={food}
-                    onChange={(e) => updateFood(mealIdx, foodIdx, e.target.value)}
-                    className="flex-1 bg-card-bg border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    placeholder="Ej: 150g pollo, 100g arroz integral..."
-                  />
-                  <button onClick={() => removeFood(mealIdx, foodIdx)} className="text-muted hover:text-danger">
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
+                <FoodRow
+                  key={foodIdx}
+                  food={food}
+                  onSelect={(f) => selectFood(mealIdx, foodIdx, f)}
+                  onQuantityChange={(qty) => updateFoodQuantity(mealIdx, foodIdx, qty)}
+                  onRemove={() => removeFood(mealIdx, foodIdx)}
+                />
               ))}
-              <button onClick={() => addFood(mealIdx)} className="text-sm text-primary hover:underline flex items-center gap-1">
+              <button onClick={() => addFood(mealIdx)} className="text-sm text-primary hover:underline flex items-center gap-1 mt-1">
                 <Plus className="h-3 w-3" /> Agregar alimento
               </button>
             </div>
-          ))}
+          );})}
+
+          {/* Day totals */}
+          {(() => {
+            const dayTotals = meals.reduce(
+              (acc, m) => {
+                m.foods.forEach(f => {
+                  acc.cal += f.calories; acc.p += f.protein; acc.c += f.carbs; acc.f += f.fat;
+                });
+                return acc;
+              },
+              { cal: 0, p: 0, c: 0, f: 0 },
+            );
+            return dayTotals.cal > 0 ? (
+              <div className="glass-card rounded-2xl p-4 border-l-4 border-primary">
+                <p className="font-bold text-primary text-sm mb-1">TOTALES DEL DIA</p>
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-white">{dayTotals.cal}</p>
+                    <p className="text-xs text-muted">kcal</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-white">{dayTotals.p}g</p>
+                    <p className="text-xs text-muted">Proteina</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-white">{dayTotals.c}g</p>
+                    <p className="text-xs text-muted">Carbos</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-white">{dayTotals.f}g</p>
+                    <p className="text-xs text-muted">Grasas</p>
+                  </div>
+                </div>
+              </div>
+            ) : null;
+          })()}
 
           <button
             onClick={addMeal}
