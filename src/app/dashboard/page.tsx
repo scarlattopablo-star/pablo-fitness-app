@@ -313,8 +313,8 @@ export default function DashboardPage() {
       {/* 7-day goal from onboarding */}
       {user && <Goal7dCard userId={user.id} />}
 
-      {/* Monthly group challenge */}
-      <MonthlyChallengeCard />
+      {/* Monthly group challenge — only for non-direct clients */}
+      {!isDirectClient && <MonthlyChallengeCard />}
 
       {/* GAMIFICATION WIDGET */}
       {gamification && (
@@ -369,8 +369,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* WEEKLY CHALLENGES */}
-      {gamification && (() => {
+      {/* WEEKLY CHALLENGES — only for non-direct clients */}
+      {gamification && !isDirectClient && (() => {
         const challenges = getWeeklyChallenges();
         const daysLeft = getDaysRemaining();
         return (
