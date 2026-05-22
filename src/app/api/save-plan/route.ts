@@ -232,17 +232,24 @@ export async function POST(request: NextRequest) {
     } else if (type === "nutrition") {
       const { data: existing } = await supabase
         .from("nutrition_plans")
-        .select("id")
+        .select("id, data")
         .eq("user_id", clientId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
+      // Preserve extras (shoppingList, budget, weekMenu, supplements) from existing plan
+      const existingData = (existing?.data && typeof existing.data === "object") ? existing.data : {};
+      const mergedData = {
+        ...existingData,
+        meals: data.meals,
+      };
+
       if (existing) {
         const { error: updErr } = await supabase
           .from("nutrition_plans")
           .update({
-            data: { meals: data.meals },
+            data: mergedData,
             important_notes: data.importantNotes || [],
             plan_approved: true,
           })
@@ -255,7 +262,7 @@ export async function POST(request: NextRequest) {
           .from("nutrition_plans")
           .insert({
             user_id: clientId,
-            data: { meals: data.meals },
+            data: mergedData,
             important_notes: data.importantNotes || [],
             plan_approved: true,
           });

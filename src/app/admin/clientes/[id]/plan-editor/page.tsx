@@ -7,7 +7,7 @@ import {
   GripVertical, Check, RefreshCw,
 } from "lucide-react";
 import { EXERCISES } from "@/lib/exercises-data";
-import { formatFoodQuantity } from "@/lib/food-database";
+import { formatFoodQuantity, findFoodByName, calculateFoodMacros } from "@/lib/food-database";
 import { supabase } from "@/lib/supabase";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import ExerciseGifPicker from "@/components/exercise-gif-picker";
@@ -56,6 +56,66 @@ interface Meal {
   name: string;
   time: string;
   foods: string[];
+}
+
+// Parse food strings from the editor into structured foodDetails with macros.
+// Mirrors the enrichMealWithFoodDetails logic on the client side so the saved
+// data always includes proper `foodDetails` + per-meal macros.
+function parseFoodString(foodStr: string): { name: string; grams: number; unit: string; calories: number; protein: number; carbs: number; fat: number } {
+  const trimmed = foodStr.trim();
+  if (!trimmed) return { name: "", grams: 0, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+
+  let name = trimmed;
+  let grams = 100;
+
+  // "150g pollo" or "150 g pollo"
+  const gramsMatch = trimmed.match(/^(\d+)\s*g\s+(.+)/i);
+  // "2 Huevo entero", "0.5 Banana"
+  const unitsMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s+(.+)/i);
+
+  if (gramsMatch) {
+    grams = parseInt(gramsMatch[1]);
+    name = gramsMatch[2];
+  } else if (unitsMatch) {
+    const count = parseFloat(unitsMatch[1]);
+    let rawName = unitsMatch[2];
+    rawName = rawName.replace(/^(rebanadas?|scoops?|cucharadas?|unidad(es)?)\s+/i, "");
+    name = rawName;
+    const tempFood = findFoodByName(name);
+    if (tempFood) {
+      const unitGrams = tempFood.unit.match(/\((\d+)\s*g\)/);
+      if (unitGrams) {
+        grams = Math.round(count * parseInt(unitGrams[1]));
+      }
+    }
+  }
+
+  const dbFood = findFoodByName(name);
+  if (dbFood) {
+    const macros = calculateFoodMacros(dbFood, grams);
+    return { name: dbFood.name, grams, unit: dbFood.unit, calories: macros.calories, protein: macros.protein, carbs: macros.carbs, fat: macros.fat };
+  }
+  return { name: trimmed, grams: 0, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+}
+
+function enrichMealsForSave(meals: Meal[]) {
+  return meals.map(meal => {
+    const foodDetails = meal.foods.filter(f => f.trim()).map(parseFoodString);
+    const totals = foodDetails.reduce(
+      (acc, f) => ({ calories: acc.calories + f.calories, protein: acc.protein + f.protein, carbs: acc.carbs + f.carbs, fat: acc.fat + f.fat }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+    return {
+      name: meal.name,
+      time: meal.time,
+      foods: meal.foods.filter(f => f.trim()),
+      foodDetails,
+      approxCalories: Math.round(totals.calories),
+      approxProtein: Math.round(totals.protein),
+      approxCarbs: Math.round(totals.carbs),
+      approxFats: Math.round(totals.fat),
+    };
+  });
 }
 
 const EMPTY_EXERCISE: TrainingExercise = {
@@ -158,7 +218,23 @@ export default function PlanEditorPage({
         }
 
         if (trainingData && trainingData.data?.days?.length > 0) {
-          setTrainingDays(trainingData.data.days);
+          // Normalize: the generator/client uses `id`, the editor uses `exerciseId`
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const normalized = trainingData.data.days.map((day: any) => ({
+            day: day.day || "",
+            instructions: day.instructions || "",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            exercises: (day.exercises || []).map((ex: any) => ({
+              exerciseId: ex.exerciseId || ex.id || "",
+              name: ex.name || "",
+              sets: ex.sets || 4,
+              reps: ex.reps || "10",
+              rest: ex.rest || "60s",
+              notes: ex.notes || "",
+              method: ex.method || "",
+            })),
+          }));
+          setTrainingDays(normalized);
         }
 
         if (nutritionData && nutritionData.data?.meals?.length > 0) {
@@ -376,8 +452,22 @@ export default function PlanEditorPage({
           clientId,
           type: isTraining ? "training" : "nutrition",
           data: isTraining
-            ? { days: trainingDays }
-            : { meals, importantNotes: nutritionNotes },
+            ? {
+                days: trainingDays.map(day => ({
+                  day: day.day,
+                  instructions: day.instructions,
+                  exercises: day.exercises.map(ex => ({
+                    id: ex.exerciseId,
+                    name: ex.name,
+                    sets: ex.sets,
+                    reps: ex.reps,
+                    rest: ex.rest,
+                    notes: ex.notes || "",
+                    method: ex.method || "",
+                  })),
+                })),
+              }
+            : { meals: enrichMealsForSave(meals), importantNotes: nutritionNotes },
         }),
       });
 
