@@ -224,7 +224,7 @@ export default function ClienteDetailPage({
   // Custom foods (admin-created, persisted in DB)
   const [customFoods, setCustomFoods] = useState<FoodItem[]>([]);
   const [showNewFoodForm, setShowNewFoodForm] = useState<{ mealIdx: number; foodIdx: number; name: string } | null>(null);
-  const [newFoodData, setNewFoodData] = useState({ calories: "", protein: "", carbs: "", fat: "", unit: "g" });
+  const [newFoodData, setNewFoodData] = useState({ calories: "", protein: "", carbs: "", fat: "", unit: "g", gramsPerUnit: "" });
 
   // Email change state
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -1743,7 +1743,7 @@ export default function ClienteDetailPage({
                                     <button
                                       onClick={() => {
                                         setShowNewFoodForm({ mealIdx, foodIdx, name: query });
-                                        setNewFoodData({ calories: "", protein: "", carbs: "", fat: "", unit: "g" });
+                                        setNewFoodData({ calories: "", protein: "", carbs: "", fat: "", unit: "g", gramsPerUnit: "" });
                                         setFoodSearch(null);
                                       }}
                                       className="w-full text-xs text-left text-primary hover:underline font-bold"
@@ -1804,7 +1804,64 @@ export default function ClienteDetailPage({
                           <p className="text-xs font-bold text-primary mb-2">
                             Nuevo alimento: &quot;{showNewFoodForm.name}&quot;
                           </p>
-                          <p className="text-[9px] text-muted mb-2">Valores por cada 100g:</p>
+                          {/* Unit type selector */}
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[9px] text-muted">Tipo:</span>
+                            <div className="flex rounded-lg overflow-hidden border border-card-border">
+                              <button
+                                onClick={() => setNewFoodData({ ...newFoodData, unit: "g" })}
+                                className={`px-2.5 py-1 text-[10px] font-bold transition-colors ${
+                                  newFoodData.unit === "g" ? "bg-primary text-black" : "bg-card-border/20 text-muted hover:text-white"
+                                }`}
+                              >
+                                Gramos
+                              </button>
+                              <button
+                                onClick={() => setNewFoodData({ ...newFoodData, unit: "unidad" })}
+                                className={`px-2.5 py-1 text-[10px] font-bold transition-colors ${
+                                  newFoodData.unit.startsWith("unidad") ? "bg-primary text-black" : "bg-card-border/20 text-muted hover:text-white"
+                                }`}
+                              >
+                                Unidad
+                              </button>
+                              <button
+                                onClick={() => setNewFoodData({ ...newFoodData, unit: "scoop" })}
+                                className={`px-2.5 py-1 text-[10px] font-bold transition-colors ${
+                                  newFoodData.unit.startsWith("scoop") ? "bg-primary text-black" : "bg-card-border/20 text-muted hover:text-white"
+                                }`}
+                              >
+                                Scoop
+                              </button>
+                              <button
+                                onClick={() => setNewFoodData({ ...newFoodData, unit: "cucharada" })}
+                                className={`px-2.5 py-1 text-[10px] font-bold transition-colors ${
+                                  newFoodData.unit.startsWith("cucharada") ? "bg-primary text-black" : "bg-card-border/20 text-muted hover:text-white"
+                                }`}
+                              >
+                                Cucharada
+                              </button>
+                            </div>
+                          </div>
+                          {/* Grams per unit — only shown for unit-based foods */}
+                          {newFoodData.unit !== "g" && (
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-[9px] text-muted">Gramos por {newFoodData.unit}:</span>
+                              <input
+                                type="number"
+                                value={newFoodData.gramsPerUnit || ""}
+                                onChange={(e) => setNewFoodData({ ...newFoodData, gramsPerUnit: e.target.value })}
+                                className="w-16 bg-card-border/20 rounded px-2 py-1 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="ej: 50"
+                              />
+                              <span className="text-[9px] text-muted">g</span>
+                            </div>
+                          )}
+                          <p className="text-[9px] text-muted mb-2">
+                            {newFoodData.unit === "g"
+                              ? "Valores por cada 100g:"
+                              : `Valores por cada ${newFoodData.unit} (${newFoodData.gramsPerUnit || "?"}g):`
+                            }
+                          </p>
                           <div className="grid grid-cols-4 gap-2 mb-2">
                             <div>
                               <label className="text-[9px] text-muted block mb-0.5">Calorias</label>
@@ -1853,6 +1910,25 @@ export default function ClienteDetailPage({
                                 try {
                                   const { data: { session } } = await supabase.auth.getSession();
                                   if (!session?.access_token) return;
+                                  // Build unit string: "g" or "unidad (50g)" etc.
+                                  const gpuVal = parseInt(newFoodData.gramsPerUnit) || 0;
+                                  let unitStr = "g";
+                                  if (newFoodData.unit !== "g" && gpuVal > 0) {
+                                    unitStr = `${newFoodData.unit} (${gpuVal}g)`;
+                                  }
+                                  // If macros are per-unit, convert to per-100g for storage
+                                  let cal100 = Number(newFoodData.calories) || 0;
+                                  let pro100 = Number(newFoodData.protein) || 0;
+                                  let carb100 = Number(newFoodData.carbs) || 0;
+                                  let fat100 = Number(newFoodData.fat) || 0;
+                                  if (newFoodData.unit !== "g" && gpuVal > 0) {
+                                    // User entered values per unit — convert to per 100g
+                                    const factor = 100 / gpuVal;
+                                    cal100 = Math.round(cal100 * factor);
+                                    pro100 = Math.round(pro100 * factor * 10) / 10;
+                                    carb100 = Math.round(carb100 * factor * 10) / 10;
+                                    fat100 = Math.round(fat100 * factor * 10) / 10;
+                                  }
                                   const res = await fetch("/api/admin/custom-foods", {
                                     method: "POST",
                                     headers: {
@@ -1861,11 +1937,11 @@ export default function ClienteDetailPage({
                                     },
                                     body: JSON.stringify({
                                       name: showNewFoodForm.name,
-                                      calories: Number(newFoodData.calories) || 0,
-                                      protein: Number(newFoodData.protein) || 0,
-                                      carbs: Number(newFoodData.carbs) || 0,
-                                      fat: Number(newFoodData.fat) || 0,
-                                      unit: newFoodData.unit,
+                                      calories: cal100,
+                                      protein: pro100,
+                                      carbs: carb100,
+                                      fat: fat100,
+                                      unit: unitStr,
                                     }),
                                   });
                                   if (res.ok) {
@@ -1885,10 +1961,17 @@ export default function ClienteDetailPage({
                                       maxGrams: 500,
                                     };
                                     setCustomFoods(prev => [...prev, newItem]);
-                                    // Set food in the meal
+                                    // Set food in the meal — use 1 unit for unit-based, 100g for grams
+                                    const cfGpu = getGramsPerUnit(cf.unit || "g");
+                                    const defaultGrams = cfGpu > 0 ? cfGpu : 100;
                                     const updated = [...editNutritionData];
                                     const foods = [...(updated[showNewFoodForm.mealIdx].foods || [])];
-                                    foods[showNewFoodForm.foodIdx] = `100g ${cf.name}`;
+                                    foods[showNewFoodForm.foodIdx] = `${defaultGrams}g ${cf.name}`;
+                                    // Auto-enable unit mode for unit-based custom foods
+                                    if (cfGpu > 0) {
+                                      const umk = `${showNewFoodForm.mealIdx}-${showNewFoodForm.foodIdx}`;
+                                      setUnitMode(prev => ({ ...prev, [umk]: true }));
+                                    }
                                     updated[showNewFoodForm.mealIdx] = { ...updated[showNewFoodForm.mealIdx], foods };
                                     setEditNutritionData(updated);
                                     setShowNewFoodForm(null);
