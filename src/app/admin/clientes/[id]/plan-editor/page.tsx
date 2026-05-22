@@ -189,21 +189,23 @@ function FoodRow({
   food,
   onSelect,
   onQuantityChange,
+  onToggleUnit,
   onRemove,
 }: {
   food: EditorFood;
   onSelect: (f: FoodItem) => void;
   onQuantityChange: (qty: number) => void;
+  onToggleUnit: () => void;
   onRemove: () => void;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const filteredFoods = searchTerm.length >= 2
+  const filteredFoods = searchTerm.length >= 1
     ? FOOD_DATABASE.filter(f =>
         f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         f.id.includes(searchTerm.toLowerCase())
-      ).slice(0, 8)
+      ).slice(0, 10)
     : [];
 
   const handleSelect = (f: FoodItem) => {
@@ -212,92 +214,150 @@ function FoodRow({
     setShowDropdown(false);
   };
 
-  // Unit step: 0.5 for unit-based, 5 for grams
+  // Check if this food CAN use units (exists in DB with unit type)
+  const dbFood = food.foodId ? FOOD_DATABASE.find(f => f.id === food.foodId) : null;
+  const canUseUnits = dbFood ? isUnitBasedFood(dbFood) : false;
   const step = food.isUnitBased ? 0.5 : 5;
+  const gpu = canUseUnits && dbFood ? getGramsPerUnit(dbFood.unit) : 0;
 
   return (
-    <div className="mb-2">
-      <div className="flex items-center gap-2">
-        <span className="text-primary text-sm shrink-0">&#8226;</span>
+    <div className="mb-3">
+      {food.name ? (
+        /* ===== SELECTED FOOD ===== */
+        <div className="bg-card-bg border border-card-border rounded-xl p-3">
+          {/* Row 1: Name + remove */}
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => { onSelect({ id: "", name: "", category: "protein", calories: 0, protein: 0, carbs: 0, fat: 0, unit: "g", mealTypes: [], maxGrams: 0 } as FoodItem); }}
+              className="text-sm text-white font-medium hover:text-primary transition-colors flex items-center gap-1.5"
+              title="Cambiar alimento"
+            >
+              <span className="text-primary">&#8226;</span>
+              {food.name}
+              <span className="text-muted text-xs">&#x270E;</span>
+            </button>
+            <button onClick={onRemove} className="text-muted hover:text-danger p-1">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
 
-        {food.name ? (
-          /* Selected food - show name + quantity + macros */
-          <>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-white font-medium truncate">{food.name}</span>
+          {/* Row 2: Quantity + unit toggle */}
+          <div className="flex items-center gap-2 mb-2">
+            {/* Quantity controls */}
+            <button
+              onClick={() => onQuantityChange(Math.max(step, food.quantity - step))}
+              className="w-7 h-7 rounded-lg bg-background border border-card-border text-muted hover:text-white hover:border-primary/50 text-sm flex items-center justify-center transition-colors"
+            >−</button>
+            <input
+              type="number"
+              value={food.quantity}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                if (!isNaN(v) && v > 0) onQuantityChange(v);
+              }}
+              step={step}
+              min={step}
+              className="w-16 bg-background border border-card-border rounded-lg px-2 py-1.5 text-sm text-center font-bold focus:outline-none focus:border-primary"
+            />
+            <button
+              onClick={() => onQuantityChange(food.quantity + step)}
+              className="w-7 h-7 rounded-lg bg-background border border-card-border text-muted hover:text-white hover:border-primary/50 text-sm flex items-center justify-center transition-colors"
+            >+</button>
+
+            {/* Unit toggle — only for foods that support units */}
+            {canUseUnits ? (
+              <div className="flex rounded-lg border border-card-border overflow-hidden ml-1">
                 <button
-                  onClick={() => { onSelect({ id: "", name: "", category: "protein", calories: 0, protein: 0, carbs: 0, fat: 0, unit: "g", mealTypes: [], maxGrams: 0 } as FoodItem); setShowDropdown(false); }}
-                  className="text-muted hover:text-white text-xs shrink-0"
-                  title="Cambiar alimento"
+                  onClick={() => { if (!food.isUnitBased) onToggleUnit(); }}
+                  className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    food.isUnitBased
+                      ? "bg-primary text-black"
+                      : "bg-background text-muted hover:text-white"
+                  }`}
                 >
-                  &#x270E;
+                  {getUnitLabel(dbFood!.unit, 2)}
+                </button>
+                <button
+                  onClick={() => { if (food.isUnitBased) onToggleUnit(); }}
+                  className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    !food.isUnitBased
+                      ? "bg-primary text-black"
+                      : "bg-background text-muted hover:text-white"
+                  }`}
+                >
+                  gramos
                 </button>
               </div>
-              {/* Macros line */}
-              <p className="text-xs text-muted">
-                {food.calories} cal &middot; {food.protein}P &middot; {food.carbs}C &middot; {food.fat}G
-              </p>
-            </div>
-            {/* Quantity input */}
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => onQuantityChange(Math.max(step, food.quantity - step))}
-                className="w-6 h-6 rounded bg-card-bg border border-card-border text-muted hover:text-white text-sm flex items-center justify-center"
-              >-</button>
-              <input
-                type="number"
-                value={food.quantity}
-                onChange={(e) => {
-                  const v = parseFloat(e.target.value);
-                  if (!isNaN(v) && v > 0) onQuantityChange(v);
-                }}
-                step={step}
-                min={step}
-                className="w-14 bg-card-bg border border-card-border rounded-lg px-1 py-1 text-sm text-center focus:outline-none focus:border-primary"
-              />
-              <button
-                onClick={() => onQuantityChange(food.quantity + step)}
-                className="w-6 h-6 rounded bg-card-bg border border-card-border text-muted hover:text-white text-sm flex items-center justify-center"
-              >+</button>
-              <span className="text-xs text-muted w-16 text-center">
-                {food.isUnitBased ? getUnitLabel(food.unit, food.quantity) : "g"}
+            ) : (
+              <span className="text-xs text-muted ml-1">gramos</span>
+            )}
+
+            {/* Show equivalent */}
+            {canUseUnits && gpu > 0 && (
+              <span className="text-[10px] text-muted ml-auto">
+                {food.isUnitBased
+                  ? `= ${food.grams}g`
+                  : `= ${(food.grams / gpu).toFixed(1)} ${getUnitLabel(dbFood!.unit, food.grams / gpu)}`
+                }
               </span>
-            </div>
-          </>
-        ) : (
-          /* No food selected - show search input */
+            )}
+          </div>
+
+          {/* Row 3: Macros */}
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-white font-bold">{food.calories} cal</span>
+            <span className="text-blue-400">{food.protein}P</span>
+            <span className="text-amber-400">{food.carbs}C</span>
+            <span className="text-rose-400">{food.fat}G</span>
+          </div>
+        </div>
+      ) : (
+        /* ===== FOOD SEARCH ===== */
+        <div className="flex items-center gap-2">
+          <span className="text-primary text-sm shrink-0">&#8226;</span>
           <div className="flex-1 relative">
             <input
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); }}
-              onFocus={() => setShowDropdown(true)}
+              onFocus={() => { if (searchTerm.length >= 1) setShowDropdown(true); }}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
               className="w-full bg-card-bg border border-card-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-              placeholder="Buscar alimento..."
+              placeholder="Buscar alimento... (ej: pollo, arroz, huevo)"
             />
             {showDropdown && filteredFoods.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-card-border rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
-                {filteredFoods.map(f => (
-                  <button
-                    key={f.id}
-                    onClick={() => handleSelect(f)}
-                    className="w-full text-left px-3 py-2 hover:bg-primary/10 text-sm flex items-center justify-between"
-                  >
-                    <span className="text-white">{f.name}</span>
-                    <span className="text-xs text-muted shrink-0 ml-2">
-                      {isUnitBasedFood(f) ? f.unit.split("(")[0].trim() : "gramos"}
-                    </span>
-                  </button>
-                ))}
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1a1a1a] border border-card-border rounded-xl shadow-xl z-20 max-h-56 overflow-y-auto">
+                {filteredFoods.map(f => {
+                  const hasUnits = isUnitBasedFood(f);
+                  const unitLabel = hasUnits ? f.unit.split("(")[0].trim() : "";
+                  const gpuInfo = hasUnits ? f.unit.match(/\((\d+)\s*g\)/) : null;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => handleSelect(f)}
+                      className="w-full text-left px-3 py-2.5 hover:bg-primary/10 text-sm flex items-center justify-between border-b border-card-border/30 last:border-0"
+                    >
+                      <div>
+                        <span className="text-white">{f.name}</span>
+                        <span className="text-[10px] text-muted ml-2">
+                          {f.calories} cal/100g
+                        </span>
+                      </div>
+                      {hasUnits && (
+                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0 ml-2">
+                          {unitLabel} {gpuInfo ? `(${gpuInfo[1]}g)` : ""}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
-        )}
-
-        <button onClick={onRemove} className="text-muted hover:text-danger shrink-0">
-          <Trash2 className="h-3 w-3" />
-        </button>
-      </div>
+          <button onClick={onRemove} className="text-muted hover:text-danger shrink-0">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -694,6 +754,34 @@ export default function PlanEditorPage({
     }
     const dbFood = findFoodByName(f.name);
     if (dbFood) {
+      const macros = calculateFoodMacros(dbFood, f.grams);
+      f.calories = macros.calories;
+      f.protein = macros.protein;
+      f.carbs = macros.carbs;
+      f.fat = macros.fat;
+    }
+    updated[mealIdx].foods[foodIdx] = f;
+    setMeals(updated);
+  };
+
+  const toggleFoodUnit = (mealIdx: number, foodIdx: number) => {
+    const updated = [...meals];
+    const f = { ...updated[mealIdx].foods[foodIdx] };
+    const dbFood = f.foodId ? FOOD_DATABASE.find(fd => fd.id === f.foodId) : null;
+    if (!dbFood) return;
+    const gpu = getGramsPerUnit(dbFood.unit);
+    if (!gpu) return;
+
+    if (f.isUnitBased) {
+      // Switching to grams: keep current grams, set quantity = grams
+      f.isUnitBased = false;
+      f.quantity = f.grams;
+    } else {
+      // Switching to units: convert grams to units
+      f.isUnitBased = true;
+      f.quantity = Math.max(0.5, Math.round(f.grams / gpu * 2) / 2);
+      f.grams = Math.round(f.quantity * gpu);
+      // Recalculate macros with snapped grams
       const macros = calculateFoodMacros(dbFood, f.grams);
       f.calories = macros.calories;
       f.protein = macros.protein;
@@ -1183,6 +1271,7 @@ export default function PlanEditorPage({
                   food={food}
                   onSelect={(f) => selectFood(mealIdx, foodIdx, f)}
                   onQuantityChange={(qty) => updateFoodQuantity(mealIdx, foodIdx, qty)}
+                  onToggleUnit={() => toggleFoodUnit(mealIdx, foodIdx)}
                   onRemove={() => removeFood(mealIdx, foodIdx)}
                 />
               ))}
