@@ -1,5 +1,5 @@
-const CACHE_NAME = "ps-entrena-v10";
-const STATIC_CACHE = "ps-static-v10";
+const CACHE_NAME = "ps-entrena-v11";
+const STATIC_CACHE = "ps-static-v11";
 
 self.addEventListener("install", (event) => {
   // Activate immediately, don't wait
