@@ -24,8 +24,8 @@ export const FOOD_DATABASE: FoodItem[] = [
   // === PROTEINAS (22) ===
   { id: "pollo-pechuga", name: "Pechuga de pollo (cocida)", category: "protein", calories: 165, protein: 31, carbs: 0, fat: 3.6, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
   { id: "pollo-muslo", name: "Muslo de pollo (cocido)", category: "protein", calories: 209, protein: 26, carbs: 0, fat: 10.9, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
-  { id: "carne-magra", name: "Carne vacuna magra (cocida)", category: "protein", calories: 250, protein: 26, carbs: 0, fat: 15, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
-  { id: "carne-molida", name: "Carne molida magra (cocida)", category: "protein", calories: 255, protein: 26, carbs: 0, fat: 16, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
+  { id: "carne-magra", name: "Carne vacuna magra (cocida)", category: "protein", calories: 175, protein: 29, carbs: 0, fat: 6, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
+  { id: "carne-molida", name: "Carne molida magra (cocida)", category: "protein", calories: 231, protein: 28, carbs: 0, fat: 12, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
   { id: "cerdo-lomo", name: "Lomo de cerdo (cocido)", category: "protein", calories: 143, protein: 27, carbs: 0, fat: 3.5, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
   { id: "pavo-pechuga", name: "Pechuga de pavo (cocida)", category: "protein", calories: 135, protein: 30, carbs: 0, fat: 1, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
   { id: "salmon", name: "Salmon (cocido)", category: "protein", calories: 208, protein: 20, carbs: 0, fat: 13, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 180 },
@@ -34,7 +34,7 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "tilapia", name: "Tilapia (cocida)", category: "protein", calories: 128, protein: 26, carbs: 0, fat: 2.7, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 200 },
   { id: "camarones", name: "Camarones (cocidos)", category: "protein", calories: 99, protein: 24, carbs: 0.2, fat: 0.3, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 150 },
   { id: "sardina", name: "Sardinas en aceite (escurridas)", category: "protein", calories: 208, protein: 25, carbs: 0, fat: 11, unit: "g", mealTypes: ["almuerzo", "cena", "snack"], maxGrams: 100 },
-  { id: "huevo-entero", name: "Huevo entero", category: "protein", calories: 143, protein: 13, carbs: 0.7, fat: 9.5, unit: "unidad (50g)", mealTypes: ["desayuno", "almuerzo", "snack"], maxGrams: 200 },
+  { id: "huevo-entero", name: "Huevo entero", category: "protein", calories: 155, protein: 13, carbs: 1.1, fat: 10.6, unit: "unidad (50g)", mealTypes: ["desayuno", "almuerzo", "snack"], maxGrams: 200 },
   { id: "clara-huevo", name: "Clara de huevo", category: "protein", calories: 52, protein: 11, carbs: 0.7, fat: 0.2, unit: "unidad (33g)", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
   { id: "whey-protein", name: "Proteina whey (scoop)", category: "protein", calories: 120, protein: 24, carbs: 3, fat: 1.5, unit: "scoop (30g)", mealTypes: ["desayuno", "snack"], maxGrams: 60 },
   { id: "tofu", name: "Tofu firme", category: "protein", calories: 76, protein: 8, carbs: 2, fat: 5, unit: "g", mealTypes: ["desayuno", "almuerzo", "cena", "snack"], maxGrams: 250 },
@@ -86,9 +86,9 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "leche-descremada", name: "Leche descremada", category: "dairy", calories: 34, protein: 3.4, carbs: 5, fat: 0.1, unit: "ml (200ml)", mealTypes: ["desayuno"], maxGrams: 500 },
   { id: "leche-entera", name: "Leche entera", category: "dairy", calories: 61, protein: 3.2, carbs: 4.8, fat: 3.3, unit: "ml (200ml)", mealTypes: ["desayuno"], maxGrams: 500 },
   { id: "queso-cottage", name: "Queso cottage", category: "dairy", calories: 98, protein: 11, carbs: 3.4, fat: 4.3, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 200 },
-  { id: "queso-ricota", name: "Ricota descremada", category: "dairy", calories: 138, protein: 11, carbs: 3.5, fat: 8, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
+  { id: "queso-ricota", name: "Ricota descremada", category: "dairy", calories: 138, protein: 11, carbs: 5, fat: 8, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 150 },
   { id: "queso-untable", name: "Queso crema light", category: "dairy", calories: 140, protein: 7, carbs: 5, fat: 10, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 60 },
-  { id: "queso-muzzarella", name: "Muzzarella", category: "dairy", calories: 280, protein: 28, carbs: 3.1, fat: 17, unit: "g", mealTypes: ["almuerzo", "cena", "snack"], maxGrams: 60 },
+  { id: "queso-muzzarella", name: "Muzzarella", category: "dairy", calories: 280, protein: 24, carbs: 3, fat: 19, unit: "g", mealTypes: ["almuerzo", "cena", "snack"], maxGrams: 60 },
 
   // === FRUTAS (19) ===
   { id: "banana", name: "Banana", category: "fruit", calories: 89, protein: 1.1, carbs: 23, fat: 0.3, unit: "unidad (120g)", mealTypes: ["desayuno", "snack"], maxGrams: 120 },
