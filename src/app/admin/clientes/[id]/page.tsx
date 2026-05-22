@@ -1407,7 +1407,7 @@ export default function ClienteDetailPage({
                 <div className="space-y-0.5">
                   {(meal.foodDetails || []).map((food: any, j: number) => (
                     <div key={j} className="flex items-center justify-between text-xs">
-                      <span>{food.name} — {food.grams}g</span>
+                      <span>{formatFoodQuantity(food.name, food.grams, food.unit || "g")}</span>
                       <span className="text-muted">{food.calories}kcal | P:{food.protein}g C:{food.carbs}g G:{food.fat}g</span>
                     </div>
                   ))}
@@ -1601,9 +1601,37 @@ export default function ClienteDetailPage({
                 <div className="space-y-1.5">
                   {(meal.foods || []).map((food: string, foodIdx: number) => {
                     // Parse existing food string to extract grams and name
+                    // Handles: "180g Pechuga de pollo", "200ml Leche", "2 Huevo entero", "1 scoop Whey"
                     const gramsMatch = food.match(/^(\d+)\s*g\s+(.+)/i);
-                    const originalGrams = gramsMatch ? parseInt(gramsMatch[1]) : 100;
-                    const originalName = gramsMatch ? gramsMatch[2] : food;
+                    const mlMatch = !gramsMatch ? food.match(/^(\d+)\s*ml\s+(.+)/i) : null;
+                    let originalGrams: number;
+                    let originalName: string;
+                    if (gramsMatch) {
+                      originalGrams = parseInt(gramsMatch[1]);
+                      originalName = gramsMatch[2].trim();
+                    } else if (mlMatch) {
+                      originalGrams = parseInt(mlMatch[1]);
+                      originalName = mlMatch[2].trim();
+                    } else {
+                      // Try "N FoodName" or "N unitLabel FoodName" (unit-based from AI plans)
+                      const unitsMatch = food.match(/^(\d+\.?\d*)\s+(.+)/);
+                      if (unitsMatch) {
+                        const count = parseFloat(unitsMatch[1]);
+                        const rawName = unitsMatch[2].replace(/^(rebanadas?|scoops?|cucharadas?|unidad(es)?)\s+/i, "").trim();
+                        const tempFood = findFoodByName(rawName) || customFoods.find(cf => cf.name.toLowerCase() === rawName.toLowerCase());
+                        if (tempFood) {
+                          const gpuTemp = getGramsPerUnit(tempFood.unit);
+                          originalGrams = gpuTemp > 0 ? Math.round(count * gpuTemp) : Math.round(count * 100);
+                          originalName = tempFood.name;
+                        } else {
+                          originalGrams = 100;
+                          originalName = food;
+                        }
+                      } else {
+                        originalGrams = 100;
+                        originalName = food;
+                      }
+                    }
                     const originalDbFood = originalName
                       ? (findFoodByName(originalName) || customFoods.find(cf => cf.name.toLowerCase() === originalName.toLowerCase()))
                       : undefined;
@@ -2164,6 +2192,7 @@ export default function ClienteDetailPage({
                     const savedMeals = editNutritionData.map((meal: any) => {
                       const newFoodDetails = (meal.foods || []).map((foodStr: string) => {
                         const gramsMatch = foodStr.match(/^(\d+)\s*g\s+(.+)/i);
+                        const unitsMatch = !gramsMatch ? foodStr.match(/^(\d+\.?\d*)\s+(.+)/) : null;
                         if (gramsMatch) {
                           const grams = parseInt(gramsMatch[1]);
                           const name = gramsMatch[2].trim();
@@ -2173,6 +2202,17 @@ export default function ClienteDetailPage({
                             return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
                           }
                           return { name, grams, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
+                        } else if (unitsMatch) {
+                          const units = parseFloat(unitsMatch[1]);
+                          const rawName = unitsMatch[2].replace(/^(rebanadas?|scoops?|cucharadas?|unidad(es)?)\s+/i, "").trim();
+                          const dbFood = findFoodByName(rawName) || customFoods.find(cf => cf.name.toLowerCase() === rawName.toLowerCase());
+                          if (dbFood) {
+                            const gpuVal = getGramsPerUnit(dbFood.unit);
+                            const grams = gpuVal > 0 ? Math.round(units * gpuVal) : Math.round(units * 100);
+                            const macros = calculateFoodMacros(dbFood, grams);
+                            return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
+                          }
+                          return { name: rawName, grams: 0, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
                         }
                         return { name: foodStr, grams: 0, unit: "", calories: 0, protein: 0, carbs: 0, fat: 0 };
                       });

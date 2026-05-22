@@ -271,10 +271,12 @@ export async function POST(request: NextRequest) {
         .limit(1)
         .maybeSingle();
 
-      // Preserve extras (shoppingList, budget, weekMenu, supplements) from existing plan
+      // Preserve extras (shoppingList, budget, supplements) from existing plan
+      // Clear weekMenu/gymDay/kitesurfDay since admin is setting new meals as source of truth
       const existingData = (existing?.data && typeof existing.data === "object") ? existing.data : {};
+      const { weekMenu: _wm, gymDay: _gd, kitesurfDay: _kd, ...preservedData } = existingData as Record<string, unknown>;
       const mergedData = {
-        ...existingData,
+        ...preservedData,
         meals: data.meals,
       };
 
