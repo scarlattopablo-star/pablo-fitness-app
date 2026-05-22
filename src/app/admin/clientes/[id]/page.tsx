@@ -16,7 +16,7 @@ import { getPhotoUrl } from "@/lib/upload-photo";
 import { EXERCISES, MUSCLE_GROUP_LABELS } from "@/lib/exercises-data";
 import { PLANS } from "@/lib/plans-data";
 import { getExerciseGif } from "@/lib/exercise-images";
-import { FOOD_DATABASE, findFoodByName, calculateSwapGrams, calculateFoodMacros } from "@/lib/food-database";
+import { FOOD_DATABASE, findFoodByName, calculateSwapGrams, calculateFoodMacros, formatFoodQuantity, type FoodItem } from "@/lib/food-database";
 import {
   WeightChart, MeasurementsLineChart, MeasurementsBarChart,
   MeasurementsChangeChart, MacrosPieChart, WeightChangeBarChart,
@@ -76,6 +76,101 @@ interface ProgressEntry {
   notes: string | null;
 }
 
+// ====================== UNIT-BASED FOOD HELPERS ======================
+function getGramsPerUnit(unit: string): number {
+  const m = unit.match(/\((\d+)\s*g\)/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function isUnitBasedFood(food: FoodItem): boolean {
+  return /^(unidad|rebanada|scoop|cucharada)\s*\(/.test(food.unit);
+}
+
+function getUnitLabel(unit: string, count: number): string {
+  const m = unit.match(/^(unidad|rebanada|scoop|cucharada)/);
+  if (!m) return "g";
+  const base = m[1];
+  if (base === "unidad") return count !== 1 ? "unidades" : "unidad";
+  if (base === "rebanada") return count !== 1 ? "rebanadas" : "rebanada";
+  if (base === "scoop") return count !== 1 ? "scoops" : "scoop";
+  if (base === "cucharada") return count !== 1 ? "cucharadas" : "cucharada";
+  return "g";
+}
+
+// Aliases for fuzzy food search in Spanish
+const FOOD_ALIASES: Record<string, string[]> = {
+  "huevo-entero": ["huevo", "huevos", "huevo entero", "huevos enteros"],
+  "clara-huevo": ["clara", "claras", "clara de huevo", "claras de huevo"],
+  "whey-protein": ["whey", "proteina", "suero", "scoop", "batido"],
+  "caseina": ["caseina", "casein"],
+  "pollo-pechuga": ["pollo", "pechuga", "pechugas"],
+  "pollo-muslo": ["muslo", "muslos"],
+  "carne-magra": ["carne", "bife", "lomo vacuno"],
+  "carne-molida": ["carne molida", "picada"],
+  "arroz-blanco": ["arroz blanco", "arroz"],
+  "arroz-integral": ["arroz integral"],
+  "avena": ["avena", "avena instantanea"],
+  "boniato": ["boniato", "batata", "camote"],
+  "pan-integral": ["pan integral", "pan negro", "pan"],
+  "pan-blanco": ["pan blanco", "pan de molde"],
+  "galleta-arroz": ["galleta", "galletas", "galleta de arroz", "galletas de arroz"],
+  "aceite-oliva": ["aceite", "aceite de oliva", "oliva"],
+  "aceite-coco": ["aceite de coco", "coco aceite"],
+  "banana": ["banana", "bananas", "platano", "platanos"],
+  "manzana": ["manzana", "manzanas"],
+  "naranja": ["naranja", "naranjas"],
+  "palta": ["palta", "aguacate", "avocado"],
+  "tomate": ["tomate", "tomates"],
+  "mani": ["mani", "mantequilla de mani", "pasta de mani"],
+  "fideos": ["fideos", "pasta", "pastas", "espagueti", "spaghetti"],
+  "yogurt-descremado": ["yogurt", "yogur", "yoghurt"],
+  "yogurt-griego": ["yogurt griego", "yogur griego", "griego"],
+  "leche-descremada": ["leche", "leche descremada"],
+  "queso-cottage": ["cottage", "queso cottage"],
+  "salmon": ["salmon", "salmón"],
+  "atun": ["atun", "atún"],
+  "merluza": ["merluza"],
+  "tortilla-trigo": ["tortilla", "tortillas", "wrap", "wraps"],
+  "semillas-chia": ["chia", "chía", "semillas de chia"],
+  "semillas-lino": ["lino", "linaza", "semillas de lino"],
+  "morron": ["morron", "morrón", "pimiento", "pimientos"],
+  "frutilla": ["frutilla", "frutillas", "fresa", "fresas"],
+  "lentejas": ["lentejas", "lenteja"],
+  "garbanzos": ["garbanzos", "garbanzo"],
+};
+
+function normalizeSearch(term: string): string {
+  return term.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+}
+
+function searchFoodsFiltered(term: string): FoodItem[] {
+  if (!term || term.length < 1) return [];
+  const normalized = normalizeSearch(term);
+  const scored = FOOD_DATABASE.map(f => {
+    const nameNorm = normalizeSearch(f.name);
+    const idNorm = f.id.toLowerCase();
+    let score = 0;
+    if (nameNorm === normalized) score = 100;
+    else if (nameNorm.startsWith(normalized)) score = 80;
+    else if (nameNorm.includes(normalized)) score = 60;
+    else if (idNorm.includes(normalized)) score = 50;
+    else {
+      const aliases = FOOD_ALIASES[f.id];
+      if (aliases?.some(a => normalizeSearch(a).includes(normalized) || normalized.includes(normalizeSearch(a)))) score = 70;
+    }
+    if (score === 0 && normalized.endsWith("s")) {
+      const singular = normalized.slice(0, -1);
+      if (nameNorm.includes(singular) || idNorm.includes(singular)) score = 40;
+    }
+    if (score === 0) {
+      const plural = normalized + "s";
+      if (nameNorm.includes(plural)) score = 35;
+    }
+    return { food: f, score };
+  });
+  return scored.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 12).map(s => s.food);
+}
+
 export default function ClienteDetailPage({
   params,
 }: {
@@ -123,6 +218,8 @@ export default function ClienteDetailPage({
   const [savingNutrition, setSavingNutrition] = useState(false);
   const [exerciseSearch, setExerciseSearch] = useState<{ dayIdx: number; exIdx: number; query: string } | null>(null);
   const [foodSearch, setFoodSearch] = useState<{ mealIdx: number; foodIdx: number; query: string } | null>(null);
+  // Track which foods are displayed in unit mode (key = "mealIdx-foodIdx")
+  const [unitMode, setUnitMode] = useState<Record<string, boolean>>({});
 
   // Email change state
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -1476,145 +1573,181 @@ export default function ClienteDetailPage({
                     const isActive = foodSearch?.mealIdx === mealIdx && foodSearch?.foodIdx === foodIdx;
                     const query = isActive ? foodSearch.query : "";
 
-                    // Build smart food list: same category first with calculated grams
-                    const getSortedFoods = () => {
-                      const searchTerm = query.toLowerCase();
-                      const filtered = FOOD_DATABASE.filter(f =>
-                        !searchTerm || f.name.toLowerCase().includes(searchTerm)
-                      );
+                    // Unit-based food detection
+                    const canUseUnits = originalDbFood ? isUnitBasedFood(originalDbFood) : false;
+                    const gpu = canUseUnits && originalDbFood ? getGramsPerUnit(originalDbFood.unit) : 0;
+                    const umKey = `${mealIdx}-${foodIdx}`;
+                    const inUnitMode = unitMode[umKey] ?? (canUseUnits && gpu > 0);
+                    const unitCount = gpu > 0 ? Math.round(originalGrams / gpu * 2) / 2 : 0;
+                    const step = inUnitMode ? 0.5 : 5;
+
+                    // Search: use fuzzy search with aliases
+                    const getSearchResults = () => {
+                      if (query) return searchFoodsFiltered(query);
+                      // If no query, show same-category foods first
                       if (originalDbFood) {
-                        const sameCategory = filtered.filter(f => f.category === originalDbFood.category && f.id !== originalDbFood.id);
-                        const otherCategory = filtered.filter(f => f.category !== originalDbFood.category);
-                        return { sameCategory, otherCategory };
+                        const same = FOOD_DATABASE.filter(f => f.category === originalDbFood.category && f.id !== originalDbFood.id);
+                        const other = FOOD_DATABASE.filter(f => f.category !== originalDbFood.category);
+                        return [...same.slice(0, 8), ...other.slice(0, 4)];
                       }
-                      return { sameCategory: [], otherCategory: filtered };
+                      return FOOD_DATABASE.slice(0, 12);
                     };
 
                     // Calculate live macros for this food
                     const liveMacros = originalDbFood ? calculateFoodMacros(originalDbFood, originalGrams) : null;
 
                     return (
-                    <div key={foodIdx} className="flex items-center gap-1.5">
-                      {/* Grams input */}
-                      <input
-                        type="number"
-                        value={originalGrams}
-                        onChange={(e) => {
-                          const newGrams = Math.max(0, parseInt(e.target.value) || 0);
-                          const updated = [...editNutritionData];
-                          const foods = [...(updated[mealIdx].foods || [])];
-                          foods[foodIdx] = `${newGrams}g ${originalName}`;
-                          updated[mealIdx] = { ...meal, foods };
-                          setEditNutritionData(updated);
-                        }}
-                        className="w-14 bg-card-border/20 rounded px-1.5 py-1.5 text-xs text-center font-bold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                        min={0}
-                        step={5}
-                      />
-                      <span className="text-[10px] text-muted">g</span>
-                      <div className="flex-1 relative">
-                        <button
-                          onClick={() => setFoodSearch(isActive ? null : { mealIdx, foodIdx, query: "" })}
-                          className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary hover:bg-card-border/30 transition-colors truncate"
-                        >
-                          {originalName || <span className="text-muted">Seleccionar...</span>}
-                        </button>
-                        {isActive && (
-                          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card-bg border border-card-border rounded-xl max-h-64 overflow-y-auto shadow-xl">
-                            <div className="sticky top-0 bg-card-bg p-2 border-b border-card-border/50">
-                              <input
-                                autoFocus
-                                value={query}
-                                onChange={(e) => setFoodSearch({ mealIdx, foodIdx, query: e.target.value })}
-                                className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                                placeholder="Buscar alimento..."
-                              />
-                            </div>
-                            {(() => {
-                              const { sameCategory, otherCategory } = getSortedFoods();
-                              const renderFoodOption = (f: typeof FOOD_DATABASE[0]) => {
-                                const newGrams = originalDbFood
-                                  ? calculateSwapGrams(originalDbFood, originalGrams, f)
-                                  : 100;
-                                const macros = calculateFoodMacros(f, newGrams);
-                                return (
+                    <div key={foodIdx} className="mb-1.5">
+                      <div className="flex items-center gap-1.5">
+                        {/* Quantity input — shows units or grams depending on mode */}
+                        <input
+                          type="number"
+                          value={inUnitMode ? unitCount : originalGrams}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            if (isNaN(v) || v < 0) return;
+                            const newGrams = inUnitMode ? Math.round(v * gpu) : Math.max(0, Math.round(v));
+                            const updated = [...editNutritionData];
+                            const foods = [...(updated[mealIdx].foods || [])];
+                            foods[foodIdx] = `${newGrams}g ${originalName}`;
+                            updated[mealIdx] = { ...meal, foods };
+                            setEditNutritionData(updated);
+                          }}
+                          className="w-14 bg-card-border/20 rounded px-1.5 py-1.5 text-xs text-center font-bold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          min={0}
+                          step={step}
+                        />
+                        {/* Unit toggle for unit-based foods */}
+                        {canUseUnits && gpu > 0 ? (
+                          <div className="flex rounded overflow-hidden border border-card-border shrink-0">
+                            <button
+                              onClick={() => setUnitMode(prev => ({ ...prev, [umKey]: true }))}
+                              className={`px-1.5 py-1 text-[9px] font-bold transition-colors ${
+                                inUnitMode ? "bg-primary text-black" : "bg-card-border/20 text-muted hover:text-white"
+                              }`}
+                              title={`1 ${getUnitLabel(originalDbFood!.unit, 1)} = ${gpu}g`}
+                            >
+                              {getUnitLabel(originalDbFood!.unit, 2)}
+                            </button>
+                            <button
+                              onClick={() => setUnitMode(prev => ({ ...prev, [umKey]: false }))}
+                              className={`px-1.5 py-1 text-[9px] font-bold transition-colors ${
+                                !inUnitMode ? "bg-primary text-black" : "bg-card-border/20 text-muted hover:text-white"
+                              }`}
+                            >
+                              g
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted shrink-0">g</span>
+                        )}
+                        <div className="flex-1 relative">
+                          <button
+                            onClick={() => setFoodSearch(isActive ? null : { mealIdx, foodIdx, query: "" })}
+                            className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs text-left focus:outline-none focus:ring-1 focus:ring-primary hover:bg-card-border/30 transition-colors truncate"
+                          >
+                            {originalName || <span className="text-muted">Seleccionar...</span>}
+                          </button>
+                          {isActive && (
+                            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-card-bg border border-card-border rounded-xl max-h-64 overflow-y-auto shadow-xl">
+                              <div className="sticky top-0 bg-card-bg p-2 border-b border-card-border/50">
+                                <input
+                                  autoFocus
+                                  value={query}
+                                  onChange={(e) => setFoodSearch({ mealIdx, foodIdx, query: e.target.value })}
+                                  className="w-full bg-card-border/20 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                                  placeholder="Buscar alimento... (ej: huevos, pollo)"
+                                />
+                              </div>
+                              {(() => {
+                                const results = getSearchResults();
+                                return results.length > 0 ? (
+                                  <>
+                                    {results.map(f => {
+                                      const hasUnits = isUnitBasedFood(f);
+                                      const fGpu = getGramsPerUnit(f.unit);
+                                      const newGrams = originalDbFood
+                                        ? calculateSwapGrams(originalDbFood, originalGrams, f)
+                                        : (hasUnits && fGpu > 0 ? fGpu : 100);
+                                      const macros = calculateFoodMacros(f, newGrams);
+                                      return (
+                                        <button
+                                          key={f.id}
+                                          onClick={() => {
+                                            const updated = [...editNutritionData];
+                                            const foods = [...(updated[mealIdx].foods || [])];
+                                            foods[foodIdx] = `${newGrams}g ${f.name}`;
+                                            updated[mealIdx] = { ...meal, foods };
+                                            setEditNutritionData(updated);
+                                            setFoodSearch(null);
+                                            // Auto-enable unit mode for unit-based foods
+                                            if (hasUnits && fGpu > 0) {
+                                              setUnitMode(prev => ({ ...prev, [umKey]: true }));
+                                            } else {
+                                              setUnitMode(prev => ({ ...prev, [umKey]: false }));
+                                            }
+                                          }}
+                                          className="w-full flex items-center justify-between px-3 py-2 hover:bg-primary/10 text-xs text-left gap-2 border-b border-card-border/20 last:border-0"
+                                        >
+                                          <span className="flex-1 font-medium">{f.name}</span>
+                                          {hasUnits && (
+                                            <span className="text-[9px] bg-primary/10 text-primary px-1 py-0.5 rounded shrink-0">
+                                              {f.unit.split("(")[0].trim()}
+                                            </span>
+                                          )}
+                                          <span className="text-[10px] text-muted whitespace-nowrap">{macros.calories}kcal</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </>
+                                ) : query ? (
                                   <button
-                                    key={f.id}
                                     onClick={() => {
                                       const updated = [...editNutritionData];
                                       const foods = [...(updated[mealIdx].foods || [])];
-                                      foods[foodIdx] = `${newGrams}g ${f.name}`;
+                                      foods[foodIdx] = `100g ${query}`;
                                       updated[mealIdx] = { ...meal, foods };
                                       setEditNutritionData(updated);
                                       setFoodSearch(null);
                                     }}
-                                    className="w-full flex items-center justify-between px-3 py-2 hover:bg-primary/10 text-xs text-left gap-2"
+                                    className="w-full px-3 py-2 text-xs text-left text-primary hover:bg-primary/10"
                                   >
-                                    <span className="flex-1 font-medium">{f.name}</span>
-                                    <span className="text-[10px] text-primary font-bold whitespace-nowrap">{newGrams}g</span>
-                                    <span className="text-[10px] text-muted whitespace-nowrap">{macros.calories}kcal</span>
+                                    Usar: &quot;{query}&quot;
                                   </button>
-                                );
-                              };
-                              return (
-                                <>
-                                  {sameCategory.length > 0 && (
-                                    <>
-                                      <div className="px-3 py-1.5 text-[10px] font-bold text-primary/70 uppercase tracking-wider bg-primary/5">
-                                        Mismo tipo ({originalDbFood?.category})
-                                      </div>
-                                      {sameCategory.slice(0, 15).map(renderFoodOption)}
-                                    </>
-                                  )}
-                                  {otherCategory.length > 0 && (
-                                    <>
-                                      {sameCategory.length > 0 && (
-                                        <div className="px-3 py-1.5 text-[10px] font-bold text-muted/70 uppercase tracking-wider bg-card-border/10">
-                                          Otros alimentos
-                                        </div>
-                                      )}
-                                      {otherCategory.slice(0, 10).map(renderFoodOption)}
-                                    </>
-                                  )}
-                                  {sameCategory.length === 0 && otherCategory.length === 0 && (
-                                    <button
-                                      onClick={() => {
-                                        const updated = [...editNutritionData];
-                                        const foods = [...(updated[mealIdx].foods || [])];
-                                        foods[foodIdx] = query;
-                                        updated[mealIdx] = { ...meal, foods };
-                                        setEditNutritionData(updated);
-                                        setFoodSearch(null);
-                                      }}
-                                      className="w-full px-3 py-2 text-xs text-left text-primary hover:bg-primary/10"
-                                    >
-                                      Usar: &quot;{query}&quot;
-                                    </button>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </div>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                        {/* Live macros */}
+                        {liveMacros && (
+                          <span className="text-[9px] text-muted whitespace-nowrap hidden sm:inline">
+                            {liveMacros.calories}kcal
+                          </span>
                         )}
+                        <button
+                          onClick={() => {
+                            const updated = [...editNutritionData];
+                            const foods = [...(updated[mealIdx].foods || [])];
+                            foods.splice(foodIdx, 1);
+                            updated[mealIdx] = { ...meal, foods };
+                            setEditNutritionData(updated);
+                          }}
+                          className="text-danger/60 hover:text-danger shrink-0"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      {/* Live macros */}
-                      {liveMacros && (
-                        <span className="text-[9px] text-muted whitespace-nowrap hidden sm:inline">
-                          {liveMacros.calories}kcal
-                        </span>
+                      {/* Equivalence line for unit-based foods */}
+                      {canUseUnits && gpu > 0 && (
+                        <p className="text-[9px] text-muted ml-16 mt-0.5">
+                          {inUnitMode
+                            ? `= ${originalGrams}g`
+                            : `= ${unitCount} ${getUnitLabel(originalDbFood!.unit, unitCount)}`
+                          }
+                          {liveMacros && <span className="ml-2">{liveMacros.protein}P · {liveMacros.carbs}C · {liveMacros.fat}G</span>}
+                        </p>
                       )}
-                      <button
-                        onClick={() => {
-                          const updated = [...editNutritionData];
-                          const foods = [...(updated[mealIdx].foods || [])];
-                          foods.splice(foodIdx, 1);
-                          updated[mealIdx] = { ...meal, foods };
-                          setEditNutritionData(updated);
-                        }}
-                        className="text-danger/60 hover:text-danger"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
                     </div>
                     );
                   })}
@@ -1739,7 +1872,7 @@ export default function ClienteDetailPage({
                                 const dbFood = findFoodByName(name);
                                 if (dbFood) {
                                   const macros = calculateFoodMacros(dbFood, grams);
-                                  return { name: dbFood.name, grams, unit: "g", ...macros };
+                                  return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
                                 }
                                 return { name, grams, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
                               } else if (unitsMatch) {
@@ -1747,9 +1880,10 @@ export default function ClienteDetailPage({
                                 const name = unitsMatch[2].trim();
                                 const dbFood = findFoodByName(name);
                                 if (dbFood) {
-                                  const defaultGrams = units * 50;
+                                  const gpuVal = getGramsPerUnit(dbFood.unit);
+                                  const defaultGrams = gpuVal > 0 ? units * gpuVal : units * 50;
                                   const macros = calculateFoodMacros(dbFood, defaultGrams);
-                                  return { name: dbFood.name, grams: defaultGrams, unit: "u", ...macros };
+                                  return { name: dbFood.name, grams: defaultGrams, unit: dbFood.unit, ...macros };
                                 }
                                 return { name, grams: 0, unit: "u", calories: 0, protein: 0, carbs: 0, fat: 0 };
                               }
@@ -1788,7 +1922,7 @@ export default function ClienteDetailPage({
                           const dbFood = findFoodByName(name);
                           if (dbFood) {
                             const macros = calculateFoodMacros(dbFood, grams);
-                            return { name: dbFood.name, grams, unit: "g", ...macros };
+                            return { name: dbFood.name, grams, unit: dbFood.unit, ...macros };
                           }
                           return { name, grams, unit: "g", calories: 0, protein: 0, carbs: 0, fat: 0 };
                         }
