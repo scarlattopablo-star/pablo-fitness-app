@@ -202,10 +202,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    // --- Helper: snapshot current plan into plan_versions before overwriting ---
+    async function snapshotPlan(
+      planId: string,
+      planType: "training" | "nutrition",
+      planData: unknown,
+      importantNotes?: unknown,
+    ) {
+      try {
+        // Get next version number
+        const { count } = await supabase
+          .from("plan_versions")
+          .select("id", { count: "exact", head: true })
+          .eq("plan_id", planId)
+          .eq("plan_type", planType);
+        const versionNumber = (count || 0) + 1;
+
+        await supabase.from("plan_versions").insert({
+          plan_id: planId,
+          plan_type: planType,
+          user_id: clientId,
+          data: planData,
+          important_notes: importantNotes ?? null,
+          saved_by: user!.id,
+          version_number: versionNumber,
+        });
+      } catch {
+        // Non-fatal — version history failure shouldn't block saves
+      }
+    }
+
     if (type === "training") {
       const { data: existing } = await supabase
         .from("training_plans")
-        .select("id")
+        .select("id, data")
         .eq("user_id", clientId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -214,6 +244,9 @@ export async function POST(request: NextRequest) {
       const planData = data.days ? { days: data.days } : data;
 
       if (existing) {
+        // Snapshot current version before overwriting
+        await snapshotPlan(existing.id, "training", existing.data);
+
         const { error: updErr } = await supabase
           .from("training_plans")
           .update({ data: planData, plan_approved: true })
@@ -232,7 +265,7 @@ export async function POST(request: NextRequest) {
     } else if (type === "nutrition") {
       const { data: existing } = await supabase
         .from("nutrition_plans")
-        .select("id, data")
+        .select("id, data, important_notes")
         .eq("user_id", clientId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -246,6 +279,9 @@ export async function POST(request: NextRequest) {
       };
 
       if (existing) {
+        // Snapshot current version before overwriting
+        await snapshotPlan(existing.id, "nutrition", existing.data, existing.important_notes);
+
         const { error: updErr } = await supabase
           .from("nutrition_plans")
           .update({
