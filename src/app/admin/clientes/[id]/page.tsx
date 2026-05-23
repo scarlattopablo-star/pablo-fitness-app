@@ -137,6 +137,8 @@ const FOOD_ALIASES: Record<string, string[]> = {
   "frutilla": ["frutilla", "frutillas", "fresa", "fresas"],
   "lentejas": ["lentejas", "lenteja"],
   "garbanzos": ["garbanzos", "garbanzo"],
+  "queso-magro": ["queso magro", "magro"],
+  "queso-dambo-light": ["dambo", "dambo light", "queso dambo"],
 };
 
 function normalizeSearch(term: string): string {

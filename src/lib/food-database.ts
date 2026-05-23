@@ -44,6 +44,7 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: "caballa", name: "Caballa (cocida)", category: "protein", calories: 205, protein: 19, carbs: 0, fat: 14, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 150 },
   { id: "caseina", name: "Proteina caseina (scoop)", category: "protein", calories: 110, protein: 24, carbs: 3, fat: 0.5, unit: "scoop (30g)", mealTypes: ["snack"], maxGrams: 60 },
   { id: "queso-dambo-light", name: "Queso dambo light", category: "protein", calories: 240, protein: 25, carbs: 1, fat: 15, unit: "g", mealTypes: ["desayuno", "snack"], maxGrams: 60 },
+  { id: "queso-magro", name: "Queso magro", category: "protein", calories: 240, protein: 32, carbs: 2, fat: 12, unit: "g", mealTypes: ["desayuno", "snack", "almuerzo"], maxGrams: 60 },
 
   // === CARBOHIDRATOS (19) ===
   { id: "arroz-blanco", name: "Arroz blanco (cocido)", category: "carb", calories: 130, protein: 2.7, carbs: 28, fat: 0.3, unit: "g", mealTypes: ["almuerzo", "cena"], maxGrams: 250 },
@@ -143,7 +144,7 @@ const VEGAN_BLOCKED_IDS = new Set([
   "pollo-pechuga", "pollo-muslo", "carne-magra", "carne-molida", "cerdo-lomo",
   "pavo-pechuga", "salmon", "atun", "merluza", "tilapia", "camarones", "sardina",
   "caballa", "huevo-entero", "clara-huevo", "whey-protein", "jamon-pavo",
-  "jamon-cocido", "bondiola", "caseina", "queso-dambo-light",
+  "jamon-cocido", "bondiola", "caseina", "queso-dambo-light", "queso-magro",
   "yogurt-descremado", "yogurt-griego", "leche-descremada", "leche-entera",
   "queso-cottage", "queso-ricota", "queso-untable", "queso-muzzarella",
 ]);
@@ -162,7 +163,7 @@ const GLUTEN_FREE_BLOCKED_IDS = new Set([
 const LACTOSE_FREE_BLOCKED_IDS = new Set([
   "yogurt-descremado", "yogurt-griego", "leche-descremada", "leche-entera",
   "queso-cottage", "queso-ricota", "queso-untable", "queso-muzzarella",
-  "whey-protein", "caseina", "queso-dambo-light",
+  "whey-protein", "caseina", "queso-dambo-light", "queso-magro",
 ]);
 
 // Frutos secos (tree nuts) — mani (mani mantequilla) es legumbre, no fruto seco (FARE)
@@ -307,7 +308,7 @@ export function findFoodByName(name: string): FoodItem | undefined {
     "huevo": "huevo-entero", "huevos": "huevo-entero", "clara": "clara-huevo", "claras": "clara-huevo",
     "whey": "whey-protein", "proteina": "whey-protein", "caseina": "caseina",
     "tofu": "tofu", "jamon": "jamon-pavo", "jamon cocido": "jamon-cocido",
-    "dambo": "queso-dambo-light",
+    "dambo": "queso-dambo-light", "queso magro": "queso-magro", "magro": "queso-magro",
     "arroz": "arroz-blanco", "arroz blanco": "arroz-blanco", "arroz integral": "arroz-integral",
     "avena": "avena", "batata": "boniato", "boniato": "boniato", "papa": "papa",
     "pan": "pan-integral", "pan integral": "pan-integral", "pan blanco": "pan-blanco",
