@@ -141,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function checkDirectClient(userId: string) {
+    // Check free_access_codes (clients who entered via direct-client code)
     const { data } = await supabase
       .from("free_access_codes")
       .select("id")
@@ -148,7 +149,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("plan_slug", "direct-client")
       .limit(1)
       .maybeSingle();
-    if (data) setIsDirectClient(true);
+    if (data) { setIsDirectClient(true); return; }
+
+    // Also check subscription (clients converted via admin panel)
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("plan_slug", "direct-client")
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (sub) setIsDirectClient(true);
   }
 
   async function fetchSubscription(userId: string) {

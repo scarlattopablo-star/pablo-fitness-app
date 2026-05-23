@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, Users, ClipboardList,
   CreditCard, BookOpen, LogOut, Menu, X, Gift, Download, Smartphone, Share, Trash2,
-  MessageCircle, Wand2,
+  MessageCircle, Wand2, Apple,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { href: "/admin/clientes", icon: Users, label: "Clientes" },
   { href: "/admin/planes", icon: ClipboardList, label: "Planes" },
   { href: "/admin/ejercicios", icon: BookOpen, label: "Ejercicios" },
+  { href: "/admin/alimentos", icon: Apple, label: "Alimentos" },
   { href: "/admin/pagos", icon: CreditCard, label: "Pagos" },
   { href: "/admin/chat", icon: MessageCircle, label: "Chat" },
   { href: "/admin/acceso-gratis", icon: Gift, label: "Acceso Gratis" },
@@ -28,16 +29,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { signOut } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [verified, setVerified] = useState<boolean | null>(null);
+  const { signOut, profile, loading: authLoading } = useAuth();
 
-  // Check 2FA verification
+  // Check 2FA verification AND is_admin
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (authLoading) return;
+
+    // If user is not admin, redirect away
+    if (profile && !profile.is_admin) {
+      router.push("/dashboard");
+      return;
+    }
+
     const lastVerified = localStorage.getItem("admin-2fa-verified");
     const isVerified = lastVerified && (Date.now() - Number(lastVerified)) < 24 * 60 * 60 * 1000;
     if (!isVerified && pathname !== "/admin/verify") {
@@ -45,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } else {
       setVerified(true);
     }
-  }, [pathname, router]);
+  }, [pathname, router, profile, authLoading]);
 
   // Register push notifications for admin so messages arrive as notifications
   useEffect(() => {

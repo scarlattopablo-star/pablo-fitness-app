@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 // GET /api/admin/custom-foods — list all custom foods
 // POST /api/admin/custom-foods — add a new custom food
+// PUT /api/admin/custom-foods — update an existing custom food
 // DELETE /api/admin/custom-foods?id=... — delete a custom food
 
 async function getAdminUser(request: NextRequest) {
@@ -68,6 +69,42 @@ export async function POST(request: NextRequest) {
       category: category || "other",
       created_by: auth.user.id,
     })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ food: data });
+}
+
+export async function PUT(request: NextRequest) {
+  const auth = await getAdminUser(request);
+  if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  const body = await request.json();
+  const { id, name, calories, protein, carbs, fat, unit, category } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: "ID requerido" }, { status: 400 });
+  }
+  if (!name || name.trim().length < 2) {
+    return NextResponse.json({ error: "Nombre requerido (min 2 caracteres)" }, { status: 400 });
+  }
+
+  const { data, error } = await auth.supabase
+    .from("custom_foods")
+    .update({
+      name: name.trim(),
+      calories: Number(calories) || 0,
+      protein: Number(protein) || 0,
+      carbs: Number(carbs) || 0,
+      fat: Number(fat) || 0,
+      unit: unit || "g",
+      category: category || "other",
+    })
+    .eq("id", id)
     .select()
     .single();
 
