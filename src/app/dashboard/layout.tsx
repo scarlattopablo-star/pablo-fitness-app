@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-dvh flex overflow-x-hidden">
       {/* SIDEBAR Desktop — slim, elegant */}
       <aside className="hidden md:flex w-60 flex-col fixed h-screen border-r border-card-border/50 bg-background">
         {/* Logo */}
@@ -382,7 +382,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         )}
         <PresenceProvider userId={user?.id || ""} fullName={profile?.full_name || ""}>
-          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">{children}</div>
+          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl w-full overflow-x-hidden">{children}</div>
         </PresenceProvider>
       </main>
 

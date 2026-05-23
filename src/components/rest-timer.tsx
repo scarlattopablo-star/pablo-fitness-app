@@ -9,22 +9,48 @@ interface RestTimerProps {
   autoStart?: boolean;
 }
 
-// Reusable AudioContext (created on first user interaction)
+// ── Audio engine: works on iOS Safari, Android Chrome, desktop ──
+// iOS requires AudioContext to be created/resumed inside a user gesture.
+// We keep a singleton and "warm it up" on mount (the user just tapped a checkbox).
 let audioCtx: AudioContext | null = null;
+let audioWarmedUp = false;
+
 function getAudioCtx(): AudioContext | null {
   try {
-    if (!audioCtx) audioCtx = new AudioContext();
-    if (audioCtx.state === "suspended") audioCtx.resume();
+    if (!audioCtx) {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+    }
     return audioCtx;
   } catch {
     return null;
   }
 }
 
-// Generate a short beep using Web Audio API
+/** Must be called from a user-gesture handler (click/tap) to unlock iOS audio */
+function warmUpAudio() {
+  if (audioWarmedUp) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  // Resume suspended context (iOS always starts suspended)
+  if (ctx.state === "suspended") ctx.resume();
+  // Play a silent buffer to fully unlock the audio pipeline on iOS
+  try {
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch { /* ok */ }
+  audioWarmedUp = true;
+}
+
 function playBeep(frequency = 880) {
   const ctx = getAudioCtx();
   if (!ctx) return;
+  // Always try to resume (iOS can re-suspend when backgrounded)
+  if (ctx.state === "suspended") ctx.resume();
   try {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -32,39 +58,64 @@ function playBeep(frequency = 880) {
     gain.connect(ctx.destination);
     osc.frequency.value = frequency;
     osc.type = "sine";
-    gain.gain.value = 0.5;
+    gain.gain.value = 0.7; // louder for mobile
     osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.stop(ctx.currentTime + 0.4);
-  } catch {
-    // Audio failed
-  }
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch { /* ok */ }
 }
 
-// Double beep for completion
 function playFinishBeep() {
+  const ctx = getAudioCtx();
+  if (ctx?.state === "suspended") ctx.resume();
   playBeep(1047); // C6
   setTimeout(() => playBeep(1319), 200); // E6
   setTimeout(() => playBeep(1568), 400); // G6
+
+  // Fallback: also try HTML5 Audio for devices where Web Audio is muted
+  try {
+    const audio = new Audio("/sounds/notification.wav");
+    audio.volume = 1.0;
+    audio.play().catch(() => {});
+  } catch { /* ok */ }
 }
 
-function tryVibrate() {
+function tryVibrate(pattern: number[] = [200, 100, 200]) {
   try {
-    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-  } catch {
-    // Vibration not supported
-  }
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch { /* ok */ }
 }
+
+// ── Background-safe timer logic ──
+// setInterval pauses when iOS/Android backgrounds the tab or locks the screen.
+// We store the real target timestamp so when the tab comes back,
+// we catch up instantly instead of running late.
 
 export default function RestTimer({ seconds, onComplete, autoStart = true }: RestTimerProps) {
   const [remaining, setRemaining] = useState(seconds);
   const [running, setRunning] = useState(autoStart);
   const [finished, setFinished] = useState(false);
 
-  // Initialize AudioContext on mount (user already interacted by clicking checkbox)
-  useEffect(() => { getAudioCtx(); }, []);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const completeCalled = useRef(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Real wall-clock target: when the timer should hit 0
+  const targetEndRef = useRef<number>(0);
+  // How many seconds were remaining when we last paused
+  const pausedRemainingRef = useRef<number>(seconds);
+
+  // Warm up audio on mount — this runs inside the click handler callstack
+  // (user just tapped the set-complete checkbox which renders this component)
+  useEffect(() => {
+    warmUpAudio();
+  }, []);
+
+  // Set the target timestamp when starting
+  useEffect(() => {
+    if (running && !finished) {
+      targetEndRef.current = Date.now() + remaining * 1000;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
 
   const stop = useCallback(() => {
     if (intervalRef.current) {
@@ -73,31 +124,94 @@ export default function RestTimer({ seconds, onComplete, autoStart = true }: Res
     }
   }, []);
 
+  const finishTimer = useCallback(() => {
+    stop();
+    setRunning(false);
+    setFinished(true);
+    setRemaining(0);
+    playFinishBeep();
+    tryVibrate([200, 100, 200, 100, 300]);
+    if (!completeCalled.current) {
+      completeCalled.current = true;
+      onComplete?.();
+    }
+  }, [stop, onComplete]);
+
   useEffect(() => {
     if (!running || finished) return;
 
+    // Tick at 250ms instead of 1000ms so we catch up quickly after backgrounding
     intervalRef.current = setInterval(() => {
+      const now = Date.now();
+      const msLeft = targetEndRef.current - now;
+
+      if (msLeft <= 0) {
+        finishTimer();
+        return;
+      }
+
+      const secsLeft = Math.ceil(msLeft / 1000);
       setRemaining(prev => {
-        if (prev <= 1) {
-          stop();
-          setRunning(false);
-          setFinished(true);
-          playFinishBeep();
-          tryVibrate();
-          if (!completeCalled.current) {
-            completeCalled.current = true;
-            onComplete?.();
-          }
-          return 0;
+        // Only trigger beeps when crossing a second boundary
+        if (secsLeft !== prev && secsLeft <= 3 && secsLeft >= 1) {
+          playBeep();
+          tryVibrate([150]);
         }
-        // Beep at 3, 2, 1
-        if (prev <= 4) playBeep();
-        return prev - 1;
+        return secsLeft;
       });
-    }, 1000);
+    }, 250);
 
     return stop;
-  }, [running, finished, stop, onComplete]);
+  }, [running, finished, stop, finishTimer]);
+
+  // ── Handle visibility change (tab back to foreground) ──
+  // When the user returns to the app, immediately sync the timer
+  useEffect(() => {
+    if (!running || finished) return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        // Re-warm audio (iOS may have killed the context)
+        warmUpAudio();
+        const ctx = getAudioCtx();
+        if (ctx?.state === "suspended") ctx.resume();
+
+        const msLeft = targetEndRef.current - Date.now();
+        if (msLeft <= 0) {
+          finishTimer();
+        } else {
+          setRemaining(Math.ceil(msLeft / 1000));
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [running, finished, finishTimer]);
+
+  // Pause / resume
+  const handlePause = () => {
+    if (running) {
+      // Pausing: save current remaining
+      pausedRemainingRef.current = remaining;
+      stop();
+      setRunning(false);
+    } else {
+      // Resuming: recalculate target from paused remaining
+      targetEndRef.current = Date.now() + pausedRemainingRef.current * 1000;
+      setRunning(true);
+    }
+  };
+
+  const handleSkip = () => {
+    stop();
+    setFinished(true);
+    setRemaining(0);
+    if (!completeCalled.current) {
+      completeCalled.current = true;
+      onComplete?.();
+    }
+  };
 
   const progress = ((seconds - remaining) / seconds) * 100;
   const mins = Math.floor(remaining / 60);
@@ -118,20 +232,13 @@ export default function RestTimer({ seconds, onComplete, autoStart = true }: Res
         <span className="text-xs text-muted">Descanso</span>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setRunning(!running)}
+            onClick={handlePause}
             className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center hover:bg-accent/30 transition-colors"
           >
             {running ? <Pause className="h-3 w-3 text-accent" /> : <Play className="h-3 w-3 text-accent" />}
           </button>
           <button
-            onClick={() => {
-              stop();
-              setFinished(true);
-              if (!completeCalled.current) {
-                completeCalled.current = true;
-                onComplete?.();
-              }
-            }}
+            onClick={handleSkip}
             className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center hover:bg-accent/30 transition-colors"
             title="Saltar descanso"
           >
@@ -148,7 +255,7 @@ export default function RestTimer({ seconds, onComplete, autoStart = true }: Res
       {/* Progress bar */}
       <div className="h-1.5 rounded-full bg-card-bg overflow-hidden">
         <div
-          className="h-full rounded-full bg-accent transition-all duration-1000 ease-linear"
+          className="h-full rounded-full bg-accent transition-all duration-300 ease-linear"
           style={{ width: `${progress}%` }}
         />
       </div>
