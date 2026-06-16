@@ -1,8 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { logAdminAction } from "@/lib/audit-log";
+import { buildNutritionExtras } from "@/lib/persist-nutrition-extras";
+import type { MealPlanMeal } from "@/lib/generate-meal-plan";
 import webpush from "web-push";
 import { Resend } from "resend";
+
+// Calcula shoppingList + budget + supplements para el plan de nutricion que el
+// admin acaba de guardar/editar. El plan manual es el MISMO menu todos los dias
+// (un solo dia que se repite), por eso daysInWeek = 1. La frecuencia de compra
+// del cliente (semanal/quincenal/mensual) define cuantos dias cubre la lista.
+// Si algo falla (sin survey, sin precios), devuelve null y no rompe el guardado.
+async function computeNutritionExtras(
+  supabase: SupabaseClient,
+  clientId: string,
+  meals: MealPlanMeal[],
+) {
+  try {
+    if (!Array.isArray(meals) || meals.length === 0) return null;
+
+    const { data: survey } = await supabase
+      .from("surveys")
+      .select("country, city, food_budget_monthly, shopping_frequency, sex, age, activity_level, training_days, dietary_restrictions, pathologies, intolerances, current_supplements, wants_supplement_advice, protein, target_calories, tdee, objective, nutritional_goal")
+      .eq("user_id", clientId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const isDeficit = (survey?.target_calories ?? 0) < (survey?.tdee ?? (survey?.target_calories ?? 0) + 1);
+
+    return await buildNutritionExtras(supabase, {
+      meals,
+      country: survey?.country,
+      city: survey?.city,
+      userBudgetMonthly: survey?.food_budget_monthly,
+      daysInWeek: 1,
+      shoppingFrequency: survey?.shopping_frequency as "semanal" | "quincenal" | "mensual" | null,
+      supplementInput: {
+        sex: survey?.sex || "hombre",
+        age: Number(survey?.age) || 30,
+        objective: (survey?.objective || "direct-client") as string,
+        nutritionalGoal: survey?.nutritional_goal ?? null,
+        activityLevel: survey?.activity_level || "moderado",
+        trainingDays: Number(survey?.training_days) || 4,
+        dietaryRestrictions: survey?.dietary_restrictions || [],
+        pathologies: survey?.pathologies || [],
+        intolerances: survey?.intolerances || [],
+        currentSupplements: survey?.current_supplements || [],
+        wantsAdvice: survey?.wants_supplement_advice ?? true,
+        proteinTarget: Number(survey?.protein) || 130,
+        isDeficit,
+      },
+    });
+  } catch {
+    return null;
+  }
+}
 
 let vapidConfigured = false;
 function ensureVapid() {
@@ -275,10 +328,22 @@ export async function POST(request: NextRequest) {
       // Clear weekMenu/gymDay/kitesurfDay since admin is setting new meals as source of truth
       const existingData = (existing?.data && typeof existing.data === "object") ? existing.data : {};
       const { weekMenu: _wm, gymDay: _gd, kitesurfDay: _kd, ...preservedData } = existingData as Record<string, unknown>;
-      const mergedData = {
+      const mergedData: Record<string, unknown> = {
         ...preservedData,
         meals: data.meals,
       };
+
+      // Regenerar la lista de compras (+ presupuesto + suplementos) en base a
+      // las comidas que el admin acaba de definir. Antes solo se preservaba la
+      // lista vieja, por eso a los planes nuevos/editados nunca les aparecia.
+      const extras = await computeNutritionExtras(supabase, clientId, data.meals as MealPlanMeal[]);
+      if (extras) {
+        if (extras.shoppingList) mergedData.shoppingList = extras.shoppingList;
+        else delete mergedData.shoppingList;
+        if (extras.budget) mergedData.budget = extras.budget;
+        else delete mergedData.budget;
+        if (extras.supplements) mergedData.supplements = extras.supplements;
+      }
 
       if (existing) {
         // Snapshot current version before overwriting
