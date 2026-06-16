@@ -50,7 +50,7 @@ export default function PlanesPage() {
         {/* PROMO BANNER */}
         <CountdownTimer
           targetDate={PROMO_END}
-          label="Oferta de lanzamiento — Primer mes GRATIS en todos los planes"
+          label="Oferta de lanzamiento — descuentos por tiempo limitado"
           variant="banner"
           className="mb-8"
         />
@@ -87,7 +87,7 @@ export default function PlanesPage() {
           <p className="text-muted max-w-xl mx-auto">
             Todos los planes incluyen entrenamiento + nutricion personalizada con
             calculo de macros personalizado, videos de ejercicios y seguimiento de progreso.
-            <span className="block mt-2 text-primary font-bold">Primer mes GRATIS — sin tarjeta de credito.</span>
+            <span className="block mt-2 text-primary font-bold">Seguimiento directo de Pablo. Cancelas cuando quieras.</span>
           </p>
         </div>
 
