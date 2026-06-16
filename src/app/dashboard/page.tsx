@@ -324,18 +324,16 @@ export default function DashboardPage() {
       {/* Monthly group challenge — only for non-direct clients */}
       {!isDirectClient && <MonthlyChallengeCard />}
 
-      {/* GAMIFICATION WIDGET */}
+      {/* GAMIFICATION WIDGET — clientes directos: sin link al ranking */}
       {gamification && (
-        <Link href="/dashboard/ranking" className="block mb-6 group">
-          <div className="grid grid-cols-3 gap-2">
-            {/* Streak */}
-            <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+        isDirectClient ? (
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            <div className="card-premium rounded-2xl p-3 text-center">
               <div className="text-2xl mb-1">{gamification.streak > 0 ? "🔥" : "💤"}</div>
               <p className="text-lg font-black text-primary">{gamification.streak}</p>
               <p className="text-[10px] text-muted uppercase tracking-wider">{gamification.streak === 1 ? "Dia" : "Dias"} racha</p>
             </div>
-            {/* Level */}
-            <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+            <div className="card-premium rounded-2xl p-3 text-center">
               <div className="text-2xl mb-1">⚡</div>
               <p className="text-lg font-black">{gamification.levelName}</p>
               <div className="mt-1 h-1 bg-card-border/50 rounded-full overflow-hidden">
@@ -343,18 +341,40 @@ export default function DashboardPage() {
               </div>
               <p className="text-[10px] text-muted mt-1">{gamification.xp} XP</p>
             </div>
-            {/* Last Achievement */}
-            <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+            <div className="card-premium rounded-2xl p-3 text-center">
               <div className="text-2xl mb-1">{gamification.lastAchievement?.icon || "🏆"}</div>
               <p className="text-xs font-bold truncate">{gamification.lastAchievement?.name || "Sin logros"}</p>
               <p className="text-[10px] text-muted uppercase tracking-wider mt-1">Ultimo logro</p>
             </div>
           </div>
-        </Link>
+        ) : (
+          <Link href="/dashboard/ranking" className="block mb-6 group">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+                <div className="text-2xl mb-1">{gamification.streak > 0 ? "🔥" : "💤"}</div>
+                <p className="text-lg font-black text-primary">{gamification.streak}</p>
+                <p className="text-[10px] text-muted uppercase tracking-wider">{gamification.streak === 1 ? "Dia" : "Dias"} racha</p>
+              </div>
+              <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+                <div className="text-2xl mb-1">⚡</div>
+                <p className="text-lg font-black">{gamification.levelName}</p>
+                <div className="mt-1 h-1 bg-card-border/50 rounded-full overflow-hidden">
+                  <div className="h-full gradient-primary rounded-full" style={{ width: `${Math.round(gamification.progress * 100)}%` }} />
+                </div>
+                <p className="text-[10px] text-muted mt-1">{gamification.xp} XP</p>
+              </div>
+              <div className="card-premium rounded-2xl p-3 text-center group-hover:border-primary/20 transition-colors">
+                <div className="text-2xl mb-1">{gamification.lastAchievement?.icon || "🏆"}</div>
+                <p className="text-xs font-bold truncate">{gamification.lastAchievement?.name || "Sin logros"}</p>
+                <p className="text-[10px] text-muted uppercase tracking-wider mt-1">Ultimo logro</p>
+              </div>
+            </div>
+          </Link>
+        )
       )}
 
-      {/* WEEKLY SUMMARY */}
-      {gamification && gamification.weekSessions > 0 && (
+      {/* WEEKLY SUMMARY — oculto para clientes directos (muestra posicion en ranking) */}
+      {gamification && gamification.weekSessions > 0 && !isDirectClient && (
         <div className="card-premium rounded-2xl p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="h-4 w-4 text-primary" />
