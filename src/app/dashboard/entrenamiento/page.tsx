@@ -62,8 +62,7 @@ export default function EntrenamientoPage() {
         .from("exercise_logs")
         .select("*")
         .eq("user_id", user.id)
-        .order("date", { ascending: false })
-        .limit(50);
+        .order("date", { ascending: false });
 
       if (error) throw error;
       if (data) {
@@ -274,7 +273,7 @@ export default function EntrenamientoPage() {
                 <div className="px-4 pb-4 border-t border-card-border/30">
                   {/* Weight evolution mini chart */}
                   {data.logs.length > 1 && (() => {
-                    const chartData = [...data.logs].reverse().slice(-10).map(log => ({
+                    const chartData = [...data.logs].reverse().map(log => ({
                       date: new Date(log.date).toLocaleDateString("es", { day: "2-digit", month: "short" }),
                       peso: Math.max(...log.sets_data.map((s: SetData) => s.weight)),
                     }));
@@ -294,9 +293,9 @@ export default function EntrenamientoPage() {
                     );
                   })()}
 
-                  {/* Session details */}
+                  {/* Session details — historial completo desde el primer día */}
                   <div className="space-y-2">
-                    {data.logs.slice(0, 5).map(log => (
+                    {data.logs.map(log => (
                       <div key={log.id} className="bg-card-bg rounded-lg p-3">
                         <p className="text-xs text-muted mb-1">
                           {new Date(log.date).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })}
