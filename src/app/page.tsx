@@ -169,14 +169,14 @@ export default function HomePage() {
             <Link href="/login" className="text-xs text-muted hover:text-foreground transition-colors font-medium">
               {t("nav.login")}
             </Link>
-            <Link href="/registro-gratis" className="btn-shimmer text-sm px-5 py-2 rounded-full">
-              30 dias gratis
+            <Link href="/planes" className="btn-shimmer text-sm px-5 py-2 rounded-full">
+              Ver Planes
             </Link>
           </div>
           <div className="flex md:hidden items-center gap-3">
             <LanguageSelector />
             <Link href="/login" className="text-xs text-muted font-medium">{t("nav.login")}</Link>
-            <Link href="/registro-gratis" className="btn-shimmer text-xs px-4 py-2 rounded-full">Gratis</Link>
+            <Link href="/planes" className="btn-shimmer text-xs px-4 py-2 rounded-full">Planes</Link>
           </div>
         </div>
       </nav>

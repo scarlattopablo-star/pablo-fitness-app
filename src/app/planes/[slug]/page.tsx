@@ -150,15 +150,6 @@ export default function PlanDetailPage({
           {/* RIGHT: Pricing Card */}
           <div className="lg:col-span-2">
             <div className="glass-card rounded-2xl p-6 sticky top-24">
-              {/* Free month badge — NO aplica al reto de 21 dias (es un producto aparte). */}
-              {plan.slug !== "reto-transformacion" && (
-                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 mb-4 text-center">
-                  <p className="text-sm font-bold text-emerald-400">Primer mes GRATIS</p>
-                  <p className="text-[10px] text-muted">Proba todo sin compromiso. Despues elegis si continuar.</p>
-                  <p className="text-[9px] text-muted/70 mt-1">Promo solo para planes mensuales — no aplica al reto Gluteos 360.</p>
-                </div>
-              )}
-
               {/* Countdown */}
               <CountdownTimer
                 targetDate={PROMO_END}
@@ -256,7 +247,7 @@ export default function PlanDetailPage({
                 href={`/encuesta?plan=${plan.slug}&duration=${selectedDuration}${referralCode ? `&ref=${referralCode}` : ""}`}
                 className="block w-full gradient-primary text-black font-bold text-center py-4 rounded-xl hover:opacity-90 transition-opacity text-lg"
               >
-                {referralCode ? "Empezar Gratis con 15% OFF" : "Empeza tu Transformacion"} →
+                {referralCode ? "Empezar con 15% OFF" : "Empeza tu Transformacion"} →
               </Link>
 
               <p className="text-xs text-muted text-center mt-3">

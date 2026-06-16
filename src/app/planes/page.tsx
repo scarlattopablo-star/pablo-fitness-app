@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   Flame, Dumbbell, Sparkles, GraduationCap, Trophy,
   Heart, Shield, RefreshCw, Users, Medal, Home, Wind,
-  ArrowLeft, ChevronRight, Check, Gift, Star, Shield as ShieldCheck, Clock, TrendingUp,
+  ArrowLeft, ChevronRight, Check, Star, Shield as ShieldCheck, Clock, TrendingUp,
 } from "lucide-react";
 import { PLANS, DURATION_LABELS, DURATION_DESCRIPTIONS, getDiscountPercentage, formatPrice } from "@/lib/plans-data";
 import { useState, useEffect } from "react";
@@ -124,33 +124,6 @@ export default function PlanesPage() {
           {DURATION_DESCRIPTIONS[selectedDuration]}
         </p>
 
-        {/* FREE TRIAL CARD */}
-        <div className="max-w-lg mx-auto mb-10">
-          <Link
-            href="/registro-gratis"
-            className="block glass-card rounded-2xl p-5 border-emerald-500/30 hover:border-emerald-500/50 transition-all group relative overflow-hidden"
-          >
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-300" />
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                <Gift className="h-6 w-6 text-emerald-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="font-bold">Primer Mes GRATIS</h3>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-black animate-pulse">
-                    GRATIS
-                  </span>
-                </div>
-                <p className="text-sm text-muted">
-                  30 dias completos para probar todo. Sin tarjeta de credito. Sin compromiso.
-                </p>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted group-hover:text-emerald-400 transition-colors flex-shrink-0" />
-            </div>
-          </Link>
-        </div>
-
         {/* PLANS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {PLANS.map((plan) => {
@@ -210,7 +183,7 @@ export default function PlanesPage() {
                     href={`/planes/${plan.slug}?duration=${selectedDuration}`}
                     className="block w-full gradient-primary text-black font-bold text-center py-3 rounded-xl hover:opacity-90 transition-opacity"
                   >
-                    Empezar Gratis
+                    Contratar Plan
                   </Link>
                   <Link
                     href={`/planes/${plan.slug}`}
@@ -229,7 +202,7 @@ export default function PlanesPage() {
             <ShieldCheck className="h-8 w-8 text-emerald-400 mx-auto mb-3" />
             <h3 className="font-bold mb-1">Garantia de Satisfaccion</h3>
             <p className="text-sm text-muted">
-              Si despues de tu mes gratis no estas conforme, simplemente no pagas. Sin preguntas, sin compromiso.
+              Entreno y nutricion 100% personalizados, con seguimiento directo de Pablo. Cancelas cuando quieras.
             </p>
           </div>
         </div>
