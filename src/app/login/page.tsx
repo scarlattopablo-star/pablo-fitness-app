@@ -83,54 +83,42 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // Check if admin
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", data.user.id)
-          .single();
+        // Fetch everything needed to decide where to land in parallel,
+        // instead of chaining up to four round-trips before redirecting.
+        const userId = data.user.id;
+        const [profileRes, surveyRes, subRes] = await Promise.all([
+          supabase.from("profiles").select("is_admin").eq("id", userId).single(),
+          supabase.from("surveys").select("id").eq("user_id", userId).limit(1).maybeSingle(),
+          supabase
+            .from("subscriptions")
+            .select("duration, amount_paid")
+            .eq("user_id", userId)
+            .eq("status", "active")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+
+        const profile = profileRes.data;
+        const survey = surveyRes.data;
+        const sub = subRes.data;
 
         if (profile?.is_admin) {
           router.push("/admin");
-        } else {
-          // Check if user has completed a survey
-          const { data: survey } = await supabase
-            .from("surveys")
-            .select("id")
-            .eq("user_id", data.user.id)
-            .limit(1)
-            .single();
-
-          if (!survey) {
-            // Check if user has an active subscription before sending to survey
-            const { data: sub } = await supabase
-              .from("subscriptions")
-              .select("id")
-              .eq("user_id", data.user.id)
-              .eq("status", "active")
-              .limit(1)
-              .maybeSingle();
-
-            if (sub) {
-              // Check if trial (7-day free) — skip survey
-              const { data: fullSub } = await supabase
-                .from("subscriptions")
-                .select("duration, amount_paid")
-                .eq("id", sub.id)
-                .single();
-              if (fullSub?.duration === "7-dias" && Number(fullSub.amount_paid) === 0) {
-                router.push("/dashboard");
-              } else {
-                // Has paid subscription but no survey - complete the survey
-                router.push("/encuesta-directa");
-              }
-            } else {
-              // No subscription and no survey - needs to pay first
-              router.push("/sin-plan");
-            }
-          } else {
+        } else if (survey) {
+          router.push("/dashboard");
+        } else if (sub) {
+          // Has active subscription but no survey yet.
+          if (sub.duration === "7-dias" && Number(sub.amount_paid) === 0) {
+            // Free trial — skip survey
             router.push("/dashboard");
+          } else {
+            // Paid subscription but no survey - complete the survey
+            router.push("/encuesta-directa");
           }
+        } else {
+          // No subscription and no survey - needs to pay first
+          router.push("/sin-plan");
         }
       }
     } catch {

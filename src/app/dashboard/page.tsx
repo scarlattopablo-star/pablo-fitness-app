@@ -91,14 +91,22 @@ export default function DashboardPage() {
     return DAILY_MESSAGES[Math.abs(hash) % DAILY_MESSAGES.length];
   })();
 
+  // Data loaders only depend on the user id. Keeping `profile` out of the
+  // deps avoids re-running every query a second time once the profile
+  // resolves a moment after the user.
   useEffect(() => {
-    if (user) loadData();
+    if (!user) return;
+    loadData();
+    loadGamification();
+    loadWeeklyMuscles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
     if (profile?.avatar_url) {
       getPhotoUrl(profile.avatar_url).then(url => { if (url) setAvatarUrl(url); });
     }
-    if (user) loadGamification();
-    if (user) loadWeeklyMuscles();
-  }, [user, profile]);
+  }, [profile?.avatar_url]);
 
   const loadGamification = async () => {
     if (!user) return;

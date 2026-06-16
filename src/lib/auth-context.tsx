@@ -60,44 +60,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Timeout: if getSession takes too long or fails, stop loading
+    let mounted = true;
+    // Tracks which user we've already loaded data for, so the initial
+    // INITIAL_SESSION event and any later token refresh don't re-run the
+    // four profile/subscription queries for the same user.
+    let loadedUserId: string | null = null;
+
+    // Safety net: if onAuthStateChange never emits (rare in-app browser
+    // failure), stop blocking the UI after 2s.
     const timeout = setTimeout(() => {
-      setLoading(false);
+      if (mounted) setLoading(false);
     }, 2000);
+
+    // Run all per-user lookups concurrently instead of one after another.
+    function loadUserData(userId: string) {
+      void Promise.all([
+        fetchProfile(userId),
+        fetchSubscription(userId),
+        checkPlans(userId),
+        checkDirectClient(userId),
+      ]);
+    }
 
     let authSub: { unsubscribe: () => void } | null = null;
 
     try {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        clearTimeout(timeout);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-          fetchSubscription(session.user.id);
-          checkPlans(session.user.id);
-          checkDirectClient(session.user.id);
+      // onAuthStateChange fires an INITIAL_SESSION event right after
+      // registration, so we no longer need a separate getSession() call
+      // (which previously doubled every query on first load).
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        const sessionUser = session?.user ?? null;
+        if (!mounted) return;
+
+        setUser(sessionUser);
+
+        if (sessionUser) {
+          if (loadedUserId !== sessionUser.id) {
+            loadedUserId = sessionUser.id;
+            // IMPORTANT: defer Supabase calls out of this callback.
+            // supabase-js holds an internal lock while it runs, and calling
+            // queries or auth methods synchronously here can deadlock and
+            // hang the app on login/token refresh.
+            setTimeout(() => { if (mounted) loadUserData(sessionUser.id); }, 0);
+          }
+        } else {
+          loadedUserId = null;
+          setProfile(null);
+          setSubscription(null);
+          setHasPlans(false);
+          setIsDirectClient(false);
         }
-        setLoading(false);
-      }).catch(() => {
+
         clearTimeout(timeout);
         setLoading(false);
       });
-
-      const { data } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            fetchProfile(session.user.id);
-            fetchSubscription(session.user.id);
-            checkPlans(session.user.id);
-            checkDirectClient(session.user.id);
-          } else {
-            setProfile(null);
-            setSubscription(null);
-            setHasPlans(false);
-          }
-        }
-      );
       authSub = data.subscription;
     } catch {
       // In-app browsers may crash on auth calls - gracefully degrade
@@ -105,7 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
 
-    return () => { if (authSub) authSub.unsubscribe(); };
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      if (authSub) authSub.unsubscribe();
+    };
   }, []);
 
   async function fetchProfile(userId: string) {
