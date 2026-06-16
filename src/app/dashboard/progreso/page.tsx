@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Camera, Plus, TrendingDown, Scale, Ruler,
   Calendar, X, Check, Loader2, Image,
@@ -58,6 +58,25 @@ export default function ProgresoPage() {
   const [photoFront, setPhotoFront] = useState<File | null>(null);
   const [photoSide, setPhotoSide] = useState<File | null>(null);
   const [photoBack, setPhotoBack] = useState<File | null>(null);
+  // Un solo input compartido para los tres slots para evitar el bug de iOS/Android
+  // donde múltiples inputs de archivo ocultos se confunden y asignan la foto al slot incorrecto.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingSlot = useRef<"front" | "side" | "back" | null>(null);
+
+  function openPhotoPicker(slot: "front" | "side" | "back") {
+    pendingSlot.current = slot;
+    fileInputRef.current?.click();
+  }
+
+  function handleSharedFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (pendingSlot.current === "front") setPhotoFront(f);
+    else if (pendingSlot.current === "side") setPhotoSide(f);
+    else if (pendingSlot.current === "back") setPhotoBack(f);
+    pendingSlot.current = null;
+    e.target.value = "";
+  }
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [planUpdated, setPlanUpdated] = useState(false);
@@ -464,13 +483,27 @@ export default function ProgresoPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">Fotos (frente, perfil, espalda)</label>
+                {/* Input compartido: evita el bug de iOS/Android donde múltiples inputs
+                    ocultos se confunden y asignan cada foto al slot incorrecto. */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleSharedFileChange}
+                />
                 <div className="grid grid-cols-3 gap-2">
                   {([
-                    { label: "Frente", file: photoFront, setter: setPhotoFront },
-                    { label: "Perfil", file: photoSide, setter: setPhotoSide },
-                    { label: "Espalda", file: photoBack, setter: setPhotoBack },
-                  ] as const).map((item) => (
-                    <label key={item.label} className="aspect-[3/4] border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer overflow-hidden relative">
+                    { label: "Frente", slot: "front" as const, file: photoFront },
+                    { label: "Perfil",  slot: "side"  as const, file: photoSide  },
+                    { label: "Espalda", slot: "back"  as const, file: photoBack  },
+                  ]).map((item) => (
+                    <button
+                      key={item.slot}
+                      type="button"
+                      onClick={() => openPhotoPicker(item.slot)}
+                      className="aspect-[3/4] border-2 border-dashed border-card-border rounded-xl flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors cursor-pointer overflow-hidden relative w-full"
+                    >
                       {item.file ? (
                         <>
                           <img src={URL.createObjectURL(item.file)} alt={item.label} className="absolute inset-0 w-full h-full object-cover rounded-xl" />
@@ -485,9 +518,7 @@ export default function ProgresoPage() {
                           <span className="text-[10px] text-primary">Subir</span>
                         </>
                       )}
-                      <input type="file" accept="image/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) item.setter(f); }} />
-                    </label>
+                    </button>
                   ))}
                 </div>
                 <div className="bg-primary/5 border border-primary/20 rounded-lg p-2 mt-2">
