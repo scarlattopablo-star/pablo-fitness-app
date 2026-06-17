@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 
-const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
+const FALLBACK_ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
 
 const SYSTEM_PROMPT = `Sos Pablo Scarlatto, entrenador personal uruguayo. Respondés mensajes de tus clientes por chat.
 
@@ -48,6 +48,20 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // El bot responde COMO el admin (Pablo). Tomamos el id del admin desde los
+    // participantes reales de la conversacion (el que no es el usuario), asi el
+    // mensaje queda en el mismo hilo privado que ve Pablo. Si no se puede,
+    // caemos al id de respaldo.
+    let ADMIN_ID = FALLBACK_ADMIN_ID;
+    const { data: convo } = await sb
+      .from("conversations")
+      .select("user1_id, user2_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (convo) {
+      ADMIN_ID = convo.user1_id === userId ? convo.user2_id : convo.user1_id;
+    }
 
     // Check if admin already responded recently (don't override real Pablo)
     const { data: recentAdminMsg } = await sb

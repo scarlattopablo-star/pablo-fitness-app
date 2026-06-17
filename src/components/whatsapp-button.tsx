@@ -4,10 +4,9 @@ import { MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getOrCreateConversation, getUnreadCount } from "@/lib/chat-helpers";
+import { getAdminId, getOrCreateConversation, getUnreadCount } from "@/lib/chat-helpers";
 import { trackEvent } from "@/lib/track-event";
 
-const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
 const WA_URL =
   "https://wa.me/59897336318?text=" +
   encodeURIComponent("Hola, quiero info del reto Gluteos 360");
@@ -41,7 +40,8 @@ export default function WhatsAppButton({
     if (!user || loading) return;
     setLoading(true);
     try {
-      const conversationId = await getOrCreateConversation(user.id, ADMIN_ID);
+      const adminId = await getAdminId();
+      const conversationId = await getOrCreateConversation(user.id, adminId);
       router.push(`/dashboard/chat/${conversationId}`);
     } catch {
       router.push("/dashboard/chat");
