@@ -11,6 +11,7 @@ const FALLBACK_ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
 let cachedAdminId: string | null = null;
 export async function getAdminId(): Promise<string> {
   if (cachedAdminId) return cachedAdminId;
+  let id = FALLBACK_ADMIN_ID;
   try {
     const { data } = await supabase
       .from("profiles")
@@ -20,11 +21,12 @@ export async function getAdminId(): Promise<string> {
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle();
-    cachedAdminId = data?.id ?? FALLBACK_ADMIN_ID;
+    id = data?.id ?? FALLBACK_ADMIN_ID;
   } catch {
-    cachedAdminId = FALLBACK_ADMIN_ID;
+    id = FALLBACK_ADMIN_ID;
   }
-  return cachedAdminId;
+  cachedAdminId = id;
+  return id;
 }
 
 // Ensure user1_id < user2_id for unique constraint
