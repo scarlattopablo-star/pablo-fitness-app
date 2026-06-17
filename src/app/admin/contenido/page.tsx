@@ -117,7 +117,7 @@ const TEMPLATES: TemplateDef[] = [
       { key: "headline3", label: "Título línea 3", default: "QUE TE CORRIGE" },
       { key: "headline4", label: "Título línea 4", default: "LA TECNICA" },
       { key: "subtitle", label: "Subtítulo", default: "Grabas 5 segundos. Te digo que corregir al toque." },
-      { key: "cta", label: "CTA", default: "PRIMER MES GRATIS - LINK EN BIO" },
+      { key: "cta", label: "CTA", default: "SUMATE AL PLAN - LINK EN BIO" },
     ],
     render: (ctx, f) => {
       // 1080x1080
@@ -225,7 +225,7 @@ const TEMPLATES: TemplateDef[] = [
       { key: "number", label: "Número", default: "3" },
       { key: "cap", label: "De", default: "30" },
       { key: "heading", label: "Titular", default: "CUPOS ESTE MES" },
-      { key: "cta", label: "CTA", default: "Primer mes GRATIS - link en bio" },
+      { key: "cta", label: "CTA", default: "Sumate al plan - link en bio" },
     ],
     render: (ctx, f) => {
       const bg = ctx.createLinearGradient(0, 0, 0, 1080);

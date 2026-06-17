@@ -112,20 +112,10 @@ export default function LoginPage() {
               .maybeSingle();
 
             if (sub) {
-              // Check if trial (7-day free) — skip survey
-              const { data: fullSub } = await supabase
-                .from("subscriptions")
-                .select("duration, amount_paid")
-                .eq("id", sub.id)
-                .single();
-              if (fullSub?.duration === "7-dias" && Number(fullSub.amount_paid) === 0) {
-                router.push("/dashboard");
-              } else {
-                // Has paid subscription but no survey - complete the survey
-                router.push("/encuesta-directa");
-              }
+              // Has paid subscription but no survey - complete the survey
+              router.push("/encuesta-directa");
             } else {
-              // No subscription and no survey - needs to pay first
+              // No subscription and no survey - needs to buy a plan first
               router.push("/sin-plan");
             }
           } else {

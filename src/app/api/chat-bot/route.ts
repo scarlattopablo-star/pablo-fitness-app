@@ -26,7 +26,7 @@ EJEMPLOS DE CÓMO RESPONDÉS:
 CONOCIMIENTO:
 - App GymRat: planes entrenamiento + nutrición, macros automáticos, GIFs ejercicios, gamificación, chat
 - Planes: Quema Grasa, Ganancia Muscular, Tonificación, Principiante, Casa, Pareja, Kitesurf, etc.
-- Precios: $3.200 UYU/mes. Trimestral 20% OFF, semestral 33% OFF, anual 50% OFF. Primer mes gratis.
+- Precios: $3.200 UYU/mes. Trimestral 20% OFF, semestral 33% OFF, anual 50% OFF. Todos los planes son pagos (no hay prueba gratis).
 - Métodos: superseries, drop sets, rest-pause, cluster, piramidal
 
 REGLAS DURAS:

@@ -81,7 +81,7 @@ const AppBar: React.FC<{ delay?: number }> = ({ delay = 0 }) => {
         </div>
         <div>
           <p style={{ color: "#fff", fontSize: 28, fontWeight: 800, margin: 0, fontFamily }}>GymRat by Pablo Scarlatto</p>
-          <p style={{ color: "#CDFF00", fontSize: 22, fontWeight: 600, margin: "2px 0 0", fontFamily }}>Primer mes GRATIS</p>
+          <p style={{ color: "#CDFF00", fontSize: 22, fontWeight: 600, margin: "2px 0 0", fontFamily }}>Plan personalizado</p>
         </div>
       </div>
       <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 22, fontWeight: 600, margin: 0, fontFamily }}>
@@ -248,10 +248,10 @@ export const SigmaStory: React.FC = () => {
                 Exclusivo socios Sigma
               </p>
               <h1 style={{ color: "#fff", fontSize: 85, fontWeight: 900, margin: 0, lineHeight: 1.1, fontFamily }}>
-                Primer mes
+                Plan
               </h1>
               <h1 style={{ color: "#CDFF00", fontSize: 105, fontWeight: 900, margin: 0, lineHeight: 1.1, textShadow: "0 0 60px rgba(205,255,0,0.5)", fontFamily }}>
-                GRATIS
+                COMPLETO
               </h1>
             </div>
 
@@ -264,7 +264,7 @@ export const SigmaStory: React.FC = () => {
                 background: "linear-gradient(135deg, #CDFF00, #88CC00)",
                 boxShadow: "0 0 60px rgba(205,255,0,0.4)",
               }}>
-                <p style={{ color: "#000", fontSize: 42, fontWeight: 900, margin: 0, fontFamily }}>EMPEZAR GRATIS</p>
+                <p style={{ color: "#000", fontSize: 42, fontWeight: 900, margin: 0, fontFamily }}>EMPEZAR HOY</p>
               </div>
             </div>
 
