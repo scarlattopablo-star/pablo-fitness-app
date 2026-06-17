@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   Flame, TrendingUp, Camera, Dumbbell,
   ArrowRight, Calendar, Target, Scale, UtensilsCrossed,
-  Loader2, ChevronRight, Zap, CreditCard, Crown,
+  Loader2, ChevronRight, CreditCard, Crown,
   Trophy, Star, Lightbulb, ClipboardCheck,
 } from "lucide-react";
 import { getTodaysTip, CATEGORY_LABELS } from "@/lib/daily-tips";
@@ -69,7 +69,7 @@ const DAILY_MESSAGES = [
 ];
 
 export default function DashboardPage() {
-  const { user, profile, subscription, isTrial, trialDaysLeft, hasActiveSubscription, isDirectClient } = useAuth();
+  const { user, profile, subscription, hasActiveSubscription, isDirectClient } = useAuth();
   // F5: estado del check-in semanal
   const [checkInState, setCheckInState] = useState<{ canCheckIn: boolean; daysSinceLast: number; nextWeekNumber: number } | null>(null);
   const [survey, setSurvey] = useState<SurveyData | null>(null);
@@ -304,7 +304,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* CRO: banner reto Transformacion para clientes existentes (no directos) */}
+      {/* CRO: banner reto Transformacion (oferta paga) para clientes existentes (no directos) */}
       {!isDirectClient && <Glutes360ClientBanner />}
 
       {/* Logger de actividad extra (correr, futbol, kitesurf, etc. por fuera del plan) */}
@@ -419,19 +419,6 @@ export default function DashboardPage() {
           </div>
         );
       })()}
-
-      {/* TRIAL COUNTDOWN BANNER */}
-      {isTrial && !isDirectClient && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
-        <div className="rounded-2xl p-4 mb-6 flex items-center gap-4 border border-warning/30 bg-warning/5">
-          <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center shrink-0">
-            <Zap className="h-5 w-5 text-warning" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-warning">Tu prueba gratuita vence en {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"}</p>
-            <p className="text-xs text-muted">Activa tu plan para no perder tu progreso y rutinas.</p>
-          </div>
-        </div>
-      )}
 
       {/* UPGRADE BANNER — only for non-direct users without active subscription */}
       {!hasActiveSubscription && !isDirectClient && (
