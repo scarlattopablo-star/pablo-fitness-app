@@ -23,7 +23,7 @@ npm run cap:sync     # Sync Capacitor mobile builds
 - **Capacitor 8** — iOS/Android native wrapper; points to remote URL (`pabloscarlattoentrenamientos.com`), not a local build
 - **MercadoPago** — payment processing with webhook at `/api/mercadopago/webhook`
 - **Resend** — transactional email
-- **Anthropic SDK + OpenAI SDK** — AI features (chat bot, content generation, technique analysis, coach nudges)
+- **Anthropic SDK + OpenAI SDK** — AI features (chat bot, content generation, technique analysis)
 - **Remotion** — programmatic video generation
 - **Playwright** — E2E tests in `tests/`, chromium only, defaults to production URL
 
@@ -51,7 +51,7 @@ This is Next.js 16, not 15. Page `params` are `Promise<{}>` and must be unwrappe
 - `/src/app/dashboard/*` — Client-facing app (requires auth + active subscription)
 - `/src/app/admin/*` — Admin panel (requires `is_admin`, protected by 2FA in `admin/layout.tsx`)
 - `/src/app/api/*` — Server routes; admin endpoints under `/api/admin/*`
-- `/src/app/api/cron/*` — Scheduled jobs (`weekly-report`, `coach-ai-nudge`)
+- `/src/app/api/cron/*` — Scheduled jobs (`weekly-report`)
 - `/src/app/api/push/*` — Push notification endpoints (`subscribe`, `send`, `send-general`, `motivational`, `achievement`, `webhook`)
 - `/src/app/planes/[slug]` — Public plan pages with MercadoPago checkout
 
