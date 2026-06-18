@@ -125,6 +125,9 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     if (!user) return;
+    // Red de seguridad: si Supabase no responde, igual liberamos la pantalla
+    // a los 6s en vez de quedar colgados en el loader para siempre.
+    const safety = setTimeout(() => setLoading(false), 6000);
     try {
       const [surveyRes, progressRes] = await Promise.all([
         supabase.from("surveys").select("*").eq("user_id", user.id)
@@ -152,8 +155,10 @@ export default function DashboardPage() {
     } catch {
       const cached = getCachedData<{ survey: SurveyData }>("dashboard");
       if (cached?.survey) { setSurvey(cached.survey); if (cached.survey.weight) setCurrentWeight(cached.survey.weight); }
+    } finally {
+      clearTimeout(safety);
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const loadWeeklyMuscles = async () => {
