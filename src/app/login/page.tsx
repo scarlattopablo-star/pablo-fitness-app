@@ -248,6 +248,12 @@ export default function LoginPage() {
             <label className="block text-sm font-medium mb-2">Email</label>
             <input
               type="email"
+              name="email"
+              id="email"
+              autoComplete="username"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@email.com"
@@ -261,6 +267,9 @@ export default function LoginPage() {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                name="password"
+                id="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Tu contraseña"
