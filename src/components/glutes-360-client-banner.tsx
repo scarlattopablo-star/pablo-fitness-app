@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Sparkles, X, Clock, ArrowRight, MessageCircle } from "lucide-react";
 import { trackEvent } from "@/lib/track-event";
+import { getPlanBySlug, formatPrice } from "@/lib/plans-data";
 
 const CUPOS_RESTANTES: number = 5;
 const CUPOS_AGOTADOS = false;
 const RETO_URL = "/planes/reto-transformacion";
+// Precio del reto (oferta paga) — sale de plans-data para no desincronizar.
+const RETO_PRICE = getPlanBySlug("reto-transformacion")?.prices["30-dias"] ?? 0;
 const WA_WAITLIST_URL =
   "https://wa.me/59897336318?text=" +
   encodeURIComponent("Hola Pablo, me anoto para el proximo Reto Transformacion 30 dias");
@@ -95,15 +98,21 @@ export default function Glutes360ClientBanner() {
             </>
           ) : (
             <>
-              <p className="text-xs text-muted mb-3">
+              <p className="text-xs text-muted mb-1">
                 <span className="text-accent font-bold">Ultimos {CUPOS_RESTANTES} {CUPOS_RESTANTES === 1 ? "cupo" : "cupos"}</span> · Cierra el {cierre}
               </p>
+              {RETO_PRICE > 0 && (
+                <p className="text-sm font-bold mb-3">
+                  Precio del reto: <span className="text-accent">${formatPrice(RETO_PRICE)} UYU</span>
+                  <span className="text-muted font-normal"> · acceso inmediato</span>
+                </p>
+              )}
               <Link
                 href={RETO_URL}
                 onClick={onClick}
                 className="inline-flex items-center gap-2 bg-accent hover:bg-accent/90 text-black font-bold text-sm px-4 py-2 rounded-full transition-colors"
               >
-                Quiero sumarme <ArrowRight className="h-4 w-4" />
+                Sumarme por ${formatPrice(RETO_PRICE)} <ArrowRight className="h-4 w-4" />
               </Link>
             </>
           )}

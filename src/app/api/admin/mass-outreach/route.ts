@@ -64,10 +64,10 @@ function buildMessages(): UserMessage[] {
     messages.push({
       ...u,
       type: "trial",
-      pushTitle: `${u.name}, tu prueba se acaba pronto`,
-      pushBody: "Primer mes GRATIS en cualquier plan — sin tarjeta. No te lo pierdas!",
-      chatMessage: `Hola ${u.name}! Soy Pablo. Vi que estás usando la app, qué bueno! Como te viene yendo?\n\nTe cuento que tengo una promo activa hasta fin de mayo: PRIMER MES GRATIS en cualquier plan, sin tarjeta de crédito. Entrás, probás el plan completo personalizado y recién al segundo mes se cobra.\n\nSi te interesa escribime y te paso el link directo para activarlo. Dale que son pocos lugares este mes!`,
-      emailSubject: `${u.name}, Primer mes GRATIS — sin tarjeta`,
+      pushTitle: `${u.name}, sumate al plan completo`,
+      pushBody: "Plan personalizado + nutrición + chat directo con Pablo. Pocos cupos este mes!",
+      chatMessage: `Hola ${u.name}! Soy Pablo. Vi que estás usando la app, qué bueno! Como te viene yendo?\n\nTe cuento que tengo cupos abiertos para sumarte al plan completo personalizado: entrenamiento + nutrición con macros + seguimiento + chat directo conmigo. Tenés descuentos según la duración que elijas (trimestral, semestral o anual).\n\nSi te interesa escribime y te paso el link directo para empezar. Dale que son pocos lugares este mes!`,
+      emailSubject: `${u.name}, sumate al plan completo — Pablo Scarlatto`,
       emailBody: buildTrialEmail(u.name),
     });
   }
@@ -92,7 +92,7 @@ function buildMessages(): UserMessage[] {
       type: "directo",
       pushTitle: `${u.name}, te pido un favor!`,
       pushBody: "Me ayudás con un testimonio? Tengo 15% OFF para tus referidos",
-      chatMessage: `Hola ${u.name}! Como estás? Te quería pedir un favor: me ayudarías con un testimonio cortito de tu experiencia entrenando conmigo? Puede ser un audio o un mensajito, me re sirve para la app.\n\nY si conocés a alguien que le interese entrenar, tengo 15% OFF para referidos. Pasale este link: pabloscarlattoentrenamientos.com/registro-gratis`,
+      chatMessage: `Hola ${u.name}! Como estás? Te quería pedir un favor: me ayudarías con un testimonio cortito de tu experiencia entrenando conmigo? Puede ser un audio o un mensajito, me re sirve para la app.\n\nY si conocés a alguien que le interese entrenar, tengo 15% OFF para referidos. Pasale este link: pabloscarlattoentrenamientos.com/planes`,
       emailSubject: `${u.name}, me ayudás con algo? - Pablo Scarlatto`,
       emailBody: buildReferralEmail(u.name),
     });
@@ -113,17 +113,17 @@ function buildTrialEmail(name: string): string {
     <p style="color:#888;font-size:14px;">Entrenamientos Personalizados</p>
   </div>
   <h2 style="color:#fff;">Hola ${name}!</h2>
-  <p style="color:#ccc;line-height:1.6;">Vi que estás probando la app y me encanta. Quería contarte que <strong style="color:#CDFF00;">tenés el PRIMER MES GRATIS</strong> en cualquier plan — sin tarjeta de crédito.</p>
+  <p style="color:#ccc;line-height:1.6;">Vi que estás usando la app y me encanta. Quería invitarte a sumarte al <strong style="color:#CDFF00;">plan completo personalizado</strong> para sacarle el máximo provecho.</p>
   <div style="background:#1a1a2e;border:1px solid #CDFF00;border-radius:12px;padding:20px;margin:20px 0;text-align:center;">
-    <p style="color:#888;margin:0 0 5px;">Oferta de lanzamiento</p>
-    <p style="font-size:28px;font-weight:bold;color:#CDFF00;margin:0;">Primer mes GRATIS</p>
+    <p style="color:#888;margin:0 0 5px;">Plan completo</p>
+    <p style="font-size:28px;font-weight:bold;color:#CDFF00;margin:0;">Entrenamiento + Nutrición</p>
     <p style="color:#888;font-size:13px;margin:5px 0 0;">Rutina personalizada + Videos + Seguimiento + Chat directo</p>
-    <p style="color:#888;font-size:13px;margin:5px 0 0;">Sin tarjeta. Recién al segundo mes se cobra.</p>
+    <p style="color:#888;font-size:13px;margin:5px 0 0;">Descuentos según la duración que elijas.</p>
   </div>
   <div style="text-align:center;margin:30px 0;">
     <a href="https://pabloscarlattoentrenamientos.com/planes" style="background:#CDFF00;color:#000;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;">Ver Planes</a>
   </div>
-  <p style="color:#888;font-size:13px;text-align:center;">Oferta hasta fin de mayo. Pocos lugares este mes!</p>
+  <p style="color:#888;font-size:13px;text-align:center;">Pocos lugares este mes!</p>
   <hr style="border:none;border-top:1px solid #333;margin:30px 0;">
   <p style="color:#666;font-size:12px;text-align:center;">Pablo Scarlatto Entrenamientos<br>pabloscarlattoentrenamientos.com</p>
 </div>
@@ -170,7 +170,7 @@ function buildReferralEmail(name: string): string {
   <p style="color:#ccc;line-height:1.6;">Te quería pedir un favor: me ayudarías con un <strong style="color:#10b981;">testimonio cortito</strong> de tu experiencia entrenando conmigo? Puede ser un audio o un mensajito. Me re sirve para la app!</p>
   <p style="color:#ccc;line-height:1.6;">Y si conocés a alguien que le interese entrenar, tengo <strong style="color:#10b981;">15% OFF para referidos</strong>. Pasale este link:</p>
   <div style="background:#1a1a2e;border:1px solid #10b981;border-radius:12px;padding:15px;margin:20px 0;text-align:center;">
-    <a href="https://pabloscarlattoentrenamientos.com/registro-gratis" style="color:#10b981;font-size:14px;">pabloscarlattoentrenamientos.com/registro-gratis</a>
+    <a href="https://pabloscarlattoentrenamientos.com/planes" style="color:#10b981;font-size:14px;">pabloscarlattoentrenamientos.com/planes</a>
   </div>
   <div style="text-align:center;margin:30px 0;">
     <a href="https://pabloscarlattoentrenamientos.com/dashboard/chat" style="background:#10b981;color:#000;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;">Responder por la App</a>

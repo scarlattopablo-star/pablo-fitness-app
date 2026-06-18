@@ -2,7 +2,6 @@
 
 import { X, Dumbbell, UtensilsCrossed, TrendingUp, MessageCircle, Crown } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
 
 interface PaywallModalProps {
   open: boolean;
@@ -18,8 +17,6 @@ const BENEFITS = [
 ];
 
 export function PaywallModal({ open, onClose, feature }: PaywallModalProps) {
-  const { trialDaysLeft } = useAuth();
-
   if (!open) return null;
 
   return (
@@ -49,9 +46,7 @@ export function PaywallModal({ open, onClose, feature }: PaywallModalProps) {
           Desbloqueá {feature || "esta función"}
         </h2>
         <p className="text-muted text-sm text-center mb-6">
-          {trialDaysLeft > 0
-            ? `Te quedan ${trialDaysLeft} días de prueba. Contratá un plan para acceso completo.`
-            : "Contratá un plan personalizado para acceder a todas las funcionalidades."}
+          Contratá un plan personalizado para acceder a todas las funcionalidades.
         </p>
 
         {/* Benefits */}
@@ -79,7 +74,7 @@ export function PaywallModal({ open, onClose, feature }: PaywallModalProps) {
           onClick={onClose}
           className="block w-full text-center text-xs text-muted mt-3 hover:text-foreground transition-colors"
         >
-          Seguir con la prueba gratuita
+          Ahora no
         </button>
       </div>
     </div>

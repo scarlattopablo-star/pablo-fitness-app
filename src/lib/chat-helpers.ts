@@ -1,5 +1,34 @@
 import { supabase } from "./supabase";
 
+// ID de respaldo de la cuenta admin (Pablo). Se usa solo si la consulta dinamica falla.
+const FALLBACK_ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
+
+// Resuelve el id real del admin (Pablo) desde la base en vez de confiar en una
+// constante hardcodeada. Asi, cuando un cliente le escribe por privado, la
+// conversacion se crea contra la cuenta admin REAL — la misma que Pablo ve en
+// /admin/chat — y no contra un id viejo que terminaba cayendo en el chat general.
+// Devuelve el admin mas antiguo (la cuenta original de Pablo).
+let cachedAdminId: string | null = null;
+export async function getAdminId(): Promise<string> {
+  if (cachedAdminId) return cachedAdminId;
+  let id = FALLBACK_ADMIN_ID;
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("is_admin", true)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    id = data?.id ?? FALLBACK_ADMIN_ID;
+  } catch {
+    id = FALLBACK_ADMIN_ID;
+  }
+  cachedAdminId = id;
+  return id;
+}
+
 // Ensure user1_id < user2_id for unique constraint
 function sortUserIds(a: string, b: string): [string, string] {
   return a < b ? [a, b] : [b, a];

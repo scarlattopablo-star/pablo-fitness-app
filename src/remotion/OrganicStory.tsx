@@ -153,7 +153,7 @@ export const OrganicStory: React.FC = () => {
           <Watermark />
           <SubtleText
             text="Entrena conmigo"
-            small="Primer mes gratis — link en bio"
+            small="Sumate al plan — link en bio"
             position="bottom"
           />
         </AbsoluteFill>

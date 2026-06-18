@@ -173,14 +173,13 @@ export default function TerminosPage() {
           </section>
 
           <section>
-            <h2 className="text-white font-bold text-lg mb-3">14. Prueba Gratuita</h2>
-            <p>Pablo Scarlatto Entrenamientos puede ofrecer periodos de prueba gratuita a nuevos usuarios.</p>
+            <h2 className="text-white font-bold text-lg mb-3">14. Planes y Acceso</h2>
+            <p>El acceso a la plataforma de Pablo Scarlatto Entrenamientos requiere la contratacion de un plan de pago.</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>La duracion de la prueba gratuita puede variar segun la promocion vigente</li>
-              <li>Durante la prueba gratuita, el usuario tiene acceso completo a las funcionalidades de la plataforma</li>
-              <li>Al finalizar la prueba, el usuario puede elegir un plan de pago para continuar usando el servicio</li>
-              <li>No se requiere tarjeta de credito para acceder a la prueba gratuita</li>
-              <li>La prueba gratuita es personal e intransferible, limitada a una por persona</li>
+              <li>Todos los planes son pagos; no se ofrecen periodos de prueba gratuita</li>
+              <li>El acceso completo a las funcionalidades se habilita una vez confirmado el pago del plan elegido</li>
+              <li>El usuario puede elegir entre distintas duraciones (mensual, trimestral, semestral o anual)</li>
+              <li>Los pagos se procesan de forma segura a traves de MercadoPago</li>
             </ul>
           </section>
 

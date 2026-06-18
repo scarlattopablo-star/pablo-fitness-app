@@ -12,6 +12,7 @@ import {
   uploadChatFile,
   markMessagesAsRead,
   getConversationPartner,
+  getAdminId,
   checkUserBlocked,
   recordWarning,
   type FileAttachment,
@@ -166,8 +167,8 @@ export default function ConversationPage() {
       }
 
       // If messaging Pablo (admin), trigger bot after 30s if he doesn't respond
-      const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
-      if (partner?.id === ADMIN_ID) {
+      const adminId = await getAdminId();
+      if (partner?.id === adminId) {
         setTimeout(() => {
           fetch("/api/chat-bot", {
             method: "POST",

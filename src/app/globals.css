@@ -168,7 +168,8 @@ h1, h2, h3, h4, h5, h6 {
   z-index: 0;
   opacity: 0.03;
   filter: invert(1);
-  mix-blend-mode: screen;
+  /* Sin mix-blend-mode: en iOS/Safari mezclar esta capa fija a pantalla completa
+     en cada repintado trababa el tipeo. A 3% de opacidad se ve igual de sutil. */
 }
 
 /* --- Decorative line --- */

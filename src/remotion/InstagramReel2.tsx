@@ -54,7 +54,7 @@ const HookScene: React.FC = () => {
   );
 };
 
-// ━━━━━━ SCENE 2: PRIMER MES GRATIS (3-6s) ━━━━━━
+// ━━━━━━ SCENE 2: PLAN PERSONALIZADO (3-6s) ━━━━━━
 const FreeMonthScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -80,21 +80,21 @@ const FreeMonthScene: React.FC = () => {
             background: "linear-gradient(135deg, #CDFF00, #88CC00)",
             boxShadow: "0 0 80px rgba(205,255,0,0.4), 0 20px 60px rgba(0,0,0,0.5)",
           }}>
-            <p style={{ color: "#000", fontSize: 80, fontWeight: 900, margin: 0 }}>GRATIS</p>
+            <p style={{ color: "#000", fontSize: 80, fontWeight: 900, margin: 0 }}>ENTRENÁ</p>
           </div>
         </div>
 
         <div style={{ transform: `translateY(${(1 - textY) * 60}px)`, opacity: textY }}>
           <h2 style={{ color: "#fff", fontSize: 85, fontWeight: 900, margin: 0, lineHeight: 1.1 }}>
-            Primer mes
+            Tu plan
           </h2>
           <h2 style={{ color: "#CDFF00", fontSize: 85, fontWeight: 900, margin: 0, lineHeight: 1.1 }}>
-            completamente gratis
+            100% personalizado
           </h2>
         </div>
 
         <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 36, fontWeight: 600, margin: "30px 0 0", opacity: subtitleOp }}>
-          Sin tarjeta de credito. Sin compromiso.
+          Entrenamiento + nutrición + chat directo.
         </p>
       </div>
     </AbsoluteFill>
@@ -386,10 +386,10 @@ const CTAFinalScene: React.FC = () => {
             Empeza hoy
           </p>
           <h1 style={{ color: "#fff", fontSize: 90, fontWeight: 900, margin: 0, lineHeight: 1.05 }}>
-            Tu primer mes
+            Tu plan
           </h1>
           <h1 style={{ color: "#CDFF00", fontSize: 110, fontWeight: 900, margin: 0, lineHeight: 1.05, textShadow: "0 0 60px rgba(205,255,0,0.5)" }}>
-            es GRATIS
+            te espera
           </h1>
         </div>
 
@@ -399,7 +399,7 @@ const CTAFinalScene: React.FC = () => {
             background: "linear-gradient(135deg, #CDFF00, #88CC00)",
             boxShadow: "0 0 60px rgba(205,255,0,0.4), 0 15px 40px rgba(0,0,0,0.5)",
           }}>
-            <p style={{ color: "#000", fontSize: 46, fontWeight: 900, margin: 0 }}>EMPEZAR GRATIS</p>
+            <p style={{ color: "#000", fontSize: 46, fontWeight: 900, margin: 0 }}>EMPEZAR HOY</p>
           </div>
         </div>
 
