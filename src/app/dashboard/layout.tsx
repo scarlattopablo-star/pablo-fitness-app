@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, profile, loading, signOut, accessChecked, hasActiveSubscription, isDirectClient } = useAuth();
+  const { user, profile, loading, signOut, hasActiveSubscription } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
@@ -48,17 +48,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       window.location.href = "/login";
     }
   }, [loading, user]);
-
-  // Gate de acceso: al dashboard solo se entra con un plan comprado (o acceso
-  // de cliente directo). Si no, va a /sin-plan. Esperamos accessChecked para no
-  // redirigir por error a un cliente que SI pago mientras carga la suscripcion.
-  useEffect(() => {
-    if (loading || !accessChecked || !user) return;
-    if (profile?.is_admin) return; // los admin no tienen suscripcion
-    if (!hasActiveSubscription && !isDirectClient) {
-      window.location.href = "/sin-plan";
-    }
-  }, [loading, accessChecked, user, profile, hasActiveSubscription, isDirectClient]);
 
   // Show onboarding splash on first open (once per device)
   useEffect(() => {

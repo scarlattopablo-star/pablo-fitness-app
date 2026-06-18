@@ -30,9 +30,6 @@ interface AuthContextType {
   profile: UserProfile | null;
   subscription: Subscription | null;
   loading: boolean;
-  // true una vez que terminaron de chequearse suscripcion, planes y cliente-directo.
-  // Sirve para no redirigir por "sin plan" antes de tener la respuesta real.
-  accessChecked: boolean;
   hasActiveSubscription: boolean;
   isExpired: boolean;
   isTrial: boolean;
@@ -46,7 +43,6 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   subscription: null,
   loading: true,
-  accessChecked: false,
   hasActiveSubscription: false,
   isExpired: false,
   isTrial: false,
@@ -62,18 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hasPlans, setHasPlans] = useState(false);
   const [isDirectClient, setIsDirectClient] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [accessChecked, setAccessChecked] = useState(false);
-
-  // Carga los datos que definen el acceso del usuario y marca accessChecked.
-  async function loadUserData(userId: string) {
-    await Promise.all([
-      fetchProfile(userId),
-      fetchSubscription(userId),
-      checkPlans(userId),
-      checkDirectClient(userId),
-    ]);
-    setAccessChecked(true);
-  }
 
   useEffect(() => {
     // Timeout: if getSession takes too long or fails, stop loading
@@ -88,9 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeout);
         setUser(session?.user ?? null);
         if (session?.user) {
-          loadUserData(session.user.id);
-        } else {
-          setAccessChecked(true);
+          fetchProfile(session.user.id);
+          fetchSubscription(session.user.id);
+          checkPlans(session.user.id);
+          checkDirectClient(session.user.id);
         }
         setLoading(false);
       }).catch(() => {
@@ -102,14 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (_event, session) => {
           setUser(session?.user ?? null);
           if (session?.user) {
-            setAccessChecked(false);
-            loadUserData(session.user.id);
+            fetchProfile(session.user.id);
+            fetchSubscription(session.user.id);
+            checkPlans(session.user.id);
+            checkDirectClient(session.user.id);
           } else {
             setProfile(null);
             setSubscription(null);
             setHasPlans(false);
-            setIsDirectClient(false);
-            setAccessChecked(true);
           }
         }
       );
@@ -257,7 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : 0;
 
   return (
-    <AuthContext.Provider value={{ user, profile, subscription, loading, accessChecked, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, isDirectClient, signOut }}>
+    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, isDirectClient, signOut }}>
       {children}
     </AuthContext.Provider>
   );
