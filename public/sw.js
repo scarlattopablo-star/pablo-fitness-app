@@ -1,5 +1,5 @@
-const CACHE_NAME = "ps-entrena-v13";
-const STATIC_CACHE = "ps-static-v13";
+const CACHE_NAME = "ps-entrena-v14";
+const STATIC_CACHE = "ps-static-v14";
 
 self.addEventListener("install", (event) => {
   // Activate immediately, don't wait
@@ -8,7 +8,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.map((k) => caches.delete(k)))
-    )
+    ).catch(() => {})
   );
 });
 
@@ -20,9 +20,30 @@ self.addEventListener("activate", (event) => {
           .filter((k) => k !== CACHE_NAME && k !== STATIC_CACHE)
           .map((k) => caches.delete(k))
       )
-    ).then(() => self.clients.claim())
+    ).catch(() => {}).then(() => self.clients.claim())
   );
 });
+
+// Cache-first, pero si Cache Storage falla por CUALQUIER motivo (storage
+// corrupto, cuota llena, modo incógnito restringido) cae a red directa.
+// Sin esto, un caches.open() roto devuelve 503 para todos los assets y
+// la app queda en blanco.
+function cacheFirst(request, cacheName) {
+  return caches
+    .open(cacheName)
+    .then((cache) =>
+      cache.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            cache.put(request, response.clone()).catch(() => {});
+          }
+          return response;
+        });
+      })
+    )
+    .catch(() => fetch(request));
+}
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -31,32 +52,12 @@ self.addEventListener("fetch", (event) => {
 
   // ONLY cache static assets (JS/CSS chunks, icons). Never touch HTML navigation.
   if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(
-      caches.open(STATIC_CACHE).then((cache) =>
-        cache.match(event.request).then((cached) => {
-          if (cached) return cached;
-          return fetch(event.request).then((response) => {
-            if (response.ok) cache.put(event.request, response.clone());
-            return response;
-          });
-        })
-      )
-    );
+    event.respondWith(cacheFirst(event.request, STATIC_CACHE));
     return;
   }
 
   if (url.pathname.startsWith("/icons/") || url.pathname.startsWith("/sounds/")) {
-    event.respondWith(
-      caches.open(CACHE_NAME).then((cache) =>
-        cache.match(event.request).then((cached) => {
-          if (cached) return cached;
-          return fetch(event.request).then((response) => {
-            if (response.ok) cache.put(event.request, response.clone());
-            return response;
-          });
-        })
-      )
-    );
+    event.respondWith(cacheFirst(event.request, CACHE_NAME));
     return;
   }
 
