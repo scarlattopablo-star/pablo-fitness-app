@@ -79,21 +79,20 @@ function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: str
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// Parallax scroll hook
-function useParallax(speed = 0.3) {
-  const ref = useRef<HTMLDivElement>(null);
-
+// Defer non-critical media (bg video, extra carousel frames) until the page has loaded
+function useAfterLoad() {
+  const [ready, setReady] = useState(false);
   useEffect(() => {
-    const handleScroll = () => {
-      if (!ref.current) return;
-      const scrollY = window.scrollY;
-      ref.current.style.transform = `translateY(${scrollY * speed}px)`;
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [speed]);
-
-  return ref;
+    const onLoad = () => setReady(true);
+    if (document.readyState === "complete") {
+      const id = setTimeout(onLoad, 0);
+      return () => clearTimeout(id);
+    }
+    window.addEventListener("load", onLoad);
+    const fallback = setTimeout(onLoad, 3500);
+    return () => { window.removeEventListener("load", onLoad); clearTimeout(fallback); };
+  }, []);
+  return ready;
 }
 
 // Transformation images data (shared between grid and hero)
@@ -132,14 +131,15 @@ const testimonials = [
 
 export default function HomePage() {
   const { t } = useI18n();
-  const parallaxRef = useParallax(0.15);
+  const mediaReady = useAfterLoad();
 
-  // Hero image rotation
+  // Hero image rotation — starts once the extra frames are allowed to load
   const [heroIndex, setHeroIndex] = useState(0);
   useEffect(() => {
+    if (!mediaReady) return;
     const interval = setInterval(() => setHeroIndex(i => (i + 1) % heroImages.length), 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [mediaReady]);
 
   // Navbar shrink on scroll
   const [scrolled, setScrolled] = useState(false);
@@ -186,22 +186,25 @@ export default function HomePage() {
 
       {/* HERO — full viewport with parallax */}
       <section className="relative min-h-screen flex items-center px-4 overflow-hidden">
-        {/* Video background */}
-        <div ref={parallaxRef} className="absolute inset-0">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover opacity-15"
-            style={{ filter: "grayscale(100%)" }}
-          >
-            <source src="/videos/hero-bg-1.mp4" type="video/mp4" />
-          </video>
+        {/* Video background — mounted after page load so it never competes with critical assets */}
+        <div className="absolute inset-0">
+          {mediaReady && (
+            <video
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="none"
+              className="absolute inset-0 w-full h-full object-cover opacity-15"
+              style={{ filter: "grayscale(100%)" }}
+            >
+              <source src="/videos/hero-bg-1.mp4" type="video/mp4" />
+            </video>
+          )}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-accent/[0.04] rounded-full blur-[120px] animate-float-slow" />
-        <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-primary/[0.03] rounded-full blur-[100px] animate-float-slow-reverse" />
+        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-accent/[0.04] rounded-full blur-[120px]" />
+        <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-primary/[0.03] rounded-full blur-[100px]" />
 
         <div className="relative max-w-6xl mx-auto w-full pt-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -285,7 +288,10 @@ export default function HomePage() {
                 <div className="absolute -inset-4 bg-accent/10 rounded-[3rem] blur-2xl opacity-60" />
                 <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-primary/20 transition-transform duration-500 group-hover:scale-[1.02]">
                   {heroImages.map((img, i) => (
-                    <img key={img} src={img} alt="Pablo Scarlatto entrenando" className="w-full object-contain absolute inset-0 transition-opacity duration-1000" style={{ opacity: heroIndex === i ? 1 : 0, position: i === 0 ? "relative" : "absolute" }} />
+                    // Only the first frame loads with the page; the rest mount after load
+                    (i === 0 || mediaReady) && (
+                      <img key={img} src={img} alt="Pablo Scarlatto entrenando" fetchPriority={i === 0 ? "high" : "low"} decoding="async" className="w-full object-contain absolute inset-0 transition-opacity duration-1000" style={{ opacity: heroIndex === i ? 1 : 0, position: i === 0 ? "relative" : "absolute" }} />
+                    )
                   ))}
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 </div>

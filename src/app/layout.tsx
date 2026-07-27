@@ -66,20 +66,6 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col">
-        {/* Logo watermark — subtle, fused with background on all pages */}
-        <img
-          src="/logo-pablo.jpg"
-          alt=""
-          aria-hidden="true"
-          className="logo-watermark"
-          style={{
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "min(70vw, 600px)",
-            height: "auto",
-          }}
-        />
         <Providers>{children}</Providers>
         <CookieBanner />
         {FB_PIXEL_ID && (

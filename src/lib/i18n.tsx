@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
 export type Locale = "es" | "en" | "pt";
 
@@ -208,18 +208,22 @@ const I18nContext = createContext<I18nContextType>({
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(() => {
-    try {
-      if (typeof window !== "undefined") {
+  // Always start in "es" so server and client render the same HTML; the saved
+  // locale is applied after mount (avoids hydration mismatch without blanking the app).
+  const [locale, setLocale] = useState<Locale>("es");
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      try {
         const saved = localStorage.getItem("locale") as Locale;
-        if (saved && saved in LOCALE_LABELS) return saved;
+        if (saved && saved in LOCALE_LABELS) { setLocale(saved); return; }
         const browserLang = navigator.language.slice(0, 2);
-        if (browserLang === "pt") return "pt";
-        if (browserLang === "en") return "en";
-      }
-    } catch { /* localStorage blocked in in-app browsers */ }
-    return "es";
-  });
+        if (browserLang === "pt") setLocale("pt");
+        else if (browserLang === "en") setLocale("en");
+      } catch { /* localStorage blocked in in-app browsers */ }
+    }, 0);
+    return () => clearTimeout(id);
+  }, []);
 
   const handleSetLocale = useCallback((newLocale: Locale) => {
     setLocale(newLocale);
