@@ -97,7 +97,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(function(){
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(function(){});
+    navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){});
   }
   window.__pwaInstallPrompt=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__pwaInstallPrompt=e;});
 })();`,

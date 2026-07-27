@@ -119,7 +119,9 @@ export default function Glutes360Offer() {
               <div className="inline-flex flex-wrap items-center justify-center gap-2 mb-6 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-sm font-bold">
                 <XCircle className="h-4 w-4 text-red-400" />
                 <span className="text-red-400">Sin cupos este mes</span>
-                <span className="text-muted">· Proximo inicio: {formatProximoCohorte()}</span>
+                {/* Fecha calculada con new Date(): en el HTML estatico queda la del build,
+                    el cliente la recalcula — suprimir el mismatch de hidratacion */}
+                <span className="text-muted" suppressHydrationWarning>· Proximo inicio: {formatProximoCohorte()}</span>
               </div>
 
               <a
@@ -144,7 +146,8 @@ export default function Glutes360Offer() {
                 <span className="text-accent">
                   Ultimos {CUPOS_RESTANTES} {CUPOS_RESTANTES === 1 ? "cupo" : "cupos"} este mes
                 </span>
-                <span className="text-muted">· Cierra el {cierre} ({diasRestantes} {diasRestantes === 1 ? "dia" : "dias"})</span>
+                {/* Idem: fechas del build vs. cliente — sin esto hay mismatch de hidratacion */}
+                <span className="text-muted" suppressHydrationWarning>· Cierra el {cierre} ({diasRestantes} {diasRestantes === 1 ? "dia" : "dias"})</span>
               </div>
 
               <Link
