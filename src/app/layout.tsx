@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Outfit, Geist, Barlow_Condensed } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -16,6 +16,20 @@ const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
   weight: ["400", "600", "700", "800"],
+});
+
+// Fuentes de la landing (scope .landing en globals.css)
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
+  preload: false,
+});
+
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-barlow-cond",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -55,7 +69,7 @@ export default function RootLayout({
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${inter.variable} ${outfit.variable} h-full antialiased`}
+      className={`${inter.variable} ${outfit.variable} ${geist.variable} ${barlowCondensed.variable} h-full antialiased`}
     >
       <head>
         <link rel="preload" href="/logo-pablo.jpg" as="image" />
