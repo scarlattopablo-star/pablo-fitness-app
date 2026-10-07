@@ -114,42 +114,49 @@ function ClienteDirectoForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    const cleanEmail = email.trim().toLowerCase();
     try {
       // Check if user was previously deleted/banned — restore if so
       await fetch("/api/restore-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: cleanEmail }),
       }).catch(() => {});
 
       const { data, error: authError } = await supabase.auth.signUp({
-        email, password,
+        email: cleanEmail, password,
         options: {
           data: { full_name: fullName, phone },
           emailRedirectTo: `${window.location.origin}/encuesta-directa`,
         },
       });
-      if (authError) {
-        if (authError.message.includes("already registered")) {
-          // Try logging in instead (user was restored)
-          const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
-          if (loginErr) {
-            setError("Este email ya esta registrado. Intenta iniciar sesion desde /login.");
-            setLoading(false);
-            return;
-          }
-          if (loginData.user) {
-            setUserId(loginData.user.id);
-            await fetch("/api/free-access", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code, userId: loginData.user.id }),
-            }).catch(() => {});
-            setStep(needsGoal ? stepGoalCD : stepDataCD);
-            setLoading(false);
-            return;
-          }
+
+      // Supabase NO devuelve error si el email ya existe: devuelve un usuario
+      // "falso" con identities = [] y un id que no existe. Si usamos ese id,
+      // la encuesta falla después ("Error al guardar encuesta"). Lo tratamos
+      // igual que "already registered" e intentamos iniciar sesión.
+      const alreadyExists =
+        (authError && authError.message.toLowerCase().includes("already registered")) ||
+        (!authError && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0);
+
+      if (alreadyExists) {
+        const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        if (loginErr || !loginData.user) {
+          setError("Este email ya tiene una cuenta. Iniciá sesión desde /login (o usá \"Olvidé mi contraseña\") y avisale a Pablo.");
+          setLoading(false);
+          return;
         }
+        setUserId(loginData.user.id);
+        await fetch("/api/free-access", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, userId: loginData.user.id }),
+        }).catch(() => {});
+        setStep(needsGoal ? stepGoalCD : stepDataCD);
+        setLoading(false);
+        return;
+      }
+      if (authError) {
         setError(authError.message);
         setLoading(false);
         return;
@@ -159,23 +166,25 @@ function ClienteDirectoForm() {
         setLoading(false);
         return;
       }
-      setUserId(data.user.id);
-      // Auto-confirm email (bypass SMTP issues)
-      await fetch("/api/confirm-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: data.user.id }),
-      });
-      // Mark code as used via server-side API (bypasses RLS)
-      await fetch("/api/free-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, userId: data.user.id }),
-      });
-      // Update profile
-      await supabase.from("profiles")
-        .update({ phone, full_name: fullName })
-        .eq("id", data.user.id);
+      const newUserId = data.user.id;
+      setUserId(newUserId);
+      // En paralelo: confirmar email (bypass SMTP), marcar código usado y actualizar perfil
+      await Promise.all([
+        fetch("/api/confirm-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: newUserId }),
+        }).catch(() => {}),
+        fetch("/api/free-access", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, userId: newUserId }),
+        }).catch(() => {}),
+        supabase.from("profiles")
+          .update({ phone, full_name: fullName })
+          .eq("id", newUserId)
+          .then(() => {}, () => {}),
+      ]);
       setStep(needsGoal ? stepGoalCD : stepDataCD);
     } catch { setError("Error inesperado. Intenta de nuevo."); }
     finally { setLoading(false); }
@@ -209,7 +218,7 @@ function ClienteDirectoForm() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
-        full_name: fullName, email,
+        full_name: fullName, email: email.trim().toLowerCase(),
         age: Number(age), sex, weight: Number(weight), height: Number(height),
         activity_level: activityLevel, dietary_restrictions: restrictions,
         objective: planSlug,

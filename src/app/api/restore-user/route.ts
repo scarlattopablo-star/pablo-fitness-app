@@ -15,11 +15,19 @@ export async function POST(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Find the user by email in auth
-    const { data: users } = await supabase.auth.admin.listUsers({ perPage: 1 });
-    // listUsers doesn't filter by email, so search manually
-    const { data: allUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-    const authUser = allUsers?.users?.find(u => u.email === email);
+    // Buscar por email en profiles (rápido, indexado) en vez de listar 1000 usuarios de auth
+    const cleanEmail = String(email).trim().toLowerCase();
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", cleanEmail.replace(/[\\%_]/g, "\\$&"))
+      .limit(1)
+      .maybeSingle();
+    if (!profileRow) {
+      return NextResponse.json({ exists: false });
+    }
+    const { data: authData } = await supabase.auth.admin.getUserById(profileRow.id);
+    const authUser = authData?.user;
 
     if (!authUser) {
       return NextResponse.json({ exists: false });

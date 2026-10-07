@@ -4,15 +4,15 @@ import { createClient } from "@supabase/supabase-js";
 function validateSurveyData(data: Record<string, unknown>): { valid: boolean; error?: string } {
   if (data.age !== undefined) {
     const age = Number(data.age);
-    if (isNaN(age) || age < 14 || age > 80) return { valid: false, error: "Edad debe ser entre 14 y 80" };
+    if (isNaN(age) || age < 14 || age > 100) return { valid: false, error: "Edad debe ser entre 14 y 100" };
   }
   if (data.weight !== undefined) {
     const weight = Number(data.weight);
-    if (isNaN(weight) || weight < 30 || weight > 250) return { valid: false, error: "Peso debe ser entre 30 y 250 kg" };
+    if (isNaN(weight) || weight < 30 || weight > 300) return { valid: false, error: "Peso debe ser entre 30 y 300 kg" };
   }
   if (data.height !== undefined) {
     const height = Number(data.height);
-    if (isNaN(height) || height < 100 || height > 230) return { valid: false, error: "Altura debe ser entre 100 y 230 cm" };
+    if (isNaN(height) || height < 100 || height > 250) return { valid: false, error: "Altura debe ser entre 100 y 250 cm" };
   }
   if (data.training_days !== undefined) {
     const days = Number(data.training_days);
@@ -88,36 +88,29 @@ export async function POST(request: NextRequest) {
       }, { onConflict: "id" });
 
       if (!firstTry) return;
-
-      // FK violation — auth user doesn't exist yet
-      // Wait and retry a few times (signUp propagation)
-      for (let i = 0; i < 5; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        const { error } = await supabase.from("profiles").upsert({
-          id: userId,
-          full_name: full_name || "",
-          email: email || "",
-        }, { onConflict: "id" });
-        if (!error) return;
-        if (!error.message.includes("foreign key")) {
-          throw new Error(`Error creando perfil: ${error.message}`);
-        }
+      if (!firstTry.message.includes("foreign key")) {
+        throw new Error(`Error creando perfil: ${firstTry.message}`);
       }
 
-      // Last resort: check if the auth user actually exists
+      // FK violation — verificar YA si el usuario de auth existe (antes esperábamos
+      // hasta 10s a ciegas). Si no existe, el signUp devolvió un id falso porque
+      // el email ya estaba registrado.
       const { data: authUser } = await supabase.auth.admin.getUserById(userId);
       if (!authUser?.user) {
-        // Auth user truly doesn't exist — this shouldn't happen normally
-        // The signUp must have failed or the userId is wrong
-        throw new Error("No se pudo verificar tu cuenta. Intenta registrarte de nuevo.");
+        throw new Error("Tu cuenta no se creó bien. Si ya tenías cuenta con este email, iniciá sesión desde /login.");
       }
 
-      // Auth user exists but profile still won't insert — one more try
-      const { error: lastErr } = await supabase.from("profiles").upsert({
-        id: userId,
-        full_name: full_name || authUser.user.user_metadata?.full_name || "",
-        email: email || authUser.user.email || "",
-      }, { onConflict: "id" });
+      // Auth user exists but profile still won't insert — retry briefly (signUp propagation)
+      let lastErr: { message: string } | null = null;
+      for (let i = 0; i < 3; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, 1000));
+        ({ error: lastErr } = await supabase.from("profiles").upsert({
+          id: userId,
+          full_name: full_name || authUser.user.user_metadata?.full_name || "",
+          email: email || authUser.user.email || "",
+        }, { onConflict: "id" }));
+        if (!lastErr) break;
+      }
       if (lastErr) {
         throw new Error(`Error creando perfil: ${lastErr.message}`);
       }

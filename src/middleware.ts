@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   response.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com; font-src 'self'; frame-ancestors 'none';"
+    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://www.facebook.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://www.facebook.com https://connect.facebook.net; font-src 'self'; frame-ancestors 'none';"
   );
 
   // CORS for API routes
