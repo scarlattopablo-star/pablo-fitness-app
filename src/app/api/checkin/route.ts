@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
         const baseUrl = req.nextUrl.origin;
         await fetch(`${baseUrl}/api/generate-plans`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-internal-key": process.env.SUPABASE_SERVICE_ROLE_KEY! },
           body: JSON.stringify({ userId: user.id, mode: "nutrition-only" }),
         });
       } catch {

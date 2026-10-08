@@ -26,7 +26,7 @@ EJEMPLOS DE CÓMO RESPONDÉS:
 CONOCIMIENTO:
 - App GymRat: planes entrenamiento + nutrición, macros automáticos, GIFs ejercicios, gamificación, chat
 - Planes: Quema Grasa, Ganancia Muscular, Tonificación, Principiante, Casa, Pareja, Kitesurf, etc.
-- Precios: $3.200 UYU/mes. Trimestral 20% OFF, semestral 33% OFF, anual 50% OFF. Primer mes gratis.
+- Precios (UYU): 1 mes $1.800. 3 meses $4.320 (20% OFF), 6 meses $7.200 (33% OFF), 1 año $10.800 (50% OFF). Plan Pareja: 1 mes $2.880. Reto Glúteos 360 (30 días): $990. No hay prueba gratis: para usar la app hay que elegir un plan y pagarlo.
 - Métodos: superseries, drop sets, rest-pause, cluster, piramidal
 
 REGLAS DURAS:
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-opus-4-5",
       max_tokens: 120,
       system: `${SYSTEM_PROMPT}\n\nCONTEXTO DEL USUARIO: ${userContext}`,
       messages: chatHistory.length > 0 ? chatHistory : [{ role: "user", content: message }],

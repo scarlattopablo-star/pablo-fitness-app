@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft, isDirectClient } = useAuth();
+  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft, isDirectClient, accessLoading, inGracePeriod, graceDaysLeft } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
@@ -48,6 +48,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       window.location.href = "/login";
     }
   }, [loading, user]);
+
+  // Sin pago ni acceso dado por Pablo → no puede usar la app
+  const blocked = !loading && !accessLoading && !!user && !hasActiveSubscription && !profile?.is_admin;
+  useEffect(() => {
+    if (blocked) window.location.href = "/sin-plan";
+  }, [blocked]);
 
   // Show onboarding splash on first open (once per device)
   useEffect(() => {
@@ -185,7 +191,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSignOut = async () => { await signOut(); router.push("/"); };
 
-
+  if (blocked) return null;
 
   return (
     <div className="min-h-screen flex">
@@ -360,6 +366,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* MAIN */}
       <main className="flex-1 md:ml-60 pt-14 md:pt-0">
+        {/* Grace period banner (clientes viejos sin acceso vigente) */}
+        {inGracePeriod && (
+          <div className="bg-warning/10 border-b border-warning/30 px-4 py-3">
+            <div className="max-w-4xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Clock className="h-4 w-4 text-warning flex-shrink-0" />
+                <p className="text-sm">
+                  <span className="font-semibold">Tu acceso vence en {graceDaysLeft} {graceDaysLeft === 1 ? "día" : "días"}</span>
+                  <span className="text-muted"> — elegí un plan para seguir entrenando</span>
+                </p>
+              </div>
+              <Link
+                href="/planes"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-warning text-black hover:opacity-90 transition-opacity flex-shrink-0"
+              >
+                <Crown className="h-3 w-3" />
+                Elegir Plan
+              </Link>
+            </div>
+          </div>
+        )}
         {/* Trial banner */}
         {isTrial && !isDirectClient && (
           <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-3">

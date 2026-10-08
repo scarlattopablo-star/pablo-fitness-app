@@ -60,6 +60,22 @@ export async function POST(request: NextRequest) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+    // Auth: solo el propio usuario (o un admin) puede guardar su encuesta
+    const token = (request.headers.get("authorization") || "").replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+    const { data: { user: caller } } = await supabase.auth.getUser(token);
+    if (!caller) {
+      return NextResponse.json({ error: "Sesión expirada. Volvé a iniciar sesión." }, { status: 401 });
+    }
+    if (caller.id !== userId) {
+      const { data: callerProfile } = await supabase.from("profiles").select("is_admin").eq("id", caller.id).single();
+      if (!callerProfile?.is_admin) {
+        return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+      }
+    }
+
     // Ensure profile exists before inserting survey (FK constraint)
     const ensureProfile = async () => {
       const { data: profile } = await supabase
@@ -216,7 +232,7 @@ export async function PATCH(request: NextRequest) {
       const baseUrl = request.nextUrl.origin;
       const generateRes = await fetch(`${baseUrl}/api/generate-plans`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-internal-key": process.env.SUPABASE_SERVICE_ROLE_KEY! },
         body: JSON.stringify({ userId, mode: "nutrition-only" }),
       });
       if (!generateRes.ok) {

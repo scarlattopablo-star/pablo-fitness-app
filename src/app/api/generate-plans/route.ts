@@ -20,15 +20,44 @@ export async function POST(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: "userId requerido" }, { status: 400 });
     }
-    const genMode: GenerateMode = mode === "training-only" || mode === "nutrition-only"
-      ? mode
-      : "both";
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // Auth: llamada interna server-to-server (/api/encuesta, /api/checkin),
+    // admin para cualquier usuario, o el propio cliente con suscripcion vigente.
+    const isInternal = request.headers.get("x-internal-key") === process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!isInternal) {
+      const token = (request.headers.get("authorization") || "").replace("Bearer ", "");
+      if (!token) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (!user) return NextResponse.json({ error: "Token invalido" }, { status: 401 });
+      const { data: caller } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
+      if (!caller?.is_admin) {
+        if (user.id !== userId) {
+          return NextResponse.json({ error: "No autorizado para este usuario" }, { status: 403 });
+        }
+        const today = new Date().toISOString().split("T")[0];
+        const { data: activeSub } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .gte("end_date", today)
+          .limit(1)
+          .maybeSingle();
+        if (!activeSub) {
+          return NextResponse.json({ error: "Necesitás un plan activo" }, { status: 403 });
+        }
+      }
+    }
+
+    const genMode: GenerateMode = mode === "training-only" || mode === "nutrition-only"
+      ? mode
+      : "both";
 
     // Get latest survey for this user (incluye campos v2 + region/budget)
     const { data: survey, error: surveyError } = await supabase

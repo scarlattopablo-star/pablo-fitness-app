@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 // POST /api/admin/convert-direct
-// Body: { subscriptionId: string }
-// Converts a subscription to "direct-client" plan with 10-year end date
+// Body: { subscriptionId: string } | { userId: string }
+// Converts a subscription to "direct-client" plan with 10-year end date.
+// Con userId (cliente sin suscripcion) crea una nueva de cliente directo.
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,11 +27,32 @@ export async function POST(req: NextRequest) {
     if (!profile?.is_admin) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
 
     const body = await req.json();
-    const { subscriptionId } = body;
-    if (!subscriptionId) return NextResponse.json({ error: "Falta subscriptionId" }, { status: 400 });
+    const { subscriptionId, userId } = body;
+    if (!subscriptionId && !userId) return NextResponse.json({ error: "Falta subscriptionId o userId" }, { status: 400 });
 
     const farFuture = new Date();
     farFuture.setFullYear(farFuture.getFullYear() + 10);
+
+    if (!subscriptionId) {
+      const { data: created, error: insertError } = await sb
+        .from("subscriptions")
+        .insert({
+          user_id: userId,
+          plan_slug: "direct-client",
+          duration: "custom",
+          amount_paid: 0,
+          currency: "UYU",
+          start_date: new Date().toISOString().split("T")[0],
+          end_date: farFuture.toISOString(),
+          status: "active",
+        })
+        .select()
+        .single();
+      if (insertError) {
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true, end_date: farFuture.toISOString(), subscription: created });
+    }
 
     const { error } = await sb
       .from("subscriptions")

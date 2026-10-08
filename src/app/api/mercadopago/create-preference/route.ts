@@ -1,17 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPreference } from "@/lib/mercadopago";
-import { DURATION_LABELS } from "@/lib/plans-data";
+import { DURATION_LABELS, getPlanBySlug } from "@/lib/plans-data";
+
+// Upsell "Plan Personalizado" del dashboard (src/app/dashboard/page.tsx)
+const CUSTOM_PLAN_PRICES: Record<string, number> = { "1-mes": 3200, "3-meses": 4700 };
+
+// El precio nunca se confia al navegador: solo se aceptan precios de lista.
+function getListPrices(planSlug: string, duration: string): number[] {
+  if (planSlug === "plan-personalizado") {
+    return CUSTOM_PLAN_PRICES[duration] ? [CUSTOM_PLAN_PRICES[duration]] : [];
+  }
+  const plan = getPlanBySlug(planSlug);
+  if (!plan) return [];
+  const key = duration as keyof typeof plan.prices;
+  return [plan.prices[key], plan.couplePrices?.[key]].filter((p): p is number => !!p && p > 0);
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { planName, planSlug, duration, price, email, name, userId, referralCode } = body;
 
-    if (!planName || !duration || !price || !email) {
+    if (!planName || !planSlug || !duration || !price || !email) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
+    }
+
+    const listPrices = getListPrices(planSlug, duration);
+    if (!listPrices.includes(Number(price))) {
+      return NextResponse.json({ error: "Precio invalido" }, { status: 400 });
     }
 
     const durationLabel = DURATION_LABELS[duration] || duration;

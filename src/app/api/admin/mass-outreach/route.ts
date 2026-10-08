@@ -92,7 +92,7 @@ function buildMessages(): UserMessage[] {
       type: "directo",
       pushTitle: `${u.name}, te pido un favor!`,
       pushBody: "Me ayudás con un testimonio? Tengo 15% OFF para tus referidos",
-      chatMessage: `Hola ${u.name}! Como estás? Te quería pedir un favor: me ayudarías con un testimonio cortito de tu experiencia entrenando conmigo? Puede ser un audio o un mensajito, me re sirve para la app.\n\nY si conocés a alguien que le interese entrenar, tengo 15% OFF para referidos. Pasale este link: pabloscarlattoentrenamientos.com/registro-gratis`,
+      chatMessage: `Hola ${u.name}! Como estás? Te quería pedir un favor: me ayudarías con un testimonio cortito de tu experiencia entrenando conmigo? Puede ser un audio o un mensajito, me re sirve para la app.\n\nY si conocés a alguien que le interese entrenar, tengo 15% OFF para referidos. Pasale este link: pabloscarlattoentrenamientos.com/planes`,
       emailSubject: `${u.name}, me ayudás con algo? - Pablo Scarlatto`,
       emailBody: buildReferralEmail(u.name),
     });
@@ -170,7 +170,7 @@ function buildReferralEmail(name: string): string {
   <p style="color:#ccc;line-height:1.6;">Te quería pedir un favor: me ayudarías con un <strong style="color:#10b981;">testimonio cortito</strong> de tu experiencia entrenando conmigo? Puede ser un audio o un mensajito. Me re sirve para la app!</p>
   <p style="color:#ccc;line-height:1.6;">Y si conocés a alguien que le interese entrenar, tengo <strong style="color:#10b981;">15% OFF para referidos</strong>. Pasale este link:</p>
   <div style="background:#1a1a2e;border:1px solid #10b981;border-radius:12px;padding:15px;margin:20px 0;text-align:center;">
-    <a href="https://pabloscarlattoentrenamientos.com/registro-gratis" style="color:#10b981;font-size:14px;">pabloscarlattoentrenamientos.com/registro-gratis</a>
+    <a href="https://pabloscarlattoentrenamientos.com/planes" style="color:#10b981;font-size:14px;">pabloscarlattoentrenamientos.com/planes</a>
   </div>
   <div style="text-align:center;margin:30px 0;">
     <a href="https://pabloscarlattoentrenamientos.com/dashboard/chat" style="background:#10b981;color:#000;padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:bold;font-size:16px;">Responder por la App</a>

@@ -336,7 +336,6 @@ export default function ClienteDetailPage({
   };
 
   const convertToDirectClient = async () => {
-    if (!subscription) return;
     setConvertingToDirect(true);
     setConvertMsg("");
     try {
@@ -348,11 +347,13 @@ export default function ClienteDetailPage({
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ subscriptionId: subscription.id }),
+        body: JSON.stringify(subscription ? { subscriptionId: subscription.id } : { userId: id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al convertir");
-      setSubscription({ ...subscription, plan_slug: "direct-client", duration: "custom", status: "active", end_date: data.end_date });
+      setSubscription(subscription
+        ? { ...subscription, plan_slug: "direct-client", duration: "custom", status: "active", end_date: data.end_date }
+        : data.subscription);
       setConvertMsg("✓ Convertido a cliente directo");
     } catch (err) {
       setConvertMsg("Error: " + String(err));
@@ -795,9 +796,10 @@ export default function ClienteDetailPage({
                       }
 
                       // Regenerate plans
+                      const { data: { session: adminSession } } = await supabase.auth.getSession();
                       const res = await fetch("/api/generate-plans", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminSession?.access_token || ""}` },
                         body: JSON.stringify({ userId: id, planSlug: newObjective }),
                       });
 
@@ -997,7 +999,24 @@ export default function ClienteDetailPage({
           )}
           </>
         ) : (
-          <p className="text-sm text-muted">Sin suscripción activa.</p>
+          <div>
+            <p className="text-sm text-muted">Sin suscripción activa.</p>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={convertToDirectClient}
+                disabled={convertingToDirect}
+                className="text-xs px-4 py-2 rounded-lg bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition font-semibold disabled:opacity-50"
+              >
+                {convertingToDirect ? "Activando..." : "Dar acceso como Cliente Directo"}
+              </button>
+              {convertMsg && (
+                <p className={`text-xs font-medium ${convertMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
+                  {convertMsg}
+                </p>
+              )}
+            </div>
+            <p className="text-[10px] text-muted mt-1">Le da acceso gratis sin vencimiento. Solo vos podés hacerlo.</p>
+          </div>
         )}
       </div>
 

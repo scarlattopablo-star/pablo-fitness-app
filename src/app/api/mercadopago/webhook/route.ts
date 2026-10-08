@@ -41,7 +41,7 @@ function verifySignature(request: NextRequest): boolean {
 
 function calculateEndDate(duration: string): string {
   const end = new Date();
-  if (duration === "1-mes") end.setMonth(end.getMonth() + 1);
+  if (duration === "1-mes" || duration === "30-dias") end.setMonth(end.getMonth() + 1);
   else if (duration === "3-meses") end.setMonth(end.getMonth() + 3);
   else if (duration === "6-meses") end.setMonth(end.getMonth() + 6);
   else end.setFullYear(end.getFullYear() + 1);

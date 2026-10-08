@@ -29,18 +29,18 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 export function RequireSubscription({ children }: { children: React.ReactNode }) {
-  const { user, hasActiveSubscription, loading } = useAuth();
+  const { user, hasActiveSubscription, loading, accessLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
-    } else if (!loading && user && !hasActiveSubscription) {
+    } else if (!loading && !accessLoading && user && !hasActiveSubscription) {
       router.push("/sin-plan");
     }
-  }, [user, hasActiveSubscription, loading, router]);
+  }, [user, hasActiveSubscription, loading, accessLoading, router]);
 
-  if (loading) {
+  if (loading || accessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <RatLoader size={64} />

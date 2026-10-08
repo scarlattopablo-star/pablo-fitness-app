@@ -35,8 +35,16 @@ interface AuthContextType {
   isTrial: boolean;
   trialDaysLeft: number;
   isDirectClient: boolean;
+  /** true hasta que terminaron de cargar suscripcion/codigos/planes del usuario */
+  accessLoading: boolean;
+  /** Cliente viejo sin acceso vigente que entra por el periodo de gracia */
+  inGracePeriod: boolean;
+  graceDaysLeft: number;
   signOut: () => Promise<void>;
 }
+
+// Ultimo dia de acceso para clientes viejos sin suscripcion vigente.
+export const LEGACY_GRACE_UNTIL = "2026-10-23";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -48,6 +56,9 @@ const AuthContext = createContext<AuthContextType>({
   isTrial: false,
   trialDaysLeft: 0,
   isDirectClient: false,
+  accessLoading: true,
+  inGracePeriod: false,
+  graceDaysLeft: 0,
   signOut: async () => {},
 });
 
@@ -57,7 +68,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [hasPlans, setHasPlans] = useState(false);
   const [isDirectClient, setIsDirectClient] = useState(false);
+  const [hasFreeCode, setHasFreeCode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [accessLoading, setAccessLoading] = useState(true);
+
+  // Carga todo lo que define si el usuario tiene acceso (suscripcion, codigo, planes)
+  async function loadAccess(userId: string) {
+    setAccessLoading(true);
+    try {
+      await Promise.all([fetchSubscription(userId), checkPlans(userId), checkDirectClient(userId)]);
+    } catch {
+      // Si falla la red, no bloqueamos la UI indefinidamente
+    } finally {
+      setAccessLoading(false);
+    }
+  }
 
   useEffect(() => {
     // Timeout: if getSession takes too long or fails, stop loading
@@ -73,14 +98,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         if (session?.user) {
           fetchProfile(session.user.id);
-          fetchSubscription(session.user.id);
-          checkPlans(session.user.id);
-          checkDirectClient(session.user.id);
+          loadAccess(session.user.id);
+        } else {
+          setAccessLoading(false);
         }
         setLoading(false);
       }).catch(() => {
         clearTimeout(timeout);
         setLoading(false);
+        setAccessLoading(false);
       });
 
       const { data } = supabase.auth.onAuthStateChange(
@@ -88,13 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(session?.user ?? null);
           if (session?.user) {
             fetchProfile(session.user.id);
-            fetchSubscription(session.user.id);
-            checkPlans(session.user.id);
-            checkDirectClient(session.user.id);
+            loadAccess(session.user.id);
           } else {
             setProfile(null);
             setSubscription(null);
             setHasPlans(false);
+            setIsDirectClient(false);
+            setHasFreeCode(false);
+            setAccessLoading(false);
           }
         }
       );
@@ -103,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // In-app browsers may crash on auth calls - gracefully degrade
       clearTimeout(timeout);
       setLoading(false);
+      setAccessLoading(false);
     }
 
     return () => { if (authSub) authSub.unsubscribe(); };
@@ -141,15 +169,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function checkDirectClient(userId: string) {
-    // Check free_access_codes (clients who entered via direct-client code)
-    const { data } = await supabase
+    // Codigos de acceso gratis que Pablo genero desde el admin y este usuario canjeo
+    const { data: codes } = await supabase
       .from("free_access_codes")
-      .select("id")
-      .eq("used_by", userId)
-      .eq("plan_slug", "direct-client")
-      .limit(1)
-      .maybeSingle();
-    if (data) { setIsDirectClient(true); return; }
+      .select("plan_slug")
+      .eq("used_by", userId);
+    if (codes && codes.length > 0) setHasFreeCode(true);
+    if (codes?.some((c) => c.plan_slug === "direct-client")) { setIsDirectClient(true); return; }
 
     // Also check subscription (clients converted via admin panel)
     const { data: sub } = await supabase
@@ -202,8 +228,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // For free ($0) non-direct-client subscriptions: enforce 30-day trial limit
-  const isFreeSubscription = !!subscription && subscription.amount_paid === 0 && !isDirectClient;
+  // Suscripcion $0 que NO viene de un codigo de Pablo (prueba gratis vieja de la web): 30 dias.
+  // Las que vienen de un codigo respetan el end_date que definio Pablo.
+  const isFreeSubscription = !!subscription && subscription.amount_paid === 0 && !isDirectClient && !hasFreeCode;
 
   let effectiveEndDate: Date | null = null;
   if (subscription) {
@@ -218,12 +245,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const hasActiveSubscription =
-    hasPlans ||
-    (!!subscription &&
+  const hasValidSubscription =
+    !!subscription &&
     subscription.status === "active" &&
     !!effectiveEndDate &&
-    effectiveEndDate >= today);
+    effectiveEndDate >= today;
+
+  // Periodo de gracia: clientes que ya tenian plan pero sin acceso vigente
+  // siguen entrando hasta esta fecha; despues tienen que pagar (o Pablo les da acceso).
+  const graceEnd = new Date(LEGACY_GRACE_UNTIL + "T23:59:59");
+  const inGracePeriod = !hasValidSubscription && hasPlans && graceEnd >= today;
+  const graceDaysLeft = inGracePeriod
+    ? Math.max(0, Math.ceil((graceEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+  const hasActiveSubscription = hasValidSubscription || inGracePeriod;
 
   const isExpired =
     !!subscription &&
@@ -242,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : 0;
 
   return (
-    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, isDirectClient, signOut }}>
+    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, isDirectClient, accessLoading, inGracePeriod, graceDaysLeft, signOut }}>
       {children}
     </AuthContext.Provider>
   );

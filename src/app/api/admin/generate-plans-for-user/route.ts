@@ -60,6 +60,22 @@ export async function POST(request: NextRequest) {
     if (!callerProfile?.is_admin && user.id !== userId) {
       return NextResponse.json({ error: "Solo admin puede generar para otros" }, { status: 403 });
     }
+    // Un cliente solo puede generarse planes si tiene una suscripcion vigente
+    // (pagada o dada por Pablo). Tener planes no da acceso por si solo.
+    if (!callerProfile?.is_admin) {
+      const today = new Date().toISOString().split("T")[0];
+      const { data: activeSub } = await supabaseAdmin
+        .from("subscriptions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .gte("end_date", today)
+        .limit(1)
+        .maybeSingle();
+      if (!activeSub) {
+        return NextResponse.json({ error: "Necesitás un plan activo" }, { status: 403 });
+      }
+    }
 
     // 1) Leer survey mas reciente del usuario
     const { data: surveys, error: sErr } = await supabaseAdmin

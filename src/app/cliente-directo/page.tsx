@@ -149,7 +149,7 @@ function ClienteDirectoForm() {
         setUserId(loginData.user.id);
         await fetch("/api/free-access", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${loginData.session?.access_token}` },
           body: JSON.stringify({ code, userId: loginData.user.id }),
         }).catch(() => {});
         setStep(needsGoal ? stepGoalCD : stepDataCD);
@@ -168,16 +168,24 @@ function ClienteDirectoForm() {
       }
       const newUserId = data.user.id;
       setUserId(newUserId);
-      // En paralelo: confirmar email (bypass SMTP), marcar código usado y actualizar perfil
+      // Confirmar email (bypass SMTP) e iniciar sesion: el canje del codigo y la
+      // suscripcion necesitan el token del usuario.
+      await fetch("/api/confirm-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: newUserId }),
+      }).catch(() => {});
+      let accessToken = data.session?.access_token;
+      for (let attempt = 0; attempt < 2 && !accessToken; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1000));
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+        accessToken = signInData?.session?.access_token;
+      }
+      // En paralelo: marcar código usado y actualizar perfil
       await Promise.all([
-        fetch("/api/confirm-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: newUserId }),
-        }).catch(() => {}),
         fetch("/api/free-access", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
           body: JSON.stringify({ code, userId: newUserId }),
         }).catch(() => {}),
         supabase.from("profiles")
@@ -212,10 +220,13 @@ function ClienteDirectoForm() {
     const goal = needsGoal && nutritionalGoal ? nutritionalGoal : undefined;
     const macros = calculateMacros(sex, w, h, a, activityLevel, planSlug, goal);
 
+    const { data: { session } } = await supabase.auth.getSession();
+    const authHeaders = { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` };
+
     // Save survey via server-side API (bypasses RLS)
     const surveyRes = await fetch("/api/encuesta", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         userId,
         full_name: fullName, email: email.trim().toLowerCase(),
@@ -240,7 +251,7 @@ function ClienteDirectoForm() {
     // Create subscription via server-side API (bypasses RLS)
     const subRes = await fetch("/api/create-subscription", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({ userId, duration: codeDuration, amountPaid: 0, currency: "UYU" }),
     });
     if (!subRes.ok) {
@@ -253,7 +264,7 @@ function ClienteDirectoForm() {
     // Auto-generate training + nutrition plans based on survey data
     const planRes = await fetch("/api/generate-plans", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({ userId, planSlug }),
     });
     if (!planRes.ok) {

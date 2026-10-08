@@ -108,10 +108,12 @@ export default function EncuestaDirectaPage() {
     const goal = needsGoal && nutritionalGoal ? nutritionalGoal : undefined;
     const macros = calculateMacros(sex, Number(weight), Number(height), Number(age), activityLevel, planSlug, goal);
 
+    const { data: { session } } = await supabase.auth.getSession();
+
     // Use server-side API to bypass RLS and ensure profile exists
     const surveyRes = await fetch("/api/encuesta", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
       body: JSON.stringify({
         userId,
         age: Number(age), sex, weight: Number(weight), height: Number(height),
@@ -148,7 +150,7 @@ export default function EncuestaDirectaPage() {
     // Auto-generate training + nutrition plans based on survey data
     const plansRes = await fetch("/api/generate-plans", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
       body: JSON.stringify({ userId, planSlug }),
     });
     if (!plansRes.ok) {

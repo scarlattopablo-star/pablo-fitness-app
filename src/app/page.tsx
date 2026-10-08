@@ -130,12 +130,12 @@ export default function HomePage() {
             <span className="w-px h-4 bg-[var(--l-line-strong)]" />
             <LanguageSelector />
             <Link href="/login" className="text-[var(--l-muted)] hover:text-[var(--l-text)] transition-colors">{t("nav.login")}</Link>
-            <Link href="/registro-gratis" className="l-btn !py-2.5 !px-5 text-sm">30 días gratis</Link>
+            <Link href="/planes" className="l-btn !py-2.5 !px-5 text-sm">Ver planes</Link>
           </div>
           <div className="flex md:hidden items-center gap-3 text-sm">
             <LanguageSelector />
             <Link href="/login" className="text-[var(--l-muted)]">{t("nav.login")}</Link>
-            <Link href="/registro-gratis" className="l-btn !py-2 !px-4 text-sm">Gratis</Link>
+            <Link href="/planes" className="l-btn !py-2 !px-4 text-sm">Planes</Link>
           </div>
         </div>
       </nav>
