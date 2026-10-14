@@ -8,13 +8,14 @@ import { supabase } from "@/lib/supabase";
 export default function TrainerInviteButton() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [gender, setGender] = useState<"f" | "m">("f");
   const [message, setMessage] = useState("");
   const [link, setLink] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const reset = () => { setName(""); setMessage(""); setLink(""); setError(""); setCopied(false); };
+  const reset = () => { setName(""); setGender("f"); setMessage(""); setLink(""); setError(""); setCopied(false); };
 
   const generate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ export default function TrainerInviteButton() {
       const res = await fetch("/api/admin/trainer-invites", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ name, message: message.trim() || null }),
+        body: JSON.stringify({ name, gender, message: message.trim() || null }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Error generando la invitacion");
@@ -62,6 +63,14 @@ export default function TrainerInviteButton() {
                   <label className="mb-1 block text-xs text-muted">Nombre</label>
                   <input value={name} onChange={(e) => setName(e.target.value)} required placeholder="Ej: Sofia Martinez"
                     className="w-full rounded-xl border border-card-border bg-background px-4 py-3 focus:border-primary focus:outline-none" />
+                </div>
+                <div className="flex gap-2">
+                  {([["f", "Ella · administradora"], ["m", "Él · administrador"]] as const).map(([g, label]) => (
+                    <button key={g} type="button" onClick={() => setGender(g)}
+                      className={`flex-1 rounded-xl border py-2 text-xs font-semibold transition-colors ${gender === g ? "border-primary bg-primary/10 text-primary" : "border-card-border text-muted hover:text-white"}`}>
+                      {label}
+                    </button>
+                  ))}
                 </div>
                 <div>
                   <label className="mb-1 block text-xs text-muted">Mensaje personal (opcional)</label>

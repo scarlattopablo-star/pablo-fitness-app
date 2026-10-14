@@ -15,3 +15,6 @@ ALTER TABLE public.trainer_invites ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admin can manage trainer invites" ON public.trainer_invites;
 CREATE POLICY "Admin can manage trainer invites" ON public.trainer_invites
   FOR ALL USING (public.is_admin());
+
+-- Genero de la persona invitada, para los textos ("administradora" / "administrador")
+ALTER TABLE public.trainer_invites ADD COLUMN IF NOT EXISTS invitee_gender TEXT CHECK (invitee_gender IN ('f', 'm'));

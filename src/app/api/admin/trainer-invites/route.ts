@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { getStaff } from "@/lib/staff-auth";
 
 // GET  → ultimas invitaciones de entrenador
-// POST { name, message? } → crea una invitacion y devuelve su token
+// POST { name, gender: "f" | "m", message? } → crea una invitacion y devuelve su token
 export async function GET(request: NextRequest) {
   const staff = await getStaff(request);
   if (staff instanceof NextResponse) return staff;
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (staff instanceof NextResponse) return staff;
   if (!staff.isAdmin) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
 
-  const { name, message } = await request.json();
+  const { name, message, gender } = await request.json();
   const inviteeName = String(name || "").trim();
   if (!inviteeName) return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
 
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     token,
     invitee_name: inviteeName.slice(0, 80),
     message: message ? String(message).slice(0, 500) : null,
+    invitee_gender: gender === "m" ? "m" : "f",
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

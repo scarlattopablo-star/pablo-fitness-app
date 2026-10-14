@@ -9,13 +9,13 @@ function admin() {
   );
 }
 
-type Invite = { token: string; invitee_name: string; message: string | null; expires_at: string; used_by: string | null };
+type Invite = { token: string; invitee_name: string; invitee_gender: string | null; message: string | null; expires_at: string; used_by: string | null };
 
 async function loadInvite(token: string | null): Promise<{ invite?: Invite; error?: string; status?: number }> {
   if (!token) return { error: "Invitacion invalida", status: 400 };
   const { data } = await admin()
     .from("trainer_invites")
-    .select("token, invitee_name, message, expires_at, used_by")
+    .select("token, invitee_name, invitee_gender, message, expires_at, used_by")
     .eq("token", token)
     .maybeSingle();
   if (!data) return { error: "Esta invitacion no existe", status: 404 };
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
   if (!invite) return NextResponse.json({ error }, { status });
   return NextResponse.json({
     name: invite.invitee_name,
+    gender: invite.invitee_gender === "m" ? "m" : "f",
     message: invite.message,
     used: !!invite.used_by,
     expired: new Date(invite.expires_at) < new Date(),

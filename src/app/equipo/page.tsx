@@ -23,7 +23,7 @@ const ROLE_FEATURES = [
 export default function EquipoInvitePage() {
   const [token, setToken] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("loading");
-  const [invite, setInvite] = useState<{ name: string; message: string | null } | null>(null);
+  const [invite, setInvite] = useState<{ name: string; gender: "f" | "m"; message: string | null } | null>(null);
   const [invalidMsg, setInvalidMsg] = useState("");
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [mode, setMode] = useState<"register" | "login">("register");
@@ -54,7 +54,7 @@ export default function EquipoInvitePage() {
         const body = await res.json();
         if (!res.ok) { setInvalidMsg(body.error || "Invitacion no valida"); setStep("invalid"); return; }
         if (body.expired && !body.used) { setInvalidMsg("Esta invitacion vencio. Pedile a Pablo un link nuevo."); setStep("invalid"); return; }
-        setInvite({ name: body.name, message: body.message });
+        setInvite({ name: body.name, gender: body.gender === "m" ? "m" : "f", message: body.message });
         setFullName(body.name || "");
         setSessionEmail(session?.user?.email ?? null);
         setStep("welcome");
@@ -66,6 +66,7 @@ export default function EquipoInvitePage() {
   }, [token]);
 
   const firstName = (invite?.name || "").split(" ")[0];
+  const roleTitle = invite?.gender === "m" ? "administrador" : "administradora";
 
   const accept = async (accessToken: string) => {
     const res = await fetch("/api/trainer-invite", {
@@ -245,7 +246,7 @@ export default function EquipoInvitePage() {
         {step === "account" && (
           <div className="eq-rise">
             <h2 className="font-[family-name:var(--font-outfit)] text-3xl font-black">
-              {mode === "register" ? "Creá tu cuenta de administradora" : "Ingresá a tu cuenta"}
+              {mode === "register" ? `Creá tu cuenta de ${roleTitle}` : "Ingresá a tu cuenta"}
             </h2>
             <p className="mt-2 mb-6 text-sm text-muted">
               {mode === "register" ? "Con esta cuenta vas a gestionar a los clientes. Un minuto y estás adentro." : "Usá el email y la contraseña con los que ya te registraste."}
