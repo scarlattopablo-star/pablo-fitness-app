@@ -34,12 +34,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [verified, setVerified] = useState<boolean | null>(null);
-  const { signOut, profile, loading: authLoading } = useAuth();
+  const { signOut, user, profile, loading: authLoading } = useAuth();
 
   // Check 2FA verification AND is_admin
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (authLoading) return;
+
+    // Sin sesion: mandar a iniciar sesion (antes mostraba el panel con todo en cero)
+    if (!user) {
+      router.push("/login");
+      return;
+    }
 
     // If user is not admin, redirect away
     if (profile && !profile.is_admin) {
@@ -54,7 +60,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } else {
       setVerified(true);
     }
-  }, [pathname, router, profile, authLoading]);
+  }, [pathname, router, user, profile, authLoading]);
 
   // Register push notifications for admin so messages arrive as notifications
   useEffect(() => {
