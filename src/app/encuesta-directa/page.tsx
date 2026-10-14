@@ -26,6 +26,8 @@ export default function EncuestaDirectaPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [userId, setUserId] = useState("");
+  // Canjeo un codigo de Pablo pero todavia no tiene la suscripcion creada
+  const [needsCodeSubscription, setNeedsCodeSubscription] = useState(false);
   const [step, setStep] = useState(1);
   // Default to "quema-grasa" for free trial users — auto-approved, no waiting for admin
   // Only set to "direct-client" when user actually has a direct-client access code
@@ -92,6 +94,7 @@ export default function EncuestaDirectaPage() {
           .maybeSingle();
         if (codeData?.plan_slug) {
           setDetectedPlanSlug(codeData.plan_slug as PlanSlug);
+          if (!subData) setNeedsCodeSubscription(true);
         } else {
           // Objetivo elegido en otro flujo (ej: invitacion de entrenador → /encuesta-directa?plan=...)
           const urlPlan = new URLSearchParams(window.location.search).get("plan");
@@ -153,6 +156,23 @@ export default function EncuestaDirectaPage() {
       legs: legs ? Number(legs) : null,
       notes: "Registro inicial (encuesta)",
     });
+
+    // Si canjeo un codigo de Pablo pero la suscripcion nunca se creo (flujo cortado,
+    // link del mail de confirmacion), crearla ahora: generate-plans exige suscripcion activa.
+    if (needsCodeSubscription) {
+      const subRes = await fetch("/api/create-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` },
+        body: JSON.stringify({ userId, currency: "UYU" }),
+      });
+      if (!subRes.ok) {
+        const subErr = await subRes.json().catch(() => ({ error: "unknown" }));
+        setError(`Error al activar tu acceso: ${subErr.error || "intenta de nuevo"}`);
+        setLoading(false);
+        return;
+      }
+      setNeedsCodeSubscription(false);
+    }
 
     // Auto-generate training + nutrition plans based on survey data
     const plansRes = await fetch("/api/generate-plans", {
