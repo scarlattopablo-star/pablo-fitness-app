@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getStaff } from "@/lib/staff-auth";
+import { cleanPersonName } from "@/lib/person-name";
 
 // GET  → ultimas invitaciones de entrenador
 // POST { name, gender: "f" | "m", message? } → crea una invitacion y devuelve su token
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
   if (!staff.isAdmin) return NextResponse.json({ error: "No autorizado" }, { status: 403 });
 
   const { name, message, gender } = await request.json();
-  const inviteeName = String(name || "").trim();
+  const inviteeName = cleanPersonName(String(name || ""));
   if (!inviteeName) return NextResponse.json({ error: "Falta el nombre" }, { status: 400 });
 
   const token = randomBytes(12).toString("base64url");

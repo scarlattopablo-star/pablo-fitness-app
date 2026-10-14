@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { UserPlus, X, Copy, Check, Loader2, ExternalLink, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { cleanPersonName } from "@/lib/person-name";
 
 /** Boton + modal del admin para generar un link de invitacion de entrenador suplente. */
 export default function TrainerInviteButton() {
@@ -35,7 +36,8 @@ export default function TrainerInviteButton() {
     } finally { setBusy(false); }
   };
 
-  const firstName = name.trim().split(" ")[0];
+  const cleanName = cleanPersonName(name);
+  const firstName = cleanName.split(" ")[0];
   const waText = `Hola ${firstName}! Te preparé el acceso a mi app para que entrenes a mis clientes personalizados. Entrá desde acá y en un minuto estás adentro 👇\n\n${link}`;
 
   return (
@@ -78,8 +80,14 @@ export default function TrainerInviteButton() {
                     placeholder="Lo va a ver en la pagina de bienvenida, firmado por vos"
                     className="w-full rounded-xl border border-card-border bg-background px-4 py-3 text-sm focus:border-primary focus:outline-none" />
                 </div>
+                {firstName && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                    <p className="text-[10px] uppercase tracking-wide text-muted mb-1">Asi lo va a ver</p>
+                    <p className="text-sm font-bold">{firstName}, te quiero <span className="text-primary">en mi equipo.</span></p>
+                  </div>
+                )}
                 {error && <p className="text-sm text-danger">{error}</p>}
-                <button type="submit" disabled={busy || !name.trim()}
+                <button type="submit" disabled={busy || !cleanName}
                   className="gradient-primary flex w-full items-center justify-center gap-2 rounded-xl py-3 font-bold text-black disabled:opacity-50">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Generar invitacion"}
                 </button>
