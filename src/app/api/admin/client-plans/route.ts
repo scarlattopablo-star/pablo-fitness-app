@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isTrainerUser } from "@/lib/staff-auth";
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -29,7 +30,8 @@ export async function GET(request: NextRequest) {
     .select("is_admin")
     .eq("id", user.id)
     .single();
-  if (!profile?.is_admin) {
+  // Admin, o entrenador suplente leyendo su propio plan
+  if (!profile?.is_admin && !(user.id === clientId && await isTrainerUser(adminClient, user.id))) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isTrainerUser } from "@/lib/staff-auth";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { logAdminAction } from "@/lib/audit-log";
 import webpush from "web-push";
@@ -198,7 +199,9 @@ export async function POST(request: NextRequest) {
       .select("is_admin")
       .eq("id", user.id)
       .single();
-    if (!profile?.is_admin) {
+    // Entrenador suplente: solo puede editar su propio plan
+    const isSelfTrainer = !profile?.is_admin && user.id === clientId && await isTrainerUser(supabase, user.id);
+    if (!profile?.is_admin && !isSelfTrainer) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
@@ -312,15 +315,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tipo invalido" }, { status: 400 });
     }
 
-    await logAdminAction({
-      admin_id: user.id,
-      action: "save_plan",
-      target_id: clientId,
-      details: `Saved ${type} plan`,
-    });
+    if (!isSelfTrainer) {
+      await logAdminAction({
+        admin_id: user.id,
+        action: "save_plan",
+        target_id: clientId,
+        details: `Saved ${type} plan`,
+      });
 
-    // Fire-and-forget: notificar al cliente
-    notifyClientPlanUpdated(supabase, user.id, clientId, type as "training" | "nutrition").catch(() => {});
+      // Fire-and-forget: notificar al cliente
+      notifyClientPlanUpdated(supabase, user.id, clientId, type as "training" | "nutrition").catch(() => {});
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

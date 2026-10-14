@@ -9,6 +9,7 @@ import {
 import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { calculateMacros, PLANS_NEEDING_GOAL } from "@/lib/harris-benedict";
+import { PLANS } from "@/lib/plans-data";
 import type { Sex, ActivityLevel, PlanSlug, NutritionalGoal } from "@/types";
 
 const ACTIVITY_LABELS: Record<ActivityLevel, { label: string; desc: string }> = {
@@ -89,7 +90,13 @@ export default function EncuestaDirectaPage() {
           .eq("used_by", session.user.id)
           .limit(1)
           .maybeSingle();
-        if (codeData?.plan_slug) setDetectedPlanSlug(codeData.plan_slug as PlanSlug);
+        if (codeData?.plan_slug) {
+          setDetectedPlanSlug(codeData.plan_slug as PlanSlug);
+        } else {
+          // Objetivo elegido en otro flujo (ej: invitacion de entrenador → /encuesta-directa?plan=...)
+          const urlPlan = new URLSearchParams(window.location.search).get("plan");
+          if (urlPlan && PLANS.some((p) => p.slug === urlPlan)) setDetectedPlanSlug(urlPlan as PlanSlug);
+        }
       }
       setUserId(session.user.id);
       setLoading(false);

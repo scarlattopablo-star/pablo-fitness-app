@@ -103,3 +103,9 @@ export async function logSessionForClient(
   }
   return null;
 }
+
+/** true si el usuario es entrenador suplente (puede editar SU PROPIO plan). */
+export async function isTrainerUser(adminClient: SupabaseClient, userId: string): Promise<boolean> {
+  const { data } = await adminClient.from("trainers").select("user_id").eq("user_id", userId).maybeSingle();
+  return !!data;
+}

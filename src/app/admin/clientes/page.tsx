@@ -6,6 +6,7 @@ import { Search, Eye, Users, Loader2, QrCode } from "lucide-react";
 import { RatLoader } from "@/components/rat-loader";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import TrainerInviteButton from "@/components/trainer-invite-modal";
 
 interface Client {
   id: string;
@@ -154,6 +155,7 @@ export default function ClientesPage() {
             placeholder="Buscar cliente..."
             className="w-full bg-card-bg border border-card-border rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-primary" />
         </div>
+        <TrainerInviteButton />
       </div>
 
       {loading ? (

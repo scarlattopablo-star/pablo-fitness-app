@@ -43,6 +43,15 @@ export default function EntrenadorClientesPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-4 md:p-6">
+      <Link href="/entrenador/mi-plan"
+        className="flex items-center justify-between glass-card rounded-2xl p-4 mb-6 hover:border-primary/40 transition-colors">
+        <div>
+          <p className="font-bold text-sm">Mi plan</p>
+          <p className="text-xs text-muted">Editá tu rutina y tu dieta o generalas segun tu encuesta</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted" />
+      </Link>
+
       <h1 className="text-2xl font-black mb-1">Clientes a entrenar</h1>
       <p className="text-muted text-sm mb-6">Clientes personalizados de Pablo. Podes ver su plan y cargar la sesion cuando los entrenas.</p>
 

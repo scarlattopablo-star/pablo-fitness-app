@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isTrainerUser } from "@/lib/staff-auth";
 import { generateTrainingPlan } from "@/lib/generate-training-plan";
 import { generateMealPlan, generateKitesurfMealPlans } from "@/lib/generate-meal-plan";
 import { generateWeekMealPlan, flattenWeekMealsForShopping } from "@/lib/generate-week-meal-plan";
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
           .gte("end_date", today)
           .limit(1)
           .maybeSingle();
-        if (!activeSub) {
+        if (!activeSub && !(await isTrainerUser(supabase, userId))) {
           return NextResponse.json({ error: "Necesitás un plan activo" }, { status: 403 });
         }
       }
