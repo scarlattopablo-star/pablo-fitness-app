@@ -245,7 +245,7 @@ export default function EquipoInvitePage() {
         {step === "account" && (
           <div className="eq-rise">
             <h2 className="font-[family-name:var(--font-outfit)] text-3xl font-black">
-              {mode === "register" ? "Creá tu cuenta de administrador" : "Ingresá a tu cuenta"}
+              {mode === "register" ? "Creá tu cuenta de administradora" : "Ingresá a tu cuenta"}
             </h2>
             <p className="mt-2 mb-6 text-sm text-muted">
               {mode === "register" ? "Con esta cuenta vas a gestionar a los clientes. Un minuto y estás adentro." : "Usá el email y la contraseña con los que ya te registraste."}
