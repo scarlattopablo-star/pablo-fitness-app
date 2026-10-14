@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
+import TrainerInviteButton from "@/components/trainer-invite-modal";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
@@ -106,8 +107,13 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl font-black mb-2">Dashboard</h1>
-      <p className="text-muted mb-6">Metricas en tiempo real de tu negocio</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-black mb-2">Dashboard</h1>
+          <p className="text-muted">Metricas en tiempo real de tu negocio</p>
+        </div>
+        <TrainerInviteButton />
+      </div>
 
       {/* Pending approvals alert */}
       {pendingApprovals.length > 0 && (
