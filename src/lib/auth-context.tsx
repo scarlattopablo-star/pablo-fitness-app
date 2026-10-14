@@ -35,6 +35,8 @@ interface AuthContextType {
   isTrial: boolean;
   trialDaysLeft: number;
   isDirectClient: boolean;
+  /** Entrenador suplente: ve a los clientes personalizados y los entrena (no edita planes) */
+  isTrainer: boolean;
   /** true hasta que terminaron de cargar suscripcion/codigos/planes del usuario */
   accessLoading: boolean;
   /** Cliente viejo sin acceso vigente que entra por el periodo de gracia */
@@ -56,6 +58,7 @@ const AuthContext = createContext<AuthContextType>({
   isTrial: false,
   trialDaysLeft: 0,
   isDirectClient: false,
+  isTrainer: false,
   accessLoading: true,
   inGracePeriod: false,
   graceDaysLeft: 0,
@@ -68,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [hasPlans, setHasPlans] = useState(false);
   const [isDirectClient, setIsDirectClient] = useState(false);
+  const [isTrainer, setIsTrainer] = useState(false);
   const [hasFreeCode, setHasFreeCode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [accessLoading, setAccessLoading] = useState(true);
@@ -76,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadAccess(userId: string) {
     setAccessLoading(true);
     try {
-      await Promise.all([fetchSubscription(userId), checkPlans(userId), checkDirectClient(userId)]);
+      await Promise.all([fetchSubscription(userId), checkPlans(userId), checkDirectClient(userId), checkTrainer(userId)]);
     } catch {
       // Si falla la red, no bloqueamos la UI indefinidamente
     } finally {
@@ -120,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSubscription(null);
             setHasPlans(false);
             setIsDirectClient(false);
+            setIsTrainer(false);
             setHasFreeCode(false);
             setAccessLoading(false);
           }
@@ -187,6 +192,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .limit(1)
       .maybeSingle();
     if (sub) setIsDirectClient(true);
+  }
+
+  async function checkTrainer(userId: string) {
+    const { data } = await supabase
+      .from("trainers")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    setIsTrainer(!!data);
   }
 
   async function fetchSubscription(userId: string) {
@@ -259,7 +273,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? Math.max(0, Math.ceil((graceEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  const hasActiveSubscription = hasValidSubscription || inGracePeriod;
+  // El entrenador suplente usa la app gratis (trabaja para Pablo)
+  const hasActiveSubscription = hasValidSubscription || inGracePeriod || isTrainer;
 
   const isExpired =
     !!subscription &&
@@ -278,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : 0;
 
   return (
-    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, isDirectClient, accessLoading, inGracePeriod, graceDaysLeft, signOut }}>
+    <AuthContext.Provider value={{ user, profile, subscription, loading, hasActiveSubscription, isExpired, isTrial, trialDaysLeft, isDirectClient, isTrainer, accessLoading, inGracePeriod, graceDaysLeft, signOut }}>
       {children}
     </AuthContext.Provider>
   );

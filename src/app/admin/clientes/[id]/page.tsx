@@ -24,6 +24,7 @@ import {
 } from "@/components/progress-charts";
 import ZoomableImage from "@/components/zoomable-image";
 import ExerciseGifPicker from "@/components/exercise-gif-picker";
+import TrainerRoleToggle from "@/components/trainer-role-toggle";
 
 interface ClientData {
   id: string;
@@ -215,6 +216,9 @@ export default function ClienteDetailPage({
   const [generateMsg, setGenerateMsg] = useState("");
   const [pastingRoutine, setPastingRoutine] = useState(false);
   const [pasteMsg, setPasteMsg] = useState("");
+  const [copiedDiet, setCopiedDiet] = useState<{ data: any; importantNotes: string[]; clientName?: string } | null>(null);
+  const [pastingDiet, setPastingDiet] = useState(false);
+  const [pasteDietMsg, setPasteDietMsg] = useState("");
   const [savingTraining, setSavingTraining] = useState(false);
   const [editingNutrition, setEditingNutrition] = useState(false);
   const [editNutritionData, setEditNutritionData] = useState<any[]>([]);
@@ -369,7 +373,47 @@ export default function ClienteDetailPage({
     if (stored) {
       try { setCopiedRoutine(JSON.parse(stored)); } catch { /* ignore */ }
     }
+    const storedDiet = localStorage.getItem("admin-diet-clipboard");
+    if (storedDiet) {
+      try { setCopiedDiet(JSON.parse(storedDiet)); } catch { /* ignore */ }
+    }
   }, []);
+
+  const copyDiet = () => {
+    if (!nutritionPlan?.data) return;
+    const payload = { data: nutritionPlan.data, importantNotes: nutritionNotes, clientName: client?.full_name || "cliente" };
+    localStorage.setItem("admin-diet-clipboard", JSON.stringify(payload));
+    setCopiedDiet(payload);
+  };
+
+  const pasteDiet = async () => {
+    if (!copiedDiet?.data) return;
+    if (!confirm(`¿Pegar la dieta de "${copiedDiet.clientName}" en este cliente? Se reemplazará su dieta actual (despues la podes editar).`)) return;
+    setPastingDiet(true);
+    setPasteDietMsg("");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Sesion expirada — recargá la pagina");
+      const res = await fetch("/api/admin/copy-nutrition-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ targetUserId: id, data: copiedDiet.data, importantNotes: copiedDiet.importantNotes }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+
+      setNutritionPlan({ ...(nutritionPlan || {}), data: body.data, important_notes: body.important_notes, plan_approved: false });
+      setExpandNutrition(true);
+      setPasteDietMsg("✓ Dieta pegada — podes editarla abajo");
+      localStorage.removeItem("admin-diet-clipboard");
+      setCopiedDiet(null);
+      setTimeout(() => setPasteDietMsg(""), 4000);
+    } catch (err) {
+      setPasteDietMsg("Error: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setPastingDiet(false);
+    }
+  };
 
   const copyRoutine = () => {
     if (!trainingPlan?.data?.days) return;
@@ -756,6 +800,7 @@ export default function ClienteDetailPage({
             >
               <Trash2 className="h-4 w-4" /> Eliminar
             </button>
+            <TrainerRoleToggle userId={id} />
           </div>
 
           {/* Change objective & regenerate plan */}
@@ -1112,7 +1157,7 @@ export default function ClienteDetailPage({
                 className="flex-1 flex items-center justify-center gap-2 text-sm text-muted font-semibold py-2 border border-card-border rounded-xl hover:bg-white/5 transition-colors"
                 title="Copiar rutina al portapapeles"
               >
-                <Copy className="h-4 w-4" /> Copiar
+                <Copy className="h-4 w-4" /> {copiedRoutine?.clientName === client?.full_name ? "Copiada ✓" : "Copiar"}
               </button>
             </div>
           </div>
@@ -1500,16 +1545,53 @@ export default function ClienteDetailPage({
               ) : null;
             })()}
 
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setEditNutritionData(JSON.parse(JSON.stringify(nutritionMeals)));
+                  setEditingNutrition(true);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 text-sm text-primary font-bold py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+              >
+                <Edit className="h-4 w-4" /> Editar Nutricion
+              </button>
+              <button
+                onClick={copyDiet}
+                className="flex-1 flex items-center justify-center gap-2 text-sm text-muted font-semibold py-2 border border-card-border rounded-xl hover:bg-white/5 transition-colors"
+                title="Copiar dieta al portapapeles"
+              >
+                <Copy className="h-4 w-4" /> {copiedDiet?.clientName === client?.full_name ? "Copiada ✓" : "Copiar"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pegar dieta copiada de otro cliente — se esconde si estamos viendo el mismo cliente que copio */}
+        {!editingNutrition && copiedDiet && copiedDiet.clientName !== client?.full_name && (
+          <div className="mt-3 pt-3 border-t border-card-border flex items-center gap-2 flex-wrap">
+            <button
+              onClick={pasteDiet}
+              disabled={pastingDiet}
+              className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition font-semibold disabled:opacity-50"
+            >
+              {pastingDiet ? "Pegando..." : `Pegar dieta de "${copiedDiet.clientName}"`}
+            </button>
             <button
               onClick={() => {
-                setEditNutritionData(JSON.parse(JSON.stringify(nutritionMeals)));
-                setEditingNutrition(true);
+                localStorage.removeItem("admin-diet-clipboard");
+                setCopiedDiet(null);
               }}
-              className="w-full flex items-center justify-center gap-2 text-sm text-primary font-bold py-2 border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+              className="text-xs px-3 py-2 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition"
+              title="Descartar la dieta copiada"
             >
-              <Edit className="h-4 w-4" /> Editar Nutricion
+              ✕ Descartar
             </button>
           </div>
+        )}
+        {pasteDietMsg && (
+          <p className={`mt-2 text-xs font-medium ${pasteDietMsg.startsWith("✓") ? "text-primary" : "text-danger"}`}>
+            {pasteDietMsg}
+          </p>
         )}
 
         {/* Inline nutrition editing */}

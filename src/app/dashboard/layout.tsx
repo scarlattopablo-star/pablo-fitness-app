@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, ClipboardList, TrendingUp,
-  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle, Gift, Trophy, Clock, Crown, GraduationCap,
+  User, BookOpen, LogOut, Menu, X, Download, Smartphone, Share, MessageCircle, Gift, Trophy, Clock, Crown, GraduationCap, Users,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { InstagramIcon } from "@/components/icons";
@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft, isDirectClient, accessLoading, inGracePeriod, graceDaysLeft } = useAuth();
+  const { user, profile, loading, signOut, hasActiveSubscription, isTrial, trialDaysLeft, isDirectClient, isTrainer, accessLoading, inGracePeriod, graceDaysLeft } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
@@ -270,6 +270,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Smartphone className="h-4 w-4" /> App instalada
             </div>
           )}
+          {isTrainer && (
+            <Link href="/entrenador" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-accent font-semibold hover:bg-accent/5 transition-all">
+              <Users className="h-[18px] w-[18px]" /> Clientes a entrenar
+            </Link>
+          )}
           <Link href="/manual" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted hover:text-foreground transition-all">
             <BookOpen className="h-[18px] w-[18px]" /> Manual
           </Link>
@@ -317,6 +322,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full text-primary font-semibold">
                 <Download className="h-[18px] w-[18px]" /> Descargar App
               </button>
+            )}
+            {isTrainer && (
+              <Link href="/entrenador" onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-accent font-semibold">
+                <Users className="h-[18px] w-[18px]" /> Clientes a entrenar
+              </Link>
             )}
             <Link href="/manual" onClick={() => setMenuOpen(false)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted">
