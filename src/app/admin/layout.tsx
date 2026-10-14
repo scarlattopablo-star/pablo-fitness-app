@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Dumbbell, LayoutDashboard, Users, ClipboardList,
   CreditCard, BookOpen, LogOut, Menu, X, Gift, Download, Smartphone, Share, Trash2,
-  MessageCircle, Wand2, Apple,
+  MessageCircle, Wand2, Apple, UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -15,6 +15,7 @@ import { syncPushSubscription, requestPushPermission, isPushSupported } from "@/
 const NAV_ITEMS = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/clientes", icon: Users, label: "Clientes" },
+  { href: "/admin/equipo", icon: UserCog, label: "Equipo" },
   { href: "/admin/planes", icon: ClipboardList, label: "Planes" },
   { href: "/admin/ejercicios", icon: BookOpen, label: "Ejercicios" },
   { href: "/admin/alimentos", icon: Apple, label: "Alimentos" },

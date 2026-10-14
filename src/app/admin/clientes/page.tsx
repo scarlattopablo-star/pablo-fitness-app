@@ -17,6 +17,7 @@ interface Client {
   isDirectClient?: boolean;
   isFreeClient?: boolean;
   planApproved?: boolean;
+  isTrainer?: boolean;
 }
 
 export default function ClientesPage() {
@@ -35,7 +36,7 @@ export default function ClientesPage() {
 
   const loadClients = async () => {
     try {
-      const [profilesRes, qrRes, plansRes, subsRes] = await Promise.all([
+      const [profilesRes, qrRes, plansRes, subsRes, trainersRes] = await Promise.all([
         supabase.from("profiles").select("*")
           .eq("is_admin", false).is("deleted_at", null)
           .order("created_at", { ascending: false }),
@@ -44,7 +45,9 @@ export default function ClientesPage() {
         supabase.from("training_plans").select("user_id, plan_approved"),
         supabase.from("subscriptions").select("user_id, plan_slug")
           .eq("plan_slug", "direct-client"),
+        supabase.from("trainers").select("user_id"),
       ]);
+      const trainerIds = new Set((trainersRes.data || []).map((t: { user_id: string }) => t.user_id));
 
       const data = profilesRes.data;
       const qrCodes = qrRes.data;
@@ -68,6 +71,7 @@ export default function ClientesPage() {
           isDirectClient: directClientIds.has(c.id),
           isFreeClient: freeClientIds.has(c.id) && !directClientIds.has(c.id),
           planApproved: approvedMap.get(c.id),
+          isTrainer: trainerIds.has(c.id),
         })));
       }
     } catch {}
@@ -115,6 +119,9 @@ export default function ClientesPage() {
                         <p className="font-medium">{client.full_name || "Sin nombre"}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <p className="text-xs text-muted">{client.email}</p>
+                          {client.isTrainer && (
+                            <span className="text-[9px] bg-accent/15 text-accent px-1.5 py-0.5 rounded font-bold">Equipo</span>
+                          )}
                           {client.isDirectClient && client.planApproved === false && (
                             <span className="text-[9px] bg-yellow-500/10 text-yellow-500 px-1.5 py-0.5 rounded font-bold">Pendiente</span>
                           )}
