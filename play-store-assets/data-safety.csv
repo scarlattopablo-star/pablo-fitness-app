@@ -1,0 +1,70 @@
+Section,Field,Value
+Data collection and security,Does your app collect or share any of the required user data types?,Yes
+Data collection and security,Is all of the user data collected by your app encrypted in transit?,Yes
+Data collection and security,Do you provide a way for users to request that their data be deleted?,Yes
+Data types,Personal info / Name,Yes
+Personal info / Name,Collected,Yes
+Personal info / Name,Shared,No
+Personal info / Name,Ephemeral,No
+Personal info / Name,Required,Yes
+Personal info / Name,Purposes,App functionality; Account management
+Data types,Personal info / Email address,Yes
+Personal info / Email address,Collected,Yes
+Personal info / Email address,Shared,No
+Personal info / Email address,Ephemeral,No
+Personal info / Email address,Required,Yes
+Personal info / Email address,Purposes,App functionality; Account management; Communications
+Data types,Personal info / Phone number,Yes
+Personal info / Phone number,Collected,Yes
+Personal info / Phone number,Shared,No
+Personal info / Phone number,Ephemeral,No
+Personal info / Phone number,Required,No
+Personal info / Phone number,Purposes,App functionality
+Data types,Personal info / User IDs,Yes
+Personal info / User IDs,Collected,Yes
+Personal info / User IDs,Shared,No
+Personal info / User IDs,Ephemeral,No
+Personal info / User IDs,Required,Yes
+Personal info / User IDs,Purposes,App functionality; Analytics
+Data types,Financial info / Purchase history,Yes
+Financial info / Purchase history,Collected,Yes
+Financial info / Purchase history,Shared,No
+Financial info / Purchase history,Ephemeral,No
+Financial info / Purchase history,Required,Yes
+Financial info / Purchase history,Purposes,App functionality
+Data types,Health and fitness / Health info,Yes
+Health and fitness / Health info,Collected,Yes
+Health and fitness / Health info,Shared,No
+Health and fitness / Health info,Ephemeral,No
+Health and fitness / Health info,Required,Yes
+Health and fitness / Health info,Purposes,App functionality; Personalization
+Data types,Health and fitness / Fitness info,Yes
+Health and fitness / Fitness info,Collected,Yes
+Health and fitness / Fitness info,Shared,No
+Health and fitness / Fitness info,Ephemeral,No
+Health and fitness / Fitness info,Required,Yes
+Health and fitness / Fitness info,Purposes,App functionality; Personalization
+Data types,Messages / Other in-app messages,Yes
+Messages / Other in-app messages,Collected,Yes
+Messages / Other in-app messages,Shared,No
+Messages / Other in-app messages,Ephemeral,No
+Messages / Other in-app messages,Required,No
+Messages / Other in-app messages,Purposes,App functionality; Communications
+Data types,Photos and videos / Photos,Yes
+Photos and videos / Photos,Collected,Yes
+Photos and videos / Photos,Shared,No
+Photos and videos / Photos,Ephemeral,No
+Photos and videos / Photos,Required,No
+Photos and videos / Photos,Purposes,App functionality
+Data types,App activity / App interactions,Yes
+App activity / App interactions,Collected,Yes
+App activity / App interactions,Shared,No
+App activity / App interactions,Ephemeral,No
+App activity / App interactions,Required,Yes
+App activity / App interactions,Purposes,App functionality; Analytics
+Data types,Device or other IDs / Device or other IDs,Yes
+Device or other IDs / Device or other IDs,Collected,Yes
+Device or other IDs / Device or other IDs,Shared,Yes
+Device or other IDs / Device or other IDs,Ephemeral,No
+Device or other IDs / Device or other IDs,Required,No
+Device or other IDs / Device or other IDs,Purposes,App functionality
