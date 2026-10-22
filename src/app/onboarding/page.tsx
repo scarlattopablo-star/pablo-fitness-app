@@ -139,7 +139,10 @@ function OnboardingContent() {
   const isLast = current === SLIDES.length - 1;
 
   useEffect(() => {
-    setHasSeenBefore(localStorage.getItem("hasSeenOnboarding") === "true");
+    const seen = localStorage.getItem("hasSeenOnboarding") === "true";
+    setHasSeenBefore(seen);
+    // Mark as seen immediately so the loop doesn't repeat if user closes mid-onboarding
+    if (!seen) localStorage.setItem("hasSeenOnboarding", "true");
   }, []);
 
   const go = useCallback(

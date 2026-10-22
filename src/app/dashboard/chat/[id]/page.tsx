@@ -50,6 +50,7 @@ export default function ConversationPage() {
   const [warning, setWarning] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -166,9 +167,12 @@ export default function ConversationPage() {
       }
 
       // If messaging Pablo (admin), trigger bot after 30s if he doesn't respond
+      // Cancel any pending bot timer before setting a new one (avoid accumulation)
       const ADMIN_ID = "fbc38340-5d8f-4f5f-91e0-46e3a8cb8d2f";
       if (partner?.id === ADMIN_ID) {
-        setTimeout(() => {
+        if (botTimerRef.current) clearTimeout(botTimerRef.current);
+        botTimerRef.current = setTimeout(() => {
+          botTimerRef.current = null;
           fetch("/api/chat-bot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

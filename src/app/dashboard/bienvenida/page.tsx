@@ -288,18 +288,11 @@ export default function BienvenidaPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setStep("checklist")}
-                  disabled={!photoUploaded}
-                  className="flex-1 gradient-primary text-black font-bold py-4 rounded-xl inline-flex items-center justify-center gap-2 hover:opacity-90 transition disabled:opacity-40"
+                  className="flex-1 gradient-primary text-black font-bold py-4 rounded-xl inline-flex items-center justify-center gap-2 hover:opacity-90 transition"
                 >
-                  Continuar <ArrowRight className="h-5 w-5" />
+                  {photoUploaded ? "Continuar" : "Continuar sin foto"} <ArrowRight className="h-5 w-5" />
                 </button>
               </div>
-              <button
-                onClick={() => setStep("checklist")}
-                className="w-full mt-2 py-3 text-sm text-muted hover:text-foreground transition text-center"
-              >
-                Saltar por ahora
-              </button>
             </motion.div>
           )}
 
