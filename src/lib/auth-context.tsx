@@ -80,7 +80,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadAccess(userId: string) {
     setAccessLoading(true);
     try {
-      await Promise.all([fetchSubscription(userId), checkPlans(userId), checkDirectClient(userId), checkTrainer(userId)]);
+      await Promise.race([
+        Promise.all([fetchSubscription(userId), checkPlans(userId), checkDirectClient(userId), checkTrainer(userId)]),
+        new Promise((resolve) => setTimeout(resolve, 8000)),
+      ]);
     } catch {
       // Si falla la red, no bloqueamos la UI indefinidamente
     } finally {
@@ -117,8 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (_event, session) => {
           setUser(session?.user ?? null);
           if (session?.user) {
-            fetchProfile(session.user.id);
-            loadAccess(session.user.id);
+            // Llamar a Supabase dentro de este callback puede trabar el lock de auth
+            // y dejar todas las consultas colgadas (carga infinita). Se difiere.
+            const userId = session.user.id;
+            setTimeout(() => {
+              fetchProfile(userId);
+              loadAccess(userId);
+            }, 0);
           } else {
             setProfile(null);
             setSubscription(null);

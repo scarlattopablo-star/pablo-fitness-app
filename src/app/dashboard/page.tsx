@@ -125,6 +125,8 @@ export default function DashboardPage() {
 
   const loadData = async () => {
     if (!user) return;
+    // Si Supabase no responde, no dejar el loader girando para siempre
+    const safety = setTimeout(() => setLoading(false), 8000);
     try {
       const [surveyRes, progressRes] = await Promise.all([
         supabase.from("surveys").select("*").eq("user_id", user.id)
@@ -153,6 +155,7 @@ export default function DashboardPage() {
       const cached = getCachedData<{ survey: SurveyData }>("dashboard");
       if (cached?.survey) { setSurvey(cached.survey); if (cached.survey.weight) setCurrentWeight(cached.survey.weight); }
     }
+    clearTimeout(safety);
     setLoading(false);
   };
 
